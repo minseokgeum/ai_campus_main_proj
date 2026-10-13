@@ -1,0 +1,20 @@
+{
+  "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm",
+  "cik": "0000789019",
+  "accession_number": "0001193125-26-323660",
+  "document": "msft-20260630.htm",
+  "form": "10-K",
+  "report_date": "2026-06-30",
+  "paragraph_index_zero_based": 526,
+  "table_index_zero_based": 24,
+  "body_search_phrase": "Microsoft is a technology company",
+  "table_search_phrase": "Total revenue",
+  "table_years": [
+    2026,
+    2025,
+    2024
+  ],
+  "unit_note": "In millions, except per share amounts",
+  "body_file": "D15_MSFT_body_sample.txt",
+  "table_file": "D15_MSFT_income_statement.html"
+}

@@ -1,0 +1,4 @@
+﻿item,tag,accn,form,start,end,unit,filed_dates,xbrl_usd,xbrl_million_usd,source_million_usd,difference_million_usd,match
+매출,RevenueFromContractWithCustomerExcludingAssessedTax,0001193125-26-323660,10-K,2025-07-01,2026-06-30,USD,2026-07-29,331839000000,331839,331839,0,True
+영업이익,OperatingIncomeLoss,0001193125-26-323660,10-K,2025-07-01,2026-06-30,USD,2026-07-29,155237000000,155237,155237,0,True
+순이익,NetIncomeLoss,0001193125-26-323660,10-K,2025-07-01,2026-06-30,USD,2026-07-29,133749000000,133749,133749,0,True
