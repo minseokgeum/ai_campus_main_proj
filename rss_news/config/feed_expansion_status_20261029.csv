@@ -1,0 +1,18 @@
+매체명,피드명,피드 URL,확인일,HTTP,분석 상태,전체 항목,기간 내 항목,발행일 미확인,요약 제공,RSS 본문 제공,본문 제공 방식,기본 설정 편입
+BBC News,top,https://feeds.bbci.co.uk/news/rss.xml,2026-10-29,200,RSS 2.0 정상,35,34,0,35/35,0/35,요약만,미결정
+BBC News,business,https://feeds.bbci.co.uk/news/business/rss.xml,2026-10-29,200,RSS 2.0 정상,39,25,0,39/39,0/39,요약만,미결정
+BBC News,technology,https://feeds.bbci.co.uk/news/technology/rss.xml,2026-10-29,200,RSS 2.0 정상,20,13,0,20/20,0/20,요약만,미결정
+The Guardian,world,https://www.theguardian.com/world/rss,2026-10-29,200,RSS 2.0 정상,45,44,0,45/45,1/45,긴 요약 중심; content 1건은 66자,미결정
+The Guardian,business,https://www.theguardian.com/uk/business/rss,2026-10-29,200,RSS 2.0 정상,46,46,0,46/46,0/46,긴 요약 중심,미결정
+The Guardian,technology,https://www.theguardian.com/uk/technology/rss,2026-10-29,200,RSS 2.0 정상,35,22,0,35/35,0/35,긴 요약 중심,미결정
+Ars Technica,all_news,https://feeds.arstechnica.com/arstechnica/index,2026-10-29,200,RSS 2.0 정상,20,20,0,20/20,20/20,582~1549자 부분 본문; 전문 RSS는 구독자 기능,미결정
+TechCrunch,all,https://techcrunch.com/feed/,2026-10-29,200,RSS 2.0 정상,20,20,0,20/20,0/20,53~336자 요약만,미결정
+WIRED,top,https://www.wired.com/feed/rss,2026-10-29,200,RSS 2.0 정상,50,50,0,50/50,0/50,요약만,미결정
+WIRED,business,https://www.wired.com/feed/category/business/latest/rss,2026-10-29,200,RSS 2.0 정상,20,17,0,20/20,0/20,요약만,미결정
+The New York Times,business,https://rss.nytimes.com/services/xml/rss/nyt/Business.xml,2026-10-29,200,RSS 2.0 정상,50,50,0,48/50,37/50,content 33~243자; 캡션·짧은 설명,미결정
+The New York Times,technology,https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,2026-10-29,200,RSS 2.0 정상,24,24,0,24/24,12/24,content 41~270자; 전문 아님,미결정
+NPR,news,https://feeds.npr.org/1001/rss.xml,2026-10-29,200,RSS 2.0 정상,10,10,0,10/10,10/10,content 152~251자; 짧은 설명,미결정
+NPR,business,https://feeds.npr.org/1006/rss.xml,2026-10-29,200,RSS 2.0 정상,10,10,0,10/10,10/10,content 129~281자; 짧은 설명,미결정
+ProPublica,main,https://www.propublica.org/feeds/propublica/main,2026-10-29,200,RSS 2.0 정상,20,12,0,20/20,20/20,기간 내 content 6222~47067자; 전문 여부 감사 필요,미결정
+IEEE Spectrum,all,https://spectrum.ieee.org/feeds/feed.rss,2026-10-29,200,RSS 2.0 정상,30,10,0,30/30,0/30,summary 323~24075자; 본문 역할 여부 감사 필요,미결정
+MIT Technology Review,all,https://www.technologyreview.com/feed/,2026-10-29,200,RSS 2.0 정상,10,10,0,9/10,원시 10/10·저장 9/10,content 2409~10121자; 전문 여부 감사 필요,미결정

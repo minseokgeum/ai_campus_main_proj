@@ -1,0 +1,17 @@
+매체명,피드명,피드 URL,주소 출처,과거 확인 상태,비고,운영 구분,판정일
+CNBC,top,https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 30건; 요약 29건; RSS 본문 없음,기본 수집,2026-10-29
+CNBC,business,https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10001147,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 30건; RSS 본문 없음,기본 수집,2026-10-29
+CNBC,economy,https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 8건·기간 밖 22건; RSS 본문 없음,기본 수집,2026-10-29
+CNBC,finance,https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 0건·기간 밖 30건; 정상 피드의 기간 내 0건이며 실패 아님,기본 수집,2026-10-29
+CNBC,technology,https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 30건; RSS 본문 없음,기본 수집,2026-10-29
+CNBC,world,https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100727362,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 30건; 요약 29건; RSS 본문 없음,기본 수집,2026-10-29
+Fortune,all,https://fortune.com/feed/,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 9건; 최종 피드 URL로 이동함; RSS 본문은 전문 보장 없음,기본 수집,2026-10-29
+The Motley Fool,headlines,https://www.fool.com/feeds/index.aspx?id=foolwatch&format=rss2,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 50건; 최종 피드 URL로 이동함; RSS 본문은 전문 보장 없음,기본 수집,2026-10-29
+Zacks,commentary,https://feed.zacks.com/commentary/AllStories/rss,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 325건; RSS 본문은 전문 보장 없음,기본 수집,2026-10-29
+Fox Business,latest,https://moxie.foxbusiness.com/google-publisher/latest.xml,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 25건; 응답 25건,기본 수집,2026-10-29
+Fox Business,economy,https://moxie.foxbusiness.com/google-publisher/economy.xml,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 10건·기간 밖 15건,기본 수집,2026-10-29
+Fox Business,markets,https://moxie.foxbusiness.com/google-publisher/markets.xml,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 6건·기간 밖 19건,기본 수집,2026-10-29
+Fox Business,technology,https://moxie.foxbusiness.com/google-publisher/technology.xml,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·RSS 2.0 분석 성공,기간 내 7건·기간 밖 18건,기본 수집,2026-10-29
+Business Insider,legacy_atom,https://feeds.businessinsider.com/custom/all,portable/rss_collect.py FEEDS,2026-10-29 HTTP 200·Atom 1.0 분석 성공,기간 내 20건; 접속·분석은 가능하지만 미국판 현행 공식 RSS 지원 안내 미확인,기본 수집·공식 지원 미확인,2026-10-29
+Yahoo Finance,주소 미확인 보류,,2026-10-29 공식 안내 우선 조사,미국 일반 뉴스 피드 주소 미확인,종목별 후보와 대만판은 연구용 설정으로 분리; 빈 URL이므로 요청하지 않음,보류(비수집),2026-10-29
+CNN Business,주소 미확인 보류,,2026-10-29 공식 안내 우선 조사,현재 Business RSS 주소 미확인,과거 HTTP 피드는 2017·2018년에 갱신 중단; 빈 URL이므로 요청하지 않음,보류(비수집),2026-10-29

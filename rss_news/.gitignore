@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+outputs/
+.pytest_cache/
+data/*.sqlite3
+data/*.sqlite3-*
+data/*.sqlite3.lock
+# 수집 데이터와 실행 결과는 올리지 않음
+data/
+outputs/
+
+# RSS 설정 CSV는 올림
+!config/
+!config/*.csv

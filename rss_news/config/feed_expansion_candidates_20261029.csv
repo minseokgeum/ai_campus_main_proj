@@ -1,0 +1,18 @@
+매체명,피드명,피드 URL,주소 출처,시험 전 상태,비고,분야,후보 구분,공식 안내 URL
+BBC News,top,https://feeds.bbci.co.uk/news/rss.xml,BBC 공식 Feed 지원 문서,현재 미검증,World Edition 주요 뉴스,일반,확대 연구용,https://support.bbc.co.uk/platform/feeds/NewsFeeds.htm
+BBC News,business,https://feeds.bbci.co.uk/news/business/rss.xml,BBC 공식 Feed 지원 문서와 BBC 도메인 섹션 피드,현재 미검증,비즈니스·경제 섹션,경제,확대 연구용,https://support.bbc.co.uk/platform/feeds/NewsFeeds.htm
+BBC News,technology,https://feeds.bbci.co.uk/news/technology/rss.xml,BBC 공식 Feed 지원 문서와 BBC 도메인 섹션 피드,현재 미검증,기술 섹션,기술,확대 연구용,https://support.bbc.co.uk/platform/feeds/NewsFeeds.htm
+The Guardian,world,https://www.theguardian.com/world/rss,Guardian 공식 RSS 도움말,현재 미검증,인덱스 URL에 /rss를 붙이는 공식 규칙,일반,확대 연구용,https://www.theguardian.com/help/feeds
+The Guardian,business,https://www.theguardian.com/business/rss,Guardian 공식 RSS 도움말,현재 미검증,인덱스 URL에 /rss를 붙이는 공식 규칙,경제,확대 연구용,https://www.theguardian.com/help/feeds
+The Guardian,technology,https://www.theguardian.com/technology/rss,Guardian 공식 RSS 도움말,현재 미검증,인덱스 URL에 /rss를 붙이는 공식 규칙,기술,확대 연구용,https://www.theguardian.com/help/feeds
+Ars Technica,all_news,https://feeds.arstechnica.com/arstechnica/index,Ars Technica 공식 RSS 안내의 All News 링크,현재 미검증,공개 피드는 전문 피드가 아니며 전문 RSS는 구독자 기능,기술·산업,확대 연구용,https://arstechnica.com/rss-feeds/
+TechCrunch,all,https://techcrunch.com/feed/,TechCrunch 공식 Subscribing 안내의 feed 링크,현재 미검증,스타트업·벤처·기술 전반,기술·산업,확대 연구용,https://techcrunch.com/subscribing/
+WIRED,top,https://www.wired.com/feed/rss,WIRED 공식 RSS 안내의 Top Stories 링크,현재 미검증,기술·과학·비즈니스·문화,기술·일반,확대 연구용,https://www.wired.com/about/rss-feeds/
+WIRED,business,https://www.wired.com/feed/category/business/latest/rss,WIRED 공식 RSS 안내의 Business 링크,현재 미검증,기술 산업과 기업,경제·기술,확대 연구용,https://www.wired.com/about/rss-feeds/
+The New York Times,business,https://rss.nytimes.com/services/xml/rss/nyt/Business.xml,NYTimes 발행사 RSS 도메인 공개 피드; 공식 안내 페이지 검색 접근 제한,현재 미검증,비즈니스 섹션; 현행 안내 재확인 필요,경제,확대 연구용·안내 재확인,https://www.nytimes.com/rss
+The New York Times,technology,https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,NYTimes 발행사 RSS 도메인 공개 피드; 공식 안내 페이지 검색 접근 제한,현재 미검증,기술 섹션; 현행 안내 재확인 필요,기술,확대 연구용·안내 재확인,https://www.nytimes.com/rss
+NPR,news,https://feeds.npr.org/1001/rss.xml,NPR 발행사 feeds 도메인 공개 피드; 공식 목록 검색 접근 제한,현재 미검증,일반 뉴스,일반,확대 연구용·안내 재확인,https://www.npr.org/rss/
+NPR,business,https://feeds.npr.org/1006/rss.xml,NPR 발행사 feeds 도메인 공개 피드; 공식 목록 검색 접근 제한,현재 미검증,비즈니스 섹션,경제,확대 연구용·안내 재확인,https://www.npr.org/rss/
+ProPublica,main,https://www.propublica.org/feeds/propublica/main,ProPublica 발행사 도메인 공개 피드 후보,현재 미검증,미국 탐사보도 전반; 공식 RSS 안내 페이지 미확인,일반·산업,확대 연구용·안내 재확인,https://www.propublica.org/
+IEEE Spectrum,all,https://spectrum.ieee.org/feeds/feed.rss,IEEE Spectrum 발행사 도메인과 공식 기사에서 RSS 제공 언급,현재 미검증,공학·기술·산업 전반,기술·산업,확대 연구용·주소 재확인,https://spectrum.ieee.org/ieee-spectrum-online-content-is-liberated
+MIT Technology Review,all,https://www.technologyreview.com/feed/,MIT Technology Review 발행사 도메인 공개 피드 후보,현재 미검증,AI·컴퓨팅·기후기술·바이오; 공식 RSS 안내 페이지 미확인,기술·산업,확대 연구용·안내 재확인,https://www.technologyreview.com/
