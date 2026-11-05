@@ -4,6 +4,19 @@ RSS·Atom 주소의 현재 접속 및 분석 결과를 확인하고 매체 현�
 
 지속 수집은 `config/feed_registry.csv`, `src/continuous_collect.py`, `data/rss_news.sqlite3`를 사용합니다. RSS 실행별 결과와 누적 SQLite를 동시에 남기고, 새 기사만 본문 대기열에 연결합니다. 상세 정책과 스케줄러 예시는 `docs/continuous_collection.md`에 있습니다.
 
+## 20개 매체 통합 실행 — 팀원 전달용 (2026-11-05)
+
+최신 실행 진입점은 `src/rss_pipeline.py`입니다. 기존 실험 노트북이나 DB 없이 **20개 매체·38개 피드 RSS → 매체별 본문 추출·정제 → 새 SQLite 저장**을 실행합니다. 사용법·컬럼·보류 및 미완료 규칙은 [RSS 인수인계 설명](docs/RSS_HANDOFF.md)에 있습니다.
+
+```powershell
+python src/rss_pipeline.py --show-config
+python src/rss_pipeline.py --collect --body-per-source 1
+```
+
+주피터 예제: `notebook/rss_handoff.ipynb`. 기존 실험 노트북을 Run All 할 필요가 없습니다. 새 DB는 `data/combined_rss.sqlite3`이며 기존 결과를 변경·자동 병합하지 않습니다. **Zacks·MIT 원문은 보류하고 RSS만 유지합니다. 추가 후보 규칙·구독·정제 미완료가 있어 전문 확보 완료나 분석 승인으로 해석하면 안 됩니다.**
+
+아래는 기존 수집 코드·조사 이력의 설명입니다.
+
 ## 지속 수집
 
 통합 설정의 `default`는 기존 14개 피드, `test`는 확대 후보 17개 피드, `hold`는 주소 미확인·종목별·지역판·과거 주소를 포함한 10개 비활성 행입니다. `hold`는 실행 대상으로 선택할 수 없습니다. 확대 후보의 본문 품질은 모두 `unverified`로 보존합니다.

@@ -17,20 +17,20 @@ DEFAULT_DB = ROOT / "outputs/continuous_notebook_test/articles.sqlite3"
 SOURCES = [
     'CNBC', 'Fortune', 'The Motley Fool', 'Zacks', 'Fox Business',
     'Business Insider', 'BBC News', 'The Guardian', 'Ars Technica',
-    'TechCrunch', 'WIRED', 'NPR', 'ProPublica', 'IEEE Spectrum',
+    'TechCrunch', 'NPR', 'ProPublica', 'IEEE Spectrum',
     'MIT Technology Review', 'ABC News', 'CBS News', 'NBC News',
     'Al Jazeera English', 'Engadget',
 ]
 HOLD = {
-    'Zacks': '기존 원문 차단 이력: RSS만 유지',
+    'Zacks': '과거 차단·본문 누락의 범용 해결 미완료: RSS만 유지',
     'MIT Technology Review': '구독 제한 표본의 전문 대조 미완료',
 }
 SELECTORS = {
     'Fortune': ['[data-testid="article-body"]', '.article-content', '.post-content', '[itemprop="articleBody"]'],
     'The Motley Fool': ['[itemprop="articleBody"]', '.article-body', '.article-content'],
     'Fox Business': ['.article-body', '[itemprop="articleBody"]'],
-    'Business Insider': ['[data-component-type="article-content"]', '.content-lock-content', '.article-content', '[itemprop="articleBody"]'],
-    'Ars Technica': ['.article-content', '[itemprop="articleBody"]'],
+    'Business Insider': ['[data-component-type="post-body-content"]', '.post-body-content', '[data-component-type="article-content"]', '.content-lock-content', '.article-content', '[itemprop="articleBody"]'],
+    'Ars Technica': ['article .post-content', '.article-content', '[itemprop="articleBody"]'],
     'WIRED': ['.body__inner-container', '[data-testid="BodyWrapper"]', '[itemprop="articleBody"]'],
     'NPR': ['.transcript', '#transcript', '.storytext', '#storytext'],
     'ProPublica': ['.article-body', '.story-body', '[itemprop="articleBody"]'],
@@ -43,9 +43,16 @@ SELECTORS = {
 
 def source_rules():
     verified = {'Engadget', 'CNBC', 'BBC News', 'The Guardian', 'TechCrunch', 'ABC News'}
+    updates = {
+        'Ars Technica': '본문 위치 수정·사용자 표본 확인',
+        'Business Insider': '본문 위치 수정·구독으로 대조 불가한 표본 있음',
+        'Fox Business': '확인한 추천·캡션·홍보 정제 반영',
+        'NPR': '공개 대본 탐색 연결·오프라인 연결 검사 통과',
+        'IEEE Spectrum': '확인한 추천 제거·시문예 분류 연결·오프라인 검사 통과',
+    }
     return [
         {'매체': source,
-         '상태': '보류' if source in HOLD else ('노트북 표본 확인' if source in verified else '통합 후보 규칙: 실행 결과 검토 필요'),
+         '상태': '본문 보류' if source in HOLD else updates.get(source, '본문 추출 표본 확인' if source in verified else '통합 실행에서 본문 후보 확보·전문 미검증'),
          '비고': HOLD.get(source, '')}
         for source in SOURCES
     ]
@@ -80,16 +87,102 @@ def classify(source, url):
 
 def extract_candidate(source, url):
     response = requests.get(url, headers={'User-Agent': 'RSSNewsCollector/1.0'}, timeout=(8, 25))
-    result = dict(http_status=response.status_code, final_url=response.url,
+    return parse_candidate_html(source, url, response.content,
+                                http_status=response.status_code,
+                                final_url=response.url)
+
+
+def remove_fool_report_promotion(node):
+    """확인된 무료 보고서 홍보 문단만 제거하고 이후 정상 본문은 유지합니다."""
+    removed = []
+    for tag in list(node.select('h2,h3,p')):
+        if tag.parent is None:
+            continue
+        text = tag.get_text(' ', strip=True)
+        normalized = ' '.join(text.replace('’', "'").replace('—', '-').split()).casefold()
+        heading_notice = (
+            tag.name in {'h2', 'h3'}
+            and 'social security bonus most retirees completely overlook' in normalized
+            and 'costly retirement mistakes' in normalized
+        )
+        intro_notice = (
+            normalized.startswith("if you're like most americans, you may feel a bit behind on retirement savings.")
+            and 'little-known strategies' in normalized
+            and 'nest egg' in normalized
+        )
+        report_notice = (
+            normalized.startswith('one easy trick could pay you')
+            and 'free report' in normalized
+            and 'costly retirement mistakes' in normalized
+            and any('api.fool.com/infotron/' in a.get('href', '') for a in tag.select('a[href]'))
+        )
+        if heading_notice or intro_notice or report_notice:
+            removed.append({'reason': '무료 은퇴 보고서 홍보', 'text': text})
+            tag.decompose()
+    return removed
+
+
+def remove_reviewed_fox_ieee_notices(node, source):
+    """사용자가 확인한 표본의 안내만 제거하고 이후 정상 문단은 유지합니다."""
+    def normalize(text):
+        return ' '.join(text.replace('’', "'").replace('\u00a0', ' ').split()).strip().rstrip(' ›').casefold()
+
+    fox = {
+        normalize(text) for text in (
+            'Wall Street keeps close watch with the fate of Congress up in the air',
+            "Robert Wolf, a former economic advisor to Obama, and Steve Cortes, a former Trump campaign advisor, discuss the midterm election's impact on Wall Street.",
+            'WHAT THE MIDTERM ELECTIONS COULD MEAN FOR MARKETS, DEBT',
+            'LARRY KUDLOW: THE SOCIALIST DEMOCRATS WILL SPEND PLENTY IF THEY WIN, BUT PRESIDENT TRUMP WILL VETO ALL OF IT',
+            'AFFORDABILITY TAKES CENTER STAGE AS AMERICANS CAST THEIR BALLOTS IN HIGH-STAKES MIDTERMS',
+            'CLICK HERE TO GET FOX BUSINESS ON THE GO',
+        )
+    }
+    ieee = {
+        normalize(text) for text in (
+            'From Your Site Articles', 'Related Articles Around the Web',
+            'IEEE Professional Development Suite Teaches In-Demand Skills',
+            'Webinar: Will AI End Distinct Programming Languages?',
+            'IEEE Young Professionals Help Bridge the U.S. Tech Skills Gap',
+            'Free Webinars and Virtual Events from IEEE | Innovate',
+        )
+    }
+    removed = []
+    if source == 'Fox Business':
+        for tag in list(node.select('.caption,.image-caption,.photo-caption,.featured-video,.video-ct')):
+            if tag.parent is not None:
+                removed.append({'reason': '사진 설명 또는 삽입 영상', 'text': tag.get_text(' ', strip=True)})
+                tag.decompose()
+    notices = fox if source == 'Fox Business' else ieee
+    for tag in list(node.select('p,h2,h3,li,blockquote')):
+        if tag.parent is None:
+            continue
+        text = tag.get_text(' ', strip=True)
+        value = normalize(text)
+        reason = '표본 확인 추천·홍보 문구' if value in notices else ''
+        if source == 'Fox Business':
+            caption = value.startswith(('a voter marks ', 'voters mark ', 'voters cast their ballots ', 'kalshi billboards '))
+            if caption and 'getty images' in value and value.endswith(')'):
+                reason = '표본 확인 사진 설명·출처'
+            if value.startswith("fox business'") and value.endswith('contributed to this report.'):
+                reason = '취재 기여자 표기'
+        if reason:
+            removed.append({'reason': reason, 'text': text})
+            tag.decompose()
+    return removed
+
+
+def parse_candidate_html(source, url, content, *, http_status, final_url=None):
+    """이미 받은 HTML을 분석합니다. 인터넷 요청과 DB 변경은 하지 않습니다."""
+    result = dict(http_status=http_status, final_url=final_url or url,
                   original_title='', body_raw='', body_clean='',
                   body_status='no_body', extraction_method='',
                   full_text_verified=False, rule_validation='integration_unverified',
                   body_checked_at_utc=datetime.now(timezone.utc).isoformat(),
                   removed_sections=[])
-    if response.status_code != 200:
-        result['body_status'] = 'restricted' if response.status_code in {401, 402, 403, 451} else 'http_error'
+    if http_status != 200:
+        result['body_status'] = 'restricted' if http_status in {401, 402, 403, 451} else 'http_error'
         return result
-    soup = BeautifulSoup(response.content, 'html.parser')
+    soup = BeautifulSoup(content, 'html.parser')
     title = soup.find('h1')
     result['original_title'] = title.get_text(' ', strip=True) if title else ''
     blocks = []
@@ -108,6 +201,10 @@ def extract_candidate(source, url):
     parts = []
     for block in blocks:
         clone = BeautifulSoup(str(block), 'html.parser')
+        if source == 'The Motley Fool':
+            result['removed_sections'].extend(remove_fool_report_promotion(clone))
+        if source in {'Fox Business', 'IEEE Spectrum'}:
+            result['removed_sections'].extend(remove_reviewed_fox_ieee_notices(clone, source))
         selectors = 'script,style,nav,aside,footer,form,button,figure,figcaption,iframe,video'
         if source == 'NBC News':
             selectors += ',[class*="subscriberRecirc"]'
@@ -144,7 +241,7 @@ def extract_candidate(source, url):
     return result
 
 
-def extract_for_source(source, url):
+def _extract_before_npr_ieee(source, url):
     functions = {
         'Engadget': extract_engadget_body, 'CNBC': extract_cnbc_body,
         'BBC News': extract_bbc_body, 'The Guardian': extract_guardian_body,
@@ -155,6 +252,78 @@ def extract_for_source(source, url):
         result['rule_validation'] = 'notebook_sample_checked'
         return result
     return extract_candidate(source, url)
+
+
+
+def extract_for_source(source, url):
+    from npr_ieee_rules import (
+        fetch_npr_transcript,
+        classify_ieee_page,
+    )
+
+    if source == "NPR":
+        transcript = fetch_npr_transcript(url)
+
+        if transcript.get("body"):
+            return {
+                "http_status": 200,
+                "final_url": transcript.get("transcript_url") or url,
+                "original_title": "",
+                "body_raw": transcript["body"],
+                "body_clean": transcript["body"],
+                "body_status": "candidate_review",
+                "body_kind": "public_transcript",
+                "speaker_count": transcript.get("speaker_count", 0),
+                "extraction_method": "NPR 공개 대본 탐색 v1",
+                "full_text_verified": False,
+                "body_checked_at_utc": datetime.now(timezone.utc).isoformat(),
+                "review_reason": "공개 대본 후보. 화자와 완전성은 별도로 확인해야 합니다.",
+            }
+
+        if "_article_html" in transcript:
+            result = parse_candidate_html(
+                source,
+                url,
+                transcript["_article_html"],
+                http_status=transcript["_article_http"],
+                final_url=transcript.get("_article_url") or url,
+            )
+            result["transcript_search_status"] = transcript["status"]
+            return result
+
+        return _extract_before_npr_ieee(source, url)
+
+    if source == "IEEE Spectrum":
+        response = requests.get(
+            url,
+            headers={"User-Agent": "RSSNewsCollector/1.0"},
+            timeout=(8, 25),
+        )
+
+        result = parse_candidate_html(
+            source, url, response.content,
+            http_status=response.status_code,
+            final_url=response.url,
+        )
+
+        if response.status_code == 200:
+            classification = classify_ieee_page(
+                response.content, response.url
+            )
+            result["content_classification"] = classification
+
+            if classification["status"] == "poetry_excluded":
+                result["body_before_type_filter"] = result["body_clean"]
+                result["body_clean"] = ""
+                result["body_status"] = "poetry_excluded"
+
+            elif classification["status"] == "poetry_review":
+                result["body_status"] = "poetry_review"
+
+        return result
+
+    return _extract_before_npr_ieee(source, url)
+
 
 
 def run_batch(db_path=DEFAULT_DB, limit_per_source=1, delay=2):

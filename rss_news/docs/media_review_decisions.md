@@ -1,5 +1,39 @@
 # 매체별 직접 검토 및 운영 결정
 
+## WIRED — 사용자 결정으로 수집 대상 전체 제외 (2026-11-05)
+
+> **WIRED는 RSS·본문 모두 신규 수집 대상에서 제외한다. 해당 기사만 보류하는 것이 아니다. 기존 원본·본문·검토 이력은 삭제하지 않는다.**
+
+- 통합 실행 매체 목록 SOURCES에서 WIRED를 제거했다. 최신 통합 실행부는 19개 매체·36개 피드를 선택한다.
+- 과거 노트북에 메모리로 남은 COLLECTION_SOURCES·MULTI_FEEDS·BODY_EXTRACTORS는 다시 읽거나 WIRED를 제외해야 한다. 과거 20개·38개 기록은 조사 이력으로 보존한다.
+
+## 확인된 Fox·IEEE 표본 규칙 반영 (2026-11-05)
+
+- 사용자가 확인한 Fox·IEEE 정제 시험의 제한된 규칙을 `src/integrated_notebook_bodies.py`의 `remove_reviewed_fox_ieee_notices`에 반영했다.
+- Fox: 확인한 추천·영상 안내 문구, 명확한 사진·영상 영역, 해당 표본의 사진 설명 형태, 앱 홍보 및 기여자 표기 분리. 실제 금리·달러·해외 증시 문장은 보존한다.
+- IEEE: 확인한 두 추천 영역 제목 및 4개 추천 링크 제목을 제외. 실제 Tech Talk 본문은 보존한다. 모든 추천 형식의 범용 제거·시문예 분류 완성을 의미하지 않는다.
+- 제거한 내용은 `removed_sections`에 남기며 원본 본문도 보존한다. 네트워크 없는 회귀 테스트에서 정상 문단 유지·추천 제거를 확인했다.
+
+## IEEE Spectrum — webinar 표본 본문·추천 경계 (2026-11-05)
+
+- 표본: https://spectrum.ieee.org/ieee-industry-experts-webinar
+- Technical programs such as the Tech Talk Series… 문장은 원문 본문이며 보존한다. 원문에 유사한 문장이 두 번 존재하므로 추출 중복이라고 단정하지 않는다.
+- **팀원 전달: From Your Site Articles 아래 3개 링크와 Related Articles Around the Web 아래 외부 링크는 추천 영역이므로 정제 본문에서 제외해야 한다.** HTML 추천 컨테이너를 확인해 제거하고 정상 본문·소제목은 유지한다. 이번 확인은 경계·처리 원칙 기록이며 실제 정제 규칙 추가 구현은 아직 하지 않았다.
+
+## ProPublica — 제보 안내 분리 후보 (2026-11-05)
+
+- 표본: https://www.propublica.org/article/propublica-approach-2026-midterm-elections
+- Help Us Report on Key Election Issues 및 Have you seen something? 문단은 제보 요청이다. 기사 자체가 취재 방침 설명이므로 단어만으로 삭제하지 않는다.
+- 원문 HTML에서 독립된 제보 카드·입력폼 영역임을 확인할 수 있을 때만 그 영역을 정제 본문에서 분리한다. 확인되지 않으면 보존한다. 현재 도구 원문 열람 실패로 실제 HTML 경계 미확인, 코드 변경 없음.
+
+## Fox Business — 사용자 확인 정제 보완 필요 (2026-11-05)
+
+> **팀원 전달: 일반 본문 사이에 추천 기사 제목, 사진 캡션·출처, 앱 홍보 및 삽입 영상 제목·설명이 혼입된다. Fox 전용 HTML 영역 제거·분리 규칙 보완이 필요하며, 아직 수정 완료로 취급하지 않는다.**
+
+- 표본: https://www.foxbusiness.com/markets/us-stock-futures-mixed-democrats-score-key-midterm-election-wins
+- 제거·분리: WHAT THE MIDTERM…, LARRY KUDLOW…, AFFORDABILITY… 추천 링크, 사진 캡션, CLICK HERE TO GET FOX BUSINESS ON THE GO, 삽입 영상 제목·설명. 기여자 표기는 별도 메타정보 분리 검토.
+- 보존: 예측시장·전문가 발언·국채금리·달러·해외 증시 설명 및 문장 안 주제 링크. 추천 제목 이후를 통째로 자르지 않는다.
+
 ## MIT Technology Review — 구독 제한·모음 기사 (2026-11-04)
 
 > **팀원 전달: 이번 주피터 표본 3건 중 2건은 구독 제한으로 사용자가 원문 전체를 대조하지 못했다. 본문 후보는 추출됐으나 전문·누락 여부 미검증이며, 전문 확인 완료로 처리하거나 관계표에 바로 사용하지 않는다. 매체 전체의 수집 불가능 판정은 아니다.**
