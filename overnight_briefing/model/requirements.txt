@@ -1,0 +1,14 @@
+# 야간선물 → 다음 날 시가 백테스트 실행 환경. 10/29 E35부터 이 버전으로 고정(그 전 결과는 당시 설치본, 10/29 중 패키지 설치로 numpy·scipy·pandas 버전이 몇 번 바뀜)
+numpy==2.5.4
+scipy==1.17.1
+pandas==3.0.6
+scikit-learn==1.9.1
+statsmodels==0.15.0
+arch==8.0.0
+pysubgroup==0.9.0
+imodels==3.0.4
+yfinance==1.7.0
+finance-datareader==0.9.202
+matplotlib==3.11.2
+pytest==9.1.1
+ruptures==1.1.10

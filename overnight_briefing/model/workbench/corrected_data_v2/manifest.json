@@ -1,0 +1,14 @@
+{
+  "version": "I24-pointtable-v2",
+  "created_at": "2026-10-29T09:03:17.263780+00:00",
+  "status": "point_table_verified_downstream_features_pending",
+  "source_run": "workbench/runs/claude_e48_r1",
+  "source_completed_sha256": "cc65e59094f90d5f7741c472eefc97d6d0993cc0ad1efde70b0f224295625b69",
+  "files_sha256": {
+    "night_signal_flags.csv": "69c7f67a8f4b54589abcc48d2cc737fd8da2e67ff860ee77fc858069e796e8c9",
+    "sector_study_predictions.csv": "63372d892cb7d60f8543fc2f4850c622858eda79316d5827490ccc17e7abb146"
+  },
+  "review": "exchange/18_codex_e48_result_checks.json",
+  "scope": "M1/F2/r2/H table only; not drop-in permission to treat oldsd06/mreg/sd08asfullycorrected. core default unchanged.",
+  "flags_semantics": "no_trade_signal=volume0andflatatdayclose;threeactualclosuresofficiallyconfirmed;positive-volumezero-returnsretained."
+}

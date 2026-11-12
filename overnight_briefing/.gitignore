@@ -1,0 +1,16 @@
+# 팀 .gitignore는 html·json·csv를 모두 막는다. 이 폴더에서는 아래만 다시 허용한다.
+# 문서(html), 모델의 고정 규칙 설정(json), 작은 기준표(종목 목록·일정·관계표). 가격·뉴스 원자료와 실행 결과는 올리지 않는다.
+!docs/*.html
+!model/workbench/protocol_*.json
+!model/workbench/runs/claude_band_design_r1/*.json
+!model/workbench/corrected_data_v2/*
+!model/data/universe.csv
+!model/data/fomc_dates.csv
+!model/data/fred_release_dates.csv
+!model/ref/*.csv
+!model/workbench/runs/claude_graph_v0/*.csv
+!model/workbench/runs/claude_segments_r1/*.csv
+app/data/*
+!app/data/.gitkeep
+model/workbench/live/
+model/workbench/runs/claude_live_r1/*.json

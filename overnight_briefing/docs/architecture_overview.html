@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4Digit 서비스 아키텍처</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* 장 열리기 전 새벽의 차가운 잉크 위에, 설계의 핵심인 노란띠 색을 후보 표시에만 쓴다. 구조도가 주인공인 한 장짜리 설계 문서. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #18222e;
+  --muted: #566372;
+  --line: #d3dae2;
+  --demo: #0b6e63;
+  --demo-soft: #e2f2ef;
+  --research: #2a5a9e;
+  --research-soft: #e6edf7;
+  --mock: #6a4fa3;
+  --mock-soft: #eee9f7;
+  --candidate: #96640b;
+  --candidate-soft: #fbf1da;
+  --gap: #b23c2e;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111821; --surface: #19222d; --ink: #e7edf3; --muted: #9dabb9; --line: #303d4b;
+    --demo: #4cc4b4; --demo-soft: #143a36; --research: #86b2ee; --research-soft: #1b2f4a;
+    --mock: #bda6ec; --mock-soft: #2d2545; --candidate: #e6b65a; --candidate-soft: #3a2d12; --gap: #f08a7a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111821; --surface: #19222d; --ink: #e7edf3; --muted: #9dabb9; --line: #303d4b;
+  --demo: #4cc4b4; --demo-soft: #143a36; --research: #86b2ee; --research-soft: #1b2f4a;
+  --mock: #bda6ec; --mock-soft: #2d2545; --candidate: #e6b65a; --candidate-soft: #3a2d12; --gap: #f08a7a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.65; word-break: keep-all; overflow-wrap: break-word; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 40px 24px 64px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-size: 13px; color: var(--muted); }
+h1 { margin: 0; font-size: 34px; line-height: 1.25; font-weight: 700; text-wrap: balance; }
+h2 { margin: 0 0 12px; font-size: 21px; line-height: 1.35; font-weight: 700; text-wrap: balance; }
+.lead { margin: 0; max-width: 46em; font-size: 17px; }
+p { margin: 0; }
+.note { color: var(--muted); font-size: 14px; max-width: 58em; margin-top: 10px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.tile h3 { margin: 0; font-size: 15px; font-weight: 700; }
+.tile p { font-size: 14.5px; line-height: 1.55; }
+.tile.gap { border-color: var(--gap); }
+.tile.gap h3 { color: var(--gap); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); margin-bottom: 12px; align-items: center; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 5px; }
+.chip.demo { background: var(--demo-soft); color: var(--demo); }
+.chip.research { background: var(--research-soft); color: var(--research); }
+.chip.mock { background: var(--mock-soft); color: var(--mock); }
+.chip.candidate { background: var(--candidate-soft); color: var(--candidate); }
+.chip.zero { background: transparent; color: var(--gap); border: 1px solid var(--gap); }
+figure { margin: 0; }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; padding: 12px; }
+.diagram svg { display: block; width: 100%; min-width: 900px; height: auto; font-family: var(--body); color: var(--ink); }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; max-width: 58em; }
+.t-col { font-size: 13px; font-weight: 700; fill: var(--muted); }
+.t-title { font-size: 14px; font-weight: 700; fill: var(--ink); }
+.t-sub { font-size: 12px; fill: var(--muted); }
+.t-edge { font-size: 11.5px; fill: var(--muted); }
+.t-chip { font-size: 11px; font-weight: 600; }
+.t-gap { font-size: 12px; font-weight: 700; fill: var(--gap); }
+.box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.box.demo { fill: var(--demo-soft); stroke: var(--demo); }
+.box.research { fill: var(--research-soft); stroke: var(--research); }
+.box.mock { fill: var(--mock-soft); stroke: var(--mock); }
+.box.candidate { fill: var(--candidate-soft); stroke: var(--candidate); stroke-dasharray: 5 4; }
+.box.record { fill: var(--surface); stroke: var(--muted); stroke-dasharray: 6 4; }
+.box.frame { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+.band { fill: var(--bg); stroke: none; }
+.fc-demo { fill: var(--demo); } .fc-research { fill: var(--research); } .fc-mock { fill: var(--mock); } .fc-candidate { fill: var(--candidate); } .fc-zero { fill: var(--gap); }
+.edge { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.edge.gap { stroke: var(--gap); stroke-dasharray: 6 4; }
+.edge.cand { stroke: var(--candidate); stroke-dasharray: 2 4; stroke-linecap: round; }
+.edge.rec { stroke: var(--muted); stroke-dasharray: 6 4; }
+.head { fill: var(--ink); } .head.gap { fill: var(--gap); } .head.cand { fill: var(--candidate); } .head.rec { fill: var(--muted); }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+th, td { padding: 10px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.nowrap { white-space: nowrap; }
+.t-min { min-width: 760px; }
+code { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+ul.rules { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; font-size: 15px; }
+ul.rules li { border-left: 2px solid var(--line); padding-left: 12px; }
+a { color: var(--research); }
+a:focus-visible { outline: 2px solid var(--research); outline-offset: 2px; }
+footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+@media (max-width: 760px) {
+  .wrap { padding: 28px 16px 48px; gap: 32px; }
+  h1 { font-size: 28px; }
+  .tiles, ul.rules { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<!--doc-tabs--><style>.doc-tabs{display:flex;flex-wrap:wrap;gap:2px 4px;align-items:center;max-width:1240px;margin:0 auto;padding:10px 16px 0;border-bottom:1px solid rgba(127,127,127,.28);font:500 13.5px/1.4 'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;box-sizing:border-box}.doc-tabs .lbl{font-size:12px;opacity:.6;margin-right:6px;font-weight:600}.doc-tabs a{color:inherit;opacity:.72;text-decoration:none;padding:6px 11px;border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;white-space:nowrap}.doc-tabs a:hover,.doc-tabs a:focus-visible{opacity:1;background:rgba(127,127,127,.12);outline:none}.doc-tabs a[aria-current=page]{opacity:1;font-weight:700;border-color:rgba(127,127,127,.35);background:rgba(127,127,127,.10);margin-bottom:-1px}@media (max-width:640px){.doc-tabs{flex-wrap:nowrap;overflow-x:auto}}</style><nav class="doc-tabs" aria-label="4Digit 문서"><span class="lbl">4Digit 문서</span><a href="architecture_overview.html" aria-current="page">서비스 아키텍처</a><a href="technical_spec.html">기술 명세서</a><a href="model_design.html">모델 설계서 v2</a><a href="experiments.html">실험 장부</a><a href="morning_brief_screen_design.html">아침 카드 목업</a><a href="code_glossary.html">코드 함수 사전</a><a href="model_study.html">숙지용 모델 노트</a></nav><!--/doc-tabs-->
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">FDS B조 · 2026-11-03 기준 · 팀 승인 전 구조안</div>
+  <h1>4Digit 서비스 아키텍처</h1>
+  <p class="lead">밤사이 사건이 왜 내 종목과 이어지는지, 내 계좌로 얼마인지를 장 열리기 전 한 화면에 모으는 구조입니다. 사건 연결은 데모로 돌아가고, 시가 숫자는 아침 카드(화면에 넘길 데이터)까지 만들어지지만, 둘은 아직 이어져 있지 않습니다.</p>
+  <p class="note">함께 보기: <a href="technical_spec.html"><b>기술 명세서(개발 구현용)</b></a> · <a href="model_design.html">모델 설계서 v2</a> · <a href="experiments.html">실험 장부</a> · <a href="morning_brief_screen_design.html">아침 카드 목업</a></p>
+</header>
+
+<section class="tiles" aria-label="현재 상태 요약">
+  <div class="tile">
+    <h3>돌아가는 것</h3>
+    <p>사건 연결 데모는 과거 두 밤을 수집부터 카드까지 다시 만듭니다. 시가 숫자는 아침 카드(07:30 노란띠·주의 문구, 08:11 믿을 정도, 내 금액)까지 만들고, 규칙을 고정한 뒤 처음 보는 5일도 다시 계산했습니다(띠 안 82.9%). <a href="morning_brief_screen_design.html">목업</a></p>
+  </div>
+  <div class="tile gap">
+    <h3>아직 안 이어진 것</h3>
+    <p>아침 카드가 데모 화면·사건 카드와 이어지지 않았습니다. 개장 전에 실행해 미리 고정한 기록과 실제 수신은 모두 0건입니다.</p>
+  </div>
+  <div class="tile">
+    <h3>팀이 정할 것</h3>
+    <p>화면 순서, 08:11 띠 처리, 계좌 띠 표시, 믿을 정도 표시 방식, 입력 방식, 보조 표시, 사용자 테스트 비교 방식, 11/6 실행 담당입니다. 아래에 추천과 이유를 적었습니다.</p>
+  </div>
+</section>
+
+<section aria-labelledby="flow">
+  <h2 id="flow">전체 구조</h2>
+  <div class="legend">
+    <span><span class="chip demo">데모</span>과거 두 밤 재생으로 동작</span>
+    <span><span class="chip research">연구</span>과거 자료로 계산·평가</span>
+    <span><span class="chip mock">시안</span>과거 아침 재생 화면</span>
+    <span><span class="chip candidate">후보</span>과거 분석 후보, 팀 결정 필요</span>
+    <span>실선 연결됨 · 빨간 파선 제품 미연결 · 회색 파선 기록 경로</span>
+  </div>
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 1060 566" role="img" aria-label="자료, 계산, 내 계좌 환산, 한 화면으로 이어지는 구조도. 사건 연결은 화면까지 이어져 있고, 야간선물과 NXT로 만든 시가 숫자는 내 계좌 환산으로 들어가는 제품 연결이 아직 없으며, 아래 기록 경로는 실제 수신과 사전 예측이 0건이다.">
+        <defs>
+          <marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0 L10 5 L0 10 z"/></marker>
+          <marker id="a-gap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head gap" d="M0 0 L10 5 L0 10 z"/></marker>
+          <marker id="a-cand" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head cand" d="M0 0 L10 5 L0 10 z"/></marker>
+          <marker id="a-rec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head rec" d="M0 0 L10 5 L0 10 z"/></marker>
+        </defs>
+
+        <text class="t-col" x="16" y="26">자료</text>
+        <text class="t-col" x="262" y="26">계산</text>
+        <text class="t-col" x="520" y="26">내 계좌로 환산</text>
+        <text class="t-col" x="730" y="26">한 화면</text>
+
+        <!-- 1행 사건 -->
+        <rect class="box demo" x="16" y="44" width="196" height="72" rx="6"/>
+        <text class="t-title" x="28" y="68">뉴스·공시</text>
+        <text class="t-chip fc-demo" x="202" y="66" text-anchor="end">데모</text>
+        <text class="t-sub" x="28" y="88">SEC 8-K, DART, 보도</text>
+        <text class="t-sub" x="28" y="105">밤사이 ~ 07:59</text>
+
+        <rect class="box demo" x="262" y="44" width="206" height="72" rx="6"/>
+        <text class="t-title" x="274" y="68">사건 묶기 + 관계표</text>
+        <text class="t-chip fc-demo" x="458" y="66" text-anchor="end">데모</text>
+        <text class="t-sub" x="274" y="88">같은 사건을 묶고 관계표</text>
+        <text class="t-sub" x="274" y="105">63줄로 내 종목을 찾음</text>
+
+        <!-- 2행 후보 -->
+        <rect class="box candidate" x="16" y="140" width="196" height="72" rx="6"/>
+        <text class="t-title" x="28" y="164">저녁 가격·나스닥</text>
+        <text class="t-chip fc-candidate" x="202" y="162" text-anchor="end">후보</text>
+        <text class="t-sub" x="28" y="184">전날 20:00 가격</text>
+        <text class="t-sub" x="28" y="201">나스닥 선물 06→08</text>
+
+        <rect class="box candidate" x="262" y="140" width="206" height="72" rx="6"/>
+        <text class="t-title" x="274" y="164">보조 신호 판정</text>
+        <text class="t-chip fc-candidate" x="458" y="162" text-anchor="end">후보</text>
+        <text class="t-sub" x="274" y="184">저녁 변화 − 다른 종목</text>
+        <text class="t-sub" x="274" y="201">중앙값이 1% 이상</text>
+
+        <!-- 3행 06시 -->
+        <rect class="box research" x="16" y="236" width="196" height="72" rx="6"/>
+        <text class="t-title" x="28" y="260">야간선물 x</text>
+        <text class="t-chip fc-research" x="202" y="258" text-anchor="end">연구</text>
+        <text class="t-sub" x="28" y="280">06:00 종가 ÷</text>
+        <text class="t-sub" x="28" y="297">15:45 주간 종가 − 1</text>
+
+        <rect class="box research" x="262" y="236" width="206" height="72" rx="6"/>
+        <text class="t-title" x="274" y="260">06시 참고값 H</text>
+        <text class="t-chip fc-research" x="458" y="258" text-anchor="end">연구</text>
+        <text class="t-sub" x="274" y="280">종목별 과거 민감도 회귀</text>
+        <text class="t-sub" x="274" y="297">+ 07:30 노란띠(S1), 과거 기준 통과</text>
+
+        <!-- 4행 08시 -->
+        <rect class="box research" x="16" y="336" width="196" height="72" rx="6"/>
+        <text class="t-title" x="28" y="360">NXT 프리마켓</text>
+        <text class="t-chip fc-research" x="202" y="358" text-anchor="end">연구</text>
+        <text class="t-sub" x="28" y="380">08:10까지 체결가 g</text>
+        <text class="t-sub" x="28" y="397">첫 구간 가격 폭 rng</text>
+
+        <rect class="box research" x="262" y="336" width="206" height="72" rx="6"/>
+        <text class="t-title" x="274" y="360">NXT 중심 08시 범위</text>
+        <text class="t-chip fc-research" x="458" y="358" text-anchor="end">연구</text>
+        <text class="t-sub" x="274" y="380">중심 g, 폭 rng·dis(E39)</text>
+        <text class="t-sub" x="274" y="397">아침 카드엔 미포함, 팀 결정</text>
+
+        <!-- 계좌 환산 -->
+        <rect class="box" x="520" y="44" width="160" height="364" rx="6"/>
+        <text class="t-title" x="532" y="68">보유 입력</text>
+        <text class="t-sub" x="532" y="88">종목·수량·현금</text>
+        <text class="t-sub" x="532" y="105">입력 방식은 팀 결정</text>
+        <line x1="532" y1="124" x2="668" y2="124" stroke="var(--line)"/>
+        <text class="t-title" x="532" y="150">금액 환산</text>
+        <text class="t-sub" x="532" y="170">금액 = 수량 ×</text>
+        <text class="t-sub" x="532" y="187">전일 종가 × 변화율</text>
+        <line x1="532" y1="206" x2="668" y2="206" stroke="var(--line)"/>
+        <text class="t-title" x="532" y="232">연결 몫</text>
+        <text class="t-chip fc-demo" x="668" y="230" text-anchor="end">데모</text>
+        <text class="t-sub" x="532" y="252">연결 종목 평가액 ÷</text>
+        <text class="t-sub" x="532" y="269">총평가액</text>
+        <line x1="532" y1="288" x2="668" y2="288" stroke="var(--line)"/>
+        <text class="t-title" x="532" y="314">처리 규칙</text>
+        <text class="t-sub" x="532" y="334">미지원 종목은 0으로</text>
+        <text class="t-sub" x="532" y="351">두지 않고 따로 표시</text>
+        <text class="t-sub" x="532" y="368">06시·08시 합계는</text>
+        <text class="t-sub" x="532" y="385">나눠서 표시</text>
+
+        <!-- 화면 -->
+        <rect class="box frame" x="730" y="44" width="314" height="364" rx="16"/>
+        <text class="t-sub" x="746" y="66">증권사 앱 장 전 모듈 · 순서는 팀 결정</text>
+
+        <rect class="box demo" x="746" y="76" width="282" height="72" rx="6"/>
+        <text class="t-title" x="758" y="100">사건 카드</text>
+        <text class="t-chip fc-demo" x="1018" y="98" text-anchor="end">데모</text>
+        <text class="t-sub" x="758" y="120">왜 내 종목과 이어졌나</text>
+        <text class="t-sub" x="758" y="137">근거 원문과 발표·수신 시각</text>
+
+        <rect class="box mock" x="746" y="156" width="282" height="72" rx="6"/>
+        <text class="t-title" x="758" y="180">내 계좌 합계</text>
+        <text class="t-chip fc-mock" x="1018" y="178" text-anchor="end">시안</text>
+        <text class="t-sub" x="758" y="200">NXT 반영분, 06시만 있는 분,</text>
+        <text class="t-sub" x="758" y="217">계산 불가분을 나눠 원으로 표시</text>
+
+        <rect class="box mock" x="746" y="236" width="282" height="72" rx="6"/>
+        <text class="t-title" x="758" y="260">종목 줄</text>
+        <text class="t-chip fc-mock" x="1018" y="258" text-anchor="end">시안</text>
+        <text class="t-sub" x="758" y="280">06시 참고값 + 07:30 노란띠, 내 금액</text>
+        <text class="t-sub" x="758" y="297">08:11 NXT 위치, 만약에(띠 위 표식)</text>
+
+        <rect class="box research" x="746" y="316" width="282" height="72" rx="6"/>
+        <text class="t-title" x="758" y="340">믿을 정도·주의 문구</text>
+        <text class="t-chip fc-research" x="1018" y="338" text-anchor="end">연구</text>
+        <text class="t-sub" x="758" y="360">08시 등급(과거 기준 통과), 실적 공시·월요일</text>
+        <text class="t-sub" x="758" y="377">그 밖 신호는 후보(E69·E72·E73)</text>
+
+        <!-- 자료 → 계산 -->
+        <line class="edge" x1="212" y1="80" x2="260" y2="80" marker-end="url(#a-ink)"/>
+        <line class="edge cand" x1="212" y1="176" x2="260" y2="176" marker-end="url(#a-cand)"/>
+        <line class="edge" x1="212" y1="272" x2="260" y2="272" marker-end="url(#a-ink)"/>
+        <text class="t-edge" x="236" y="264" text-anchor="middle">x</text>
+        <line class="edge" x1="212" y1="372" x2="260" y2="372" marker-end="url(#a-ink)"/>
+        <text class="t-edge" x="236" y="364" text-anchor="middle">g, rng</text>
+        <line class="edge" x1="365" y1="308" x2="365" y2="334" marker-end="url(#a-ink)"/>
+        <text class="t-edge" x="357" y="326" text-anchor="end">F2와의 차이 dis</text>
+
+        <!-- 계산 → 환산 -->
+        <line class="edge" x1="468" y1="80" x2="518" y2="80" marker-end="url(#a-ink)"/>
+        <text class="t-edge" x="493" y="72" text-anchor="middle">연결</text>
+        <line class="edge cand" x1="468" y1="176" x2="518" y2="176" marker-end="url(#a-cand)"/>
+        <line class="edge gap" x1="468" y1="272" x2="518" y2="272" marker-end="url(#a-gap)"/>
+        <text class="t-edge" x="493" y="264" text-anchor="middle">H</text>
+        <line class="edge gap" x1="468" y1="372" x2="518" y2="372" marker-end="url(#a-gap)"/>
+        <text class="t-edge" x="493" y="364" text-anchor="middle">범위</text>
+        <text class="t-gap" x="514" y="326" text-anchor="end">이번 주 이을 곳</text>
+
+        <!-- 환산 → 화면 -->
+        <line class="edge" x1="680" y1="112" x2="744" y2="112" marker-end="url(#a-ink)"/>
+        <text class="t-edge" x="705" y="104" text-anchor="middle">내 몫</text>
+        <line class="edge" x1="680" y1="192" x2="744" y2="192" marker-end="url(#a-ink)"/>
+        <text class="t-edge" x="705" y="184" text-anchor="middle">합계</text>
+        <line class="edge" x1="680" y1="272" x2="744" y2="272" marker-end="url(#a-ink)"/>
+        <text class="t-edge" x="705" y="264" text-anchor="middle">종목별</text>
+        <line class="edge cand" x1="680" y1="352" x2="744" y2="352" marker-end="url(#a-cand)"/>
+        <text class="t-edge" x="705" y="344" text-anchor="middle">내 종목</text>
+
+        <!-- 기록 띠 -->
+        <rect class="band" x="4" y="436" width="1052" height="122" rx="6"/>
+        <rect class="box record" x="16" y="448" width="178" height="68" rx="6"/>
+        <text class="t-title" x="28" y="472">실제 수신</text>
+        <text class="t-chip fc-zero" x="184" y="470" text-anchor="end">0건</text>
+        <text class="t-sub" x="28" y="492">L1: 시세 1건 읽기</text>
+        <text class="t-sub" x="28" y="508">응답과 시각 저장</text>
+
+        <rect class="box record" x="228" y="448" width="178" height="68" rx="6"/>
+        <text class="t-title" x="240" y="472">입력 판본 고정</text>
+        <text class="t-sub" x="240" y="492">출처·시각·해시 기록</text>
+        <text class="t-sub" x="240" y="508">나중에 못 바꾸게 함</text>
+
+        <rect class="box record" x="440" y="448" width="178" height="68" rx="6"/>
+        <text class="t-title" x="452" y="472">예측 먼저 저장</text>
+        <text class="t-chip fc-zero" x="608" y="470" text-anchor="end">0건</text>
+        <text class="t-sub" x="452" y="492">L2: 시가 전에 봉인</text>
+        <text class="t-sub" x="452" y="508">결과를 모르는 상태</text>
+
+        <rect class="box record" x="652" y="448" width="178" height="68" rx="6"/>
+        <text class="t-title" x="664" y="472">시가 관측 연결</text>
+        <text class="t-sub" x="664" y="492">개장 뒤 정답 연결</text>
+        <text class="t-sub" x="664" y="508">최초 기록은 그대로</text>
+
+        <rect class="box record" x="864" y="448" width="178" height="68" rx="6"/>
+        <text class="t-title" x="876" y="472">미래 평가</text>
+        <text class="t-sub" x="876" y="492">S1: 사전에 정한 기준과</text>
+        <text class="t-sub" x="876" y="508">기간으로 성능 판단</text>
+
+        <line class="edge rec" x1="194" y1="482" x2="226" y2="482" marker-end="url(#a-rec)"/>
+        <line class="edge rec" x1="406" y1="482" x2="438" y2="482" marker-end="url(#a-rec)"/>
+        <line class="edge rec" x1="618" y1="482" x2="650" y2="482" marker-end="url(#a-rec)"/>
+        <line class="edge rec" x1="830" y1="482" x2="862" y2="482" marker-end="url(#a-rec)"/>
+
+        <line class="edge rec" x1="114" y1="408" x2="114" y2="446" marker-end="url(#a-rec)"/>
+        <text class="t-edge" x="122" y="430">실제로 받기</text>
+        <line class="edge rec" x1="454" y1="408" x2="454" y2="446" marker-end="url(#a-rec)"/>
+        <text class="t-edge" x="446" y="430" text-anchor="end">고정 상태로 추론</text>
+        <line class="edge gap" x1="600" y1="446" x2="600" y2="410" marker-end="url(#a-gap)"/>
+        <text class="t-edge" x="608" y="430">봉인된 예측 ID로만 읽기(미구현)</text>
+
+        <text class="t-sub" x="16" y="542">기록 경로: 부품은 오프라인 검증까지 끝났습니다. 과거 재생 결과를 사전 예측으로 바꾸지 않습니다.</text>
+      </svg>
+    </div>
+    <figcaption>사건 연결은 화면까지 이어져 있고, 시가 숫자는 아침 카드(<code>morning_card.py</code>)로 화면 데이터까지 만들지만 데모 화면과의 제품 연결은 없습니다. 화면 모습은 <a href="morning_brief_screen_design.html">아침 카드 목업</a>에 있습니다. 이번 주 MVP가 이어야 하는 자리는 빨간 파선입니다. 수식과 구현 사양은 <a href="model_design.html">현재 로컬 모델 설계서</a>와 <a href="technical_spec.html">기술 명세서1.4</a>에 있습니다. 외부 공유본은 이번 교정과 아직 동기화하지 않았습니다.</figcaption>
+  </figure>
+</section>
+
+<section aria-labelledby="time">
+  <h2 id="time">시각별로 화면이 바뀌는 방식</h2>
+  <div class="table-wrap">
+    <table class="t-min">
+      <thead><tr><th>시각</th><th>쓰는 자료</th><th>화면에 나오는 것</th><th>계좌 평균 오차</th></tr></thead>
+      <tbody>
+        <tr><td class="nowrap">안 볼 때</td><td>전일 종가 그대로</td><td>비교 기준</td><td class="num">1.98%p</td></tr>
+        <tr><td class="nowrap">06:00 자료, 07:30 화면</td><td>야간선물, 과거 민감도, 밤사이 사건</td><td>사건 카드, 06시 참고값, 노란띠, 내 금액, 주의 문구(실적 공시·월요일)</td><td class="num">1.07%p</td></tr>
+        <tr><td class="nowrap">08:11 전후</td><td>NXT 체결가와 가격 폭</td><td>07:30 노란띠는 그대로 두고 NXT 08:10 위치와 믿을 정도 등급을 더합니다(아침 카드 구현). NXT 중심 08시 범위로 바꿀지는 팀 결정입니다.</td><td class="num">0.71%p</td></tr>
+        <tr><td class="nowrap">08:49</td><td>NXT 체결가</td><td>새 판본 표시 후보. 발송 시각은 미정입니다.</td><td class="num">0.38%p</td></tr>
+        <tr><td class="nowrap">09:00 개장 뒤</td><td>사전에 정한 시가 관측</td><td>사전 저장한 범위 안팎을 기록합니다. 범위는 움직이지 않습니다.</td><td class="num">평가 대상</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">오차는 그 시각에 쓸 수 있는 중심값(06시 H, 08:11 NXT 가격)의 예시 계좌 4개 342행 과거 재분석입니다. 08:11은 과거 자료의 가용 시각이고 서비스 발송 약속이 아닙니다. KRX 예상체결가(08:50 공개)는 과거 시계열이 없어 비교하지 못했습니다.</p>
+</section>
+
+<section aria-labelledby="modules">
+  <h2 id="modules">모듈별 책임과 코드 위치</h2>
+  <div class="table-wrap">
+    <table class="t-min">
+      <thead><tr><th>모듈</th><th>입력 → 출력</th><th>코드</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td class="nowrap">수집·사건 묶기</td><td>8-K, DART, 보도, 관계표 → <code>events.json</code></td><td><code>4Digit-solo/nightbrief/collect.py</code>, <code>analyze.py</code>, <code>relation.py</code></td><td><span class="chip demo">데모</span></td></tr>
+        <tr><td class="nowrap">계좌 연결 계산</td><td>사건, 예시 계좌 → <code>exposure.json</code></td><td><code>nightbrief/account.py</code></td><td><span class="chip demo">데모</span></td></tr>
+        <tr><td class="nowrap">카드 문장</td><td>사건·계좌 → <code>cards.json</code>, 코드 검사 후 실패 시 규칙 문장</td><td><code>nightbrief/cards.py</code>, <code>llm.py</code></td><td><span class="chip demo">데모</span></td></tr>
+        <tr><td class="nowrap">화면·API</td><td>카드와 근거 → FastAPI + React</td><td><code>4Digit-solo/server/app.py</code>, <code>web/</code></td><td><span class="chip demo">데모</span></td></tr>
+        <tr><td class="nowrap">06시 참고값</td><td>x, 전일 종가, 과거 상태 → H</td><td><code>workbench/i24_panel.py</code></td><td><span class="chip research">연구</span></td></tr>
+        <tr><td class="nowrap">80% 범위</td><td><code>T, code, g, sd08, rng, dis</code> → 중심과 반폭</td><td><code>workbench/frozen_range.py</code></td><td><span class="chip research">연구</span></td></tr>
+        <tr><td class="nowrap">07:30 띠·08시 등급</td><td>패널, DART 공시 → S1 띠, D08 등급, 주의 문구</td><td><code>workbench/e62_band.py</code></td><td><span class="chip research">연구</span></td></tr>
+        <tr><td class="nowrap">아침 카드</td><td>패널, 보유 종목 → 화면 데이터 JSON(과거 평가로 선택한 규칙)</td><td><code>workbench/morning_card.py</code></td><td><span class="chip research">연구</span></td></tr>
+        <tr><td class="nowrap">실제 날짜 입력</td><td>KIS·FDR·DART → 자료 폴더 → 연구와 같은 패널</td><td><code>workbench/live_refresh.py</code>, <code>live_panel.py</code></td><td><span class="chip zero">장 전 실행 0건</span></td></tr>
+        <tr><td class="nowrap">아침 카드 목업</td><td>E74 카드 숫자, 예시 계좌 → 설명용 화면</td><td><a href="morning_brief_screen_design.html">목업 페이지</a></td><td><span class="chip mock">시안</span></td></tr>
+        <tr><td class="nowrap">과거 아침 화면</td><td>저장된 H·NXT·범위, 가정 계좌 → 재생 화면</td><td><code>workbench/presentation/morning_replay/</code></td><td><span class="chip mock">시안</span></td></tr>
+        <tr><td class="nowrap">기록</td><td>수신·입력·예측·관측 → 순서를 보존한 증거</td><td><code>prospective_journal.py</code>, <code>capture_probe.py</code>, <code>provider_outcome.py</code>, <code>provider_evidence.py</code>, <code>l1_run.py</code></td><td><span class="chip zero">실제 0건</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="evidence">
+  <h2 id="evidence">결과로 정해진 경계</h2>
+  <div class="table-wrap">
+    <table class="t-min">
+      <thead><tr><th>설계 규칙</th><th>결과</th><th>실험</th></tr></thead>
+      <tbody>
+        <tr><td>시가 중심은 H와 NXT 가격을 그대로 씁니다. H의 이득은 시장이 셀수록 큽니다(조용한 장 4.3%, 센 장 16~24%)</td><td>나스닥·저녁 가격 조합, 어제 오차 보정, 외부 지표 약 80개 모두 추가 이득 미확인</td><td class="nowrap">E36 E41 E55 E59</td></tr>
+        <tr><td>반도체 밖 종목에 야간선물을 그대로 곱하지 않습니다</td><td>반도체 제외 합성 계좌 1.39 → 0.87%p. 반도체 위주 계좌는 단순 곱셈과 구분 안 됨</td><td class="nowrap">E50 E57</td></tr>
+        <tr><td>두 숫자가 어긋나면 나중 숫자를 앞에 둡니다</td><td>반대 방향일 때 시가가 NXT 쪽 74.0%</td><td class="nowrap">E58</td></tr>
+        <tr><td>장중 방향을 표시하지 않습니다</td><td>기존 E58의 시가 뒤 갭 방향 유지 44.8~46.6%. 실제 Claude의 별도 E90 인계에서는 E23이 보지 않은 과거 243일의 09:30 갭 방향 이어짐이 43.2%(95% 구간 41.9~44.5)였습니다. 같은 방향으로 더 간다고 볼 근거가 없다는 해석까지이며 반전 매매 근거가 아닙니다.</td><td class="nowrap">E58 · <a href="../../research/overnight_backtest/workbench/runs/claude_creon_usb_r1/README.md">E90 인계</a></td></tr>
+        <tr><td>장초반 흔들림 예보와 장전 시가띠는 별도 목표입니다</td><td>실제 Claude의 E91 인계: 09:00–09:30 흔들림 예보의 날짜 평균 오차가 직전 60일 중앙값 B보다 종목 199개·253일에서 0.070%p, 예시 계좌 A·C·D·E·250일에서 0.052%p 작았습니다. M0′는 E24와 달리 H·sd08을 쓰고 나스닥·특수일을 뺀 모형이며 평가는 2025-09-24부터입니다. 이 결과로 장전 계좌 시가띠의 숫자 보류를 해제하지 않습니다.</td><td class="nowrap"><a href="../../research/overnight_backtest/workbench/runs/claude_creon_usb_r1/README.md">E91 인계</a></td></tr>
+        <tr><td>조용한 날이라고 화면을 줄이지 않습니다</td><td>조용하다고 표시한 날의 30%가 실제 1% 이상 변화</td><td class="nowrap">E56</td></tr>
+        <tr><td>먼저 볼 종목에 혼자 움직임순을 쓰지 않습니다</td><td>포착 비율 보유 금액순 73.6, 혼자 움직임순 68.4</td><td class="nowrap">E59</td></tr>
+        <tr><td>07:30 종목 띠는 밤 크기로 폭을 조절합니다(S1)</td><td>봉인 93종목·54일 포함률 79.08%, 폭 3.69%p, 단순 띠 89.08%·4.73%p. 조용한 구간에서도 유지. 세부 설정 10가지를 바꿔도 대체로 유지(계단식 폭만 조용한 밤 74.6%)</td><td class="nowrap">E62 E65 E86</td></tr><tr><td>계좌 띠는 종목 띠를 더하지 않습니다</td><td>더하면 27~33% 넓어집니다. 공동오차 규칙 AS1은 봉인 조용한 밤 72.2%로 기준 75% 미달. 사후 진단에서는 연구 대상 종목의 평균 오차(y−H)가 약 −0.5~−1.6%p였던 6일에 미달이 몰렸습니다. 예상보다 낮다는 뜻이며 전일보다 하락했다는 뜻은 아닙니다. 같은 자료의 NXT 방향 일치 관찰은 원인이나 독립 예측력의 증거가 아닙니다</td><td class="nowrap">E63 E85</td></tr>
+        <tr><td>계좌 후속 후보 세 가지를 같은 기준으로 비교했습니다</td><td>재사용 54일·31,290개 계좌-날의 고정 1회 결과입니다. 조용한 밤 15일의 포함률은 연결 대조 AS1-M 72.09% → 비대칭 A 73.23%, 공동 표준화 RMS B 71.65%, 결합 C 73.60%. 모두 기존 75% 하한 미달입니다. A는 아래쪽 이탈을 23.93% → 21.53%로 줄였지만 전체 점수의 개선은 불확실하며, B/C는 전체 점수가 악화했습니다. 원 AS1 판정은 보존합니다.</td><td class="nowrap"><a href="../../research/overnight_backtest/workbench/runs/codex_e87_r1/summary.json">E87 저장 결과</a></td></tr>
+        <tr><td>믿을 정도는 띠와 별도 등급으로 표시합니다</td><td>08시 방향 봉인 높음 96.7%, 보통 84.0%, 낮음 64.4%. 처음 보는 5일에도 높음 96% 이상. 이벤트·VIX·나스닥을 더한 이득 없음. 등급은 사실상 NXT 갭 크기가 정하고, 재료 3개는 확률 숫자 보정에 씀(유지). 경계·벌점 세기를 바꿔도 순서 유지</td><td class="nowrap">E61 E64 E74 E83 E86</td></tr><tr><td>주의 문구는 확인된 것만 붙입니다</td><td>월요일에는 06시 추정치의 오차가 평소보다 컸습니다. 단순 기준 구간(R0)의 포함률은 월요일 74.2%, 다른 요일 80.0%였습니다. FOMC·CPI·연휴·전날 하루 급변·밤사이 국내 기사 양은 차이 없음</td><td class="nowrap">E67 E72 E73</td></tr><tr><td>07:30 띠 뒤에 08:11 갱신을 둡니다</td><td>덜 맞은 아침의 결정적 소식(휴전 속보, 대형주 아침 잠정실적)은 대부분 07:30 뒤에 나옴</td><td class="nowrap">E72</td></tr><tr><td>흔들림이 이어지는 날은 후보 신호로 지켜봅니다</td><td>최근 5일 변동성 높음 76.6 vs 80.4%, 어제 시가 크게 빗나감 72.0 vs 82.3%(띠 안). 새 계약으로 다시 시험</td><td class="nowrap">E73</td></tr><tr><td>실적 공시 다음 아침은 주의 문구를 답니다</td><td>세 구간 모두 평소보다 크게 빗나가고 띠 안 비율이 낮음(봉인 S1 49.5 vs 79.3%)</td><td class="nowrap">E64 E65</td></tr><tr><td>범위 포함률 감시 기준은 모형별로 정합니다(미결)</td><td>10월 66.36%는 우연과 구분 안 됨. 19거래일 하한 72.9%는 08:11 NXT 중심 범위 후보의 과거 변동으로 계산한 예시이며, S1의 운영 중단값으로 채택하지 않았습니다. S1은 날짜별 변동으로 감시 범위를 다시 계산해 확정해야 합니다</td><td class="nowrap">E54</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">모두 과거 자료의 연구 결과입니다. E87은 이미 본 자료를 재사용했고 후보의 동기도 같은 평가 구간에서 얻었습니다. E90·E91은 사용자의 별도 요청으로 실제 Claude가 수행한 결과 인계이며 Codex의 독립 전수 검증이 아닙니다. E91은 이미 본 날짜가 섞인 개발 재분석이고, 1분봉 종가 경로라 분 안의 최고·최저를 놓칩니다. 독립 미래 성능이나 사용자 효용을 입증하지 않았습니다. 최신 인계의 기준과 한계는 <a href="../../research/overnight_backtest/workbench/runs/claude_creon_usb_r1/README.md">로컬 연구 README</a>, 기존 기록은 <a href="experiments.html">실험 장부 공유본</a>에서 봅니다. 이번 로컬 동기화는 외부 게시가 아닙니다.</p>
+</section>
+
+<section aria-labelledby="rules">
+  <h2 id="rules">구현할 때 지킬 것</h2>
+  <ul class="rules">
+    <li>노란띠는 시가 참고 범위입니다. 확률이나 확신의 표시가 아니고 장중 범위나 손실 한도도 아닙니다. 믿을 정도는 색·등급·주의 문구로 따로 보여 줍니다.</li>
+    <li>노란띠와 만약에는 한 기능입니다. 띠 위 표식을 움직여 가정 금액을 보고, 가정이 띠를 다시 계산하지 않습니다.</li><li>미지원 종목을 0으로 넣거나 조용히 빼서 비중을 다시 계산하지 않습니다.</li>
+    <li>06시 값과 08시 값을 하나의 최신 합계로 합쳐 강조하지 않습니다.</li>
+    <li>과거 재생 화면에는 과거 재생이라고 표시합니다. 사전 저장한 값만 예측으로 부릅니다.</li>
+    <li>사건과 가격의 연결을 원인으로 단정하지 않습니다.</li>
+    <li>매수·매도 권유나 수익 약속으로 읽히는 문구를 쓰지 않습니다.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="decide">
+  <h2 id="decide">팀이 정할 것</h2>
+  <div class="table-wrap">
+    <table class="t-min">
+      <thead><tr><th>안건</th><th>추천</th><th>이유</th></tr></thead>
+      <tbody>
+        <tr><td class="nowrap">08:11 띠 처리</td><td>07:30 띠를 유지하고 NXT 위치·등급을 더함(지금 구현). NXT 중심 08시 범위로 바꾸는 안은 사용자 시험 뒤 결정</td><td>띠가 아침에 두 번 바뀌면 무엇이 바뀌었는지 헷갈립니다. NXT 중심 범위는 과거 구간점수가 2.92% 좋았지만(E39) MVP는 한 가지 띠로 단순하게 시작합니다.</td></tr>
+        <tr><td class="nowrap">다음 실제 실행</td><td>11/6은 팀 목표였으며 별도 실행 합의는 없습니다. 사용자 요청에 따라 밀린 작업 팔로업을 먼저 마무리합니다.</td><td>11/2 L1은 미실행으로 보존했습니다. 새 실행일 미지정, 계약으로 확인한 사전 기록은 0건입니다. 날짜를 바꾸어 재실행하거나 자동 예약하지 않습니다.</td></tr>
+        <tr><td class="nowrap">화면 순서</td><td>사건 연결 → 계좌 합계 → 종목 줄</td><td>점 숫자만으로는 야간선물에 비중을 곱한 값과 차이가 작습니다. 야간선물이 주지 못하는 것은 내 종목과 이어지는 이유와 얼마나 벗어날 수 있는지(노란띠)입니다.</td></tr>
+        <tr><td class="nowrap">계좌 띠 표시</td><td>지원 종목의 원화 변화액과 ‘만약에’ 합계를 우선합니다. 여러 종목의 계좌 80% 범위는 값을 비웁니다.</td><td>07:30 공통 오차를 분리한 후보(E96)와 전날 저녁 가격을 반영한 후보(E97)는 조용한 밤 포함률이 각각 88.12%, 90.44%로 허용 상한 85%를 넘었습니다. 다시 검토할 조건은 모델 설계서 §5.6에 있습니다.</td></tr>
+        <tr><td class="nowrap">보조 표시</td><td>과거 재생 화면에서 먼저 시험하고, 실시간은 저녁 가격 수신을 확인한 뒤 결정</td><td>혼자 움직인 종목의 벗어남 방향 일치는 65~70%지만 새 표본이 25일뿐입니다.</td></tr>
+        <tr><td class="nowrap">사용자 테스트</td><td>같은 과거 아침을 야간선물 + 비중 곱셈 화면과 우리 화면으로 비교, 반도체 외 보유자 포함</td><td>연결의 가치가 아직 측정되지 않았습니다. 우리 화면이 못 이기면 메인을 다시 정해야 합니다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<p class="note"><b>사건 연결 화면(C) 읽기 과제.</b> 6월 25일의 두 장면을 같은 가정 계좌표와 출처 설명으로 재구성했습니다. 다섯 문항은 화면에서 확인되는 사실과 ‘알 수 없음’이 맞는 경우를 구분합니다. 참여자 모집 전입니다. <a href="../../research/overnight_backtest/workbench/presentation/c_reading/0730.png">07:30 C</a> · <a href="../../research/overnight_backtest/workbench/presentation/c_reading/0811.png">08:11 C</a> · <a href="model_design.html">문항·채점 근거, 설계서 §11.6</a></p>
+<p class="note"><b>E87·E92 계좌 띠 비교(11/5~11/6).</b> E87은 AS1의 밤 크기 조절은 그대로 두고 폭을 정하는 방법만 바꾼 세 후보를 검증 표본 54일에서 비교했습니다. 조용한 밤 포함률은 기준 72.09%, 후보 A·B·C 73.23·71.65·73.60%로 모두 75%에 못 미쳤습니다. E92는 보유 종목의 08:10 NXT 갭을 비중대로 평균한 값 G를 중심으로 둔 조건부 폭 GC를, 중심만 바꾼 G0, G 중심의 단순 순위 폭 GR0와 비교했습니다. 개발 표본 86일에서 GC는 G0보다 23.77% 좋았지만 GR0보다 낫다는 것은 확인되지 않았고(1.62%, 신뢰구간이 0 포함), 조용한 밤이 14일뿐이라 전체 판정은 불가입니다. 검증 표본의 조용한 밤에서는 G0가 아래로 벗어난 비율을 22.80%에서 11.41%로 줄였지만, 포함률이 87.40%로 너무 넓어 그대로 쓸 수 없습니다. 보유 종목 모두의 NXT 관측이 있어야 계산되므로 결과는 그런 계좌·일에만 해당합니다(10종목 계좌는 비교 가능한 행이 10.55%). <a href="../../research/overnight_backtest/workbench/runs/codex_e87_r1/summary.json">E87 결과</a> · <a href="../../research/overnight_backtest/workbench/runs/codex_e92_r1/summary.json">E92 결과</a> · 자세한 수치는 설계서 §8.5·§8.7</p>
+
+<p class="note"><b>장중 지속과 장 초반 흔들림(E90·E91, 11/5).</b> 크레온 1분봉으로 과거 실험을 넓혀 보니, 시가 뒤 갭 방향으로 더 간다고 볼 근거가 없다는 결론이 2년치에서도 유지됐습니다(처음 보는 해의 이어짐 비율 43.2%). 장 초반 09:00~09:30 흔들림 예보는 199종목과 예시 계좌 4개에서 직전 60일 중앙값보다 나았습니다. 두 결과는 계좌 시가 예측구간과 목표가 달라 계좌 숫자 보류를 바꾸지 않습니다. 자세한 내용은 설계서 §8.6에 있습니다.</p>
+<p class="note"><b>입력·코드 교차 검증(E81·E88·E89, 11/5).</b> 팀 저장소의 KRX 백테스트(반도체 15종목)와 맞춰 보니 14종목·2025-06-11~2026-10-26의 시가·전일 종가·시가갭 3,864행, 야간 수익률 327/333일, 06시 계산 함수가 모두 일치했습니다. 빠진 6일은 선물 만기 다음 날로, 수집기가 만기일 밤의 다음 계약을 받지 않는 문제(E82와 같음)였습니다. 크레온 1분봉 대조로는 한국투자증권 과거 NXT 분봉이 시작 시각 표기이고 받은 날 기준 수정주가라는 점을 사후에 확인했고, 저장 자료의 기업 행사일 가짜 갭은 없었습니다. 크레온으로 2025-07~10의 NXT 값을 채워 보니 08:11 등급과 시장 몫 분해가 처음 보는 74일에서도 기준을 통과했습니다. 모두 과거 자료 검증이며 실시간 수신·미래 성능의 증거가 아닙니다. <a href="../../research/overnight_backtest/workbench/runs/claude_krx_crosscheck_r1/README.md">E81 README</a> · <a href="../../research/overnight_backtest/workbench/runs/claude_creon_usb_r1/README.md">E88~E91 README</a></p>
+
+<p><b>11/5 아침 카드 교정(Codex).</b> 07:30 카드가 같은 날 08:10 NXT 정보를 쓰지 않게 막았고, NXT 갭이 0이거나 비정상인 종목에는 등급을 내지 않습니다. 비어 있는 등급 재료를 과거 중앙값으로 채운 경우와 카드를 목표 시각보다 늦게 만든 경우를 카드에 표시합니다. 계좌 금액은 반올림 전 값으로 계산·합산한 뒤 표시만 반올림하고, 지원 종목만 합한 값과 계좌 전체 값을 구분합니다. 가격을 모르는 제외 종목이 있으면 계좌 전체 값은 비웁니다. 실제 날짜 카드는 자료를 받은 시각을 먼저 확인해, 야간 자료는 그 밤이 끝난 다음 날 06:05 이후, NXT 등급 자료는 그날 08:11 이후에 받은 것만 씁니다. 이 확인을 통과했다고 실제 수신이나 장 전 봉인이 증명되는 것은 아닙니다. 관련 시험 45개가 통과했습니다.</p>
+<footer>당일 매매자 기능은 보유자 기능과 검증을 분리합니다. 시가 숫자의 정확도를 시가 이후 매매 가치의 근거로 쓰지 않습니다.</footer>
+
+</div>
+</body>
+</html>

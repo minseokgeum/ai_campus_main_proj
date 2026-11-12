@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>코드 함수 사전</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* 숙지 노트와 같은 모양. 찾아보는 사전이라 맨 위 검색칸이 주인공. */
+:root{
+  --bg:#F3F4F6; --surface:#FFFFFF; --ink:#18212B; --muted:#56616E; --line:#DDE2E8;
+  --band:#F1BD17; --band-soft:#FCEFC2; --a:#1F63C9; --b:#C2510F; --soft:#EEF2F7;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1318; --surface:#161D24; --ink:#E4E9EE; --muted:#9CA8B5; --line:#2B353F;
+    --band:#E2B114; --band-soft:#3F360F; --a:#6AA3FF; --b:#FF8A4C; --soft:#1C252E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1318; --surface:#161D24; --ink:#E4E9EE; --muted:#9CA8B5; --line:#2B353F;
+  --band:#E2B114; --band-soft:#3F360F; --a:#6AA3FF; --b:#FF8A4C; --soft:#1C252E; color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.7; word-break:keep-all; overflow-wrap:break-word}
+.layout{max-width:1180px; margin:0 auto; padding:24px 16px 64px; display:grid; grid-template-columns:220px minmax(0,1fr); gap:32px}
+@media (max-width:900px){ .layout{grid-template-columns:minmax(0,1fr)} nav.toc{position:static!important; max-height:none!important} }
+nav.toc{position:sticky; top:16px; align-self:start; max-height:calc(100vh - 32px); overflow-y:auto; font-size:13.5px; line-height:1.45; display:grid; gap:2px}
+nav.toc a{color:var(--muted); text-decoration:none; padding:4px 8px; border-radius:6px}
+nav.toc a:hover, nav.toc a:focus-visible{background:var(--surface); color:var(--ink); outline:none}
+nav.toc b{font-size:12px; color:var(--muted); padding:8px 8px 2px; font-weight:600}
+main{min-width:0; display:grid; gap:24px}
+header h1{margin:0 0 6px; font-size:30px; line-height:1.3}
+header p{margin:0; color:var(--muted)}
+.search{position:sticky; top:0; z-index:5; background:var(--bg); padding:10px 0}
+.search input{width:100%; font:inherit; font-size:16px; padding:11px 14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink)}
+.search input:focus{outline:2px solid var(--band); outline-offset:1px}
+.search .hint{font-size:13px; color:var(--muted); margin-top:4px}
+section{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px}
+@media (max-width:600px){ section{padding:16px 14px} }
+section > h2{margin:0 0 4px; font-size:21px}
+section > .sub{margin:0 0 12px; color:var(--muted); font-size:14px}
+p{margin:8px 0; max-width:70ch}
+a{color:var(--a)}
+code{font-family:var(--mono); font-size:.9em}
+.tablewrap{overflow-x:auto; margin:8px 0}
+table{border-collapse:collapse; width:100%; font-size:14.5px; line-height:1.55}
+th,td{text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font-size:13px; color:var(--muted); font-weight:600}
+td.fn code{word-break:break-all; color:var(--ink)}
+tr[hidden]{display:none}
+details.file{border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin:10px 0}
+details.file summary{cursor:pointer; font-weight:600; display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+details.file summary code{font-size:14.5px}
+details.file .line{color:var(--muted); font-size:14.5px; margin:8px 0 2px}
+.cnt{font-family:var(--mono); font-size:12px; color:var(--muted); font-weight:400}
+.cnt::after{content:"개"}
+.tag{font-size:12px; padding:1px 8px; border-radius:999px; border:1px solid var(--line); white-space:nowrap; font-weight:500}
+.tag.ok{border-color:var(--a); color:var(--a)} .tag.no{border-color:var(--b); color:var(--b)} .tag.ph{background:var(--band-soft); border-color:transparent}
+.flow{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; margin:12px 0}
+.tl{border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface)}
+.tl .t{font-weight:600}
+.tl .c code{font-size:12.5px; color:var(--a); word-break:break-all}
+.tl .d{font-size:13.5px; color:var(--muted); margin-top:4px}
+.tl.key{border-color:var(--band); box-shadow:inset 0 0 0 1px var(--band)}
+.box{background:var(--soft); border-radius:10px; padding:12px 14px; margin:12px 0; max-width:74ch}
+.box p{margin:4px 0}
+ol.steps{margin:6px 0 10px; padding-left:22px; font-size:14.5px; color:var(--ink)}
+.empty{display:none; color:var(--muted); padding:8px 0}
+</style>
+</head>
+<body>
+<!--doc-tabs--><style>.doc-tabs{display:flex;flex-wrap:wrap;gap:2px 4px;align-items:center;max-width:1240px;margin:0 auto;padding:10px 16px 0;border-bottom:1px solid rgba(127,127,127,.28);font:500 13.5px/1.4 'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;box-sizing:border-box}.doc-tabs .lbl{font-size:12px;opacity:.6;margin-right:6px;font-weight:600}.doc-tabs a{color:inherit;opacity:.72;text-decoration:none;padding:6px 11px;border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;white-space:nowrap}.doc-tabs a:hover,.doc-tabs a:focus-visible{opacity:1;background:rgba(127,127,127,.12);outline:none}.doc-tabs a[aria-current=page]{opacity:1;font-weight:700;border-color:rgba(127,127,127,.35);background:rgba(127,127,127,.10);margin-bottom:-1px}@media (max-width:640px){.doc-tabs{flex-wrap:nowrap;overflow-x:auto}}</style><nav class="doc-tabs" aria-label="4Digit 문서"><span class="lbl">4Digit 문서</span><a href="architecture_overview.html">서비스 아키텍처</a><a href="technical_spec.html">기술 명세서</a><a href="model_design.html">모델 설계서 v2</a><a href="experiments.html">실험 장부</a><a href="morning_brief_screen_design.html">아침 카드 목업</a><a href="code_glossary.html" aria-current="page">코드 함수 사전</a><a href="model_study.html">숙지용 모델 노트</a></nav><!--/doc-tabs-->
+<div class="layout">
+<nav class="toc" aria-label="목차">
+  <b>먼저</b>
+  <a href="#how">읽는 법</a>
+  <a href="#habits">이름 짓는 습관</a>
+  <a href="#cols">열 이름 사전</a>
+  <a href="#flow">아침 카드가 만들어지는 길</a>
+  <b>지금 화면에 쓰는 파일</b>
+  <a href="#core">핵심 7개 파일</a>
+  <a href="#inner">핵심 함수 속 이름(good·minimum 등)</a>
+  <b>나머지</b>
+  <a href="#exp">실험 실행기(E45~E51)</a>
+  <a href="#runs">실험 스크립트(E54~E92)</a>
+  <a href="#safety">실시간 기록 안전장치</a>
+  <a href="#audit">재검증·관리 도구</a>
+  <a href="#src">옛 코드(src)</a>
+  <a href="#tests">시험 파일</a>
+  <b>같이 보기</b>
+  <a href="model_study.html">숙지용 모델 노트</a>
+  <a href="model_design.html">모델 설계서 v2</a>
+  <a href="experiments.html">야간선물 실험 장부</a>
+</nav>
+<main>
+<header>
+  <h1>코드 함수 사전</h1>
+  <p>야간선물 모델 코드(research/overnight_backtest)의 파일과 함수가 무슨 일을 하는지 쉬운 말로 적었어요. 함수 252줄, 2026-11-03 코드 기준.</p>
+</header>
+
+<div class="search">
+  <input id="q" type="search" placeholder="함수 이름이나 낱말로 찾기 (예: good, minimum, forecast_day, 공시)" autocomplete="off" aria-label="함수 찾기">
+  <div class="hint" id="hint">파일 이름으로 찾으면 그 파일의 함수가 다 보여요.</div>
+</div>
+
+<section id="how">
+  <h2>읽는 법</h2>
+  <p class="sub">파일 = 일을 묶은 상자, 함수 = 한 가지 일</p>
+  <p><b>파일</b>은 비슷한 일을 하는 함수를 모은 상자예요. <b>함수</b>는 "재료를 받아서 한 가지 일을 하고 결과를 돌려주는" 단위예요. 괄호 안의 이름은 함수가 받는 재료예요. 예를 들어 <code>finished(session, d, now)</code>는 "어느 장(session), 어느 날(d), 지금 시각(now)을 받아서 그 장이 끝났는지 알려 준다"는 뜻이에요.</p>
+  <p>파일 옆 표시는 지금 상태예요. <span class="tag ok">지금 화면에 쓰임</span>은 아침 카드를 만들 때 실제로 도는 파일, <span class="tag ph">실험</span>은 기준을 정하려고 한 번 돌린 실험, <span class="tag">재검증</span>·<span class="tag">실시간 기록 안전장치</span>·<span class="tag">관리</span>는 결과를 다시 확인하거나 기록을 지키는 도구예요.</p>
+  <div class="box"><p>아침 카드를 이해하려면 <b>핵심 7개 파일</b>만 보면 돼요. 나머지는 "이 이름이 뭐였지?" 할 때 검색칸으로 찾아보는 용도예요.</p></div>
+</section>
+
+<section id="habits">
+  <h2>이름 짓는 습관</h2>
+  <p class="sub">이름의 앞뒤 글자만 봐도 대충 무슨 일인지 알 수 있어요</p>
+  <div class="tablewrap"><table><thead><tr><th style="width:36%">이름에 이게 있으면</th><th>보통 이런 뜻</th></tr></thead><tbody>
+<tr data-k="main 명령으로 파일을 실행할 때 처음 도는 곳. 나머지 함수를 순서대로 부른다."><td class="fn"><code>main</code></td><td>명령으로 파일을 실행할 때 처음 도는 곳. 나머지 함수를 순서대로 부른다.</td></tr>
+<tr data-k="_이름 (밑줄로 시작) 그 파일 안에서만 쓰는 작은 도우미. 다른 파일에서는 부르지 않는다."><td class="fn"><code>_이름 (밑줄로 시작)</code></td><td>그 파일 안에서만 쓰는 작은 도우미. 다른 파일에서는 부르지 않는다.</td></tr>
+<tr data-k="sha · sha256 · digest · key_sha 파일이나 값의 해시(sha-256). 한 글자만 바뀌어도 값이 달라져서, 몰래 바뀌지 않았는지 확인할 때 쓴다."><td class="fn"><code>sha · sha256 · digest · key_sha</code></td><td>파일이나 값의 해시(SHA-256). 한 글자만 바뀌어도 값이 달라져서, 몰래 바뀌지 않았는지 확인할 때 쓴다.</td></tr>
+<tr data-k="validate_ · verify_ · require · need · check_ 검사하고, 틀리면 그 자리에서 멈춘다. 틀린 채로 계산이 계속되지 않게."><td class="fn"><code>validate_ · verify_ · require · need · check_</code></td><td>검사하고, 틀리면 그 자리에서 멈춘다. 틀린 채로 계산이 계속되지 않게.</td></tr>
+<tr data-k="load_ · read_ 파일을 읽어 표로 만든다."><td class="fn"><code>load_ · read_</code></td><td>파일을 읽어 표로 만든다.</td></tr>
+<tr data-k="build_ · make_ · assemble · construct 여러 재료를 합쳐 큰 표를 만든다."><td class="fn"><code>build_ · make_ · assemble · construct</code></td><td>여러 재료를 합쳐 큰 표를 만든다.</td></tr>
+<tr data-k="prior_ · past_ · _before 그날보다 앞선 자료만 쓴다. 미래 값이 섞이지 않게 하는 표시."><td class="fn"><code>prior_ · past_ · _before</code></td><td>그날보다 앞선 자료만 쓴다. 미래 값이 섞이지 않게 하는 표시.</td></tr>
+<tr data-k="fit_ 과거 자료로 계수(기울기 등)를 배운다."><td class="fn"><code>fit_</code></td><td>과거 자료로 계수(기울기 등)를 배운다.</td></tr>
+<tr data-k="predict · forecast_ 배운 계수로 그날 값을 계산한다."><td class="fn"><code>predict · forecast_</code></td><td>배운 계수로 그날 값을 계산한다.</td></tr>
+<tr data-k="daily · describe · summarize · evaluate 채점하고 요약한다."><td class="fn"><code>daily · describe · summarize · evaluate</code></td><td>채점하고 요약한다.</td></tr>
+<tr data-k="compare 두 후보를 같은 종목·일로 맞춰 어느 쪽이 나은지 본다."><td class="fn"><code>compare</code></td><td>두 후보를 같은 종목·일로 맞춰 어느 쪽이 나은지 본다.</td></tr>
+<tr data-k="bootstrap_mean · bs · block_ 날짜를 블록(5·10거래일) 단위로 다시 뽑는 블록 부트스트랩. 차이가 우연인지 본다."><td class="fn"><code>bootstrap_mean · bs · block_</code></td><td>날짜를 블록(5·10거래일) 단위로 다시 뽑는 블록 부트스트랩. 차이가 우연인지 본다.</td></tr>
+<tr data-k="holm 여러 개를 한꺼번에 시험할 때 p값을 엄격하게 고친다(holm 보정). 우연히 하나쯤 통과하는 것을 막는다."><td class="fn"><code>holm</code></td><td>여러 개를 한꺼번에 시험할 때 p값을 엄격하게 고친다(Holm 보정). 우연히 하나쯤 통과하는 것을 막는다.</td></tr>
+<tr data-k="nw_p newey–west p값. 붙은 날끼리 비슷한 점(자기상관)을 고려한 p값."><td class="fn"><code>nw_p</code></td><td>Newey–West p값. 붙은 날끼리 비슷한 점(자기상관)을 고려한 p값.</td></tr>
+<tr data-k="stage_ 실험 단계. 개발 단계(design)와 최종 검증 단계(sealed)."><td class="fn"><code>stage_</code></td><td>실험 단계. 개발 단계(design)와 최종 검증 단계(sealed).</td></tr>
+<tr data-k="run · execute · once 실험이나 수신을 실제로 돌린다."><td class="fn"><code>run · execute · once</code></td><td>실험이나 수신을 실제로 돌린다.</td></tr>
+<tr data-k="approval · verify_approval 승인 파일이 있어야만 돈다. 실수로 실행되는 것을 막는다."><td class="fn"><code>approval · verify_approval</code></td><td>승인 파일이 있어야만 돈다. 실수로 실행되는 것을 막는다.</td></tr>
+<tr data-k="write_x · exclusive 새 파일로만 쓴다. 같은 이름이 있으면 실패한다(덮어쓰기 금지)."><td class="fn"><code>write_x · exclusive</code></td><td>새 파일로만 쓴다. 같은 이름이 있으면 실패한다(덮어쓰기 금지).</td></tr>
+<tr data-k="synthetic · test_ 가짜(합성) 자료로 시험한다. 실제 시장 자료가 아니다."><td class="fn"><code>synthetic · test_</code></td><td>가짜(합성) 자료로 시험한다. 실제 시장 자료가 아니다.</td></tr>
+<tr data-k="minimum · min_periods 최소 관측 수. 창 안의 유효 관측이 이보다 적으면 값을 만들지 않고 결측(nan)으로 둔다. 0이나 평균으로 채우지 않는다."><td class="fn"><code>minimum · min_periods</code></td><td>최소 관측 수. 창 안의 유효 관측이 이보다 적으면 값을 만들지 않고 결측(NaN)으로 둔다. 0이나 평균으로 채우지 않는다.</td></tr>
+<tr data-k="window 창 길이. 그날 이전 유효 관측 가운데 최근 몇 개를 쓰는지(거래일 매칭 표일이 아니라 관측 개수)."><td class="fn"><code>window</code></td><td>창 길이. 그날 이전 유효 관측 가운데 최근 몇 개를 쓰는지(거래일 매칭 표일이 아니라 관측 개수).</td></tr>
+<tr data-k="lam (λ) 지수가중 감쇠. 하루 오래될 때마다 가중치를 0.94배로 줄인다. 약 11거래일 지나면 가중치가 절반."><td class="fn"><code>lam (λ)</code></td><td>지수가중 감쇠. 하루 오래될 때마다 가중치를 0.94배로 줄인다. 약 11거래일 지나면 가중치가 절반.</td></tr>
+<tr data-k="level · alpha (α) 구간 수준. level 0.8 = 80% 구간, alpha = 1 − level = 0.2."><td class="fn"><code>level · alpha (α)</code></td><td>구간 수준. level 0.8 = 80% 구간, alpha = 1 − level = 0.2.</td></tr>
+<tr data-k="block · reps · seed 블록 부트스트랩의 블록 길이(거래일), 반복 횟수, 난수 씨앗(같은 결과 재현용)."><td class="fn"><code>block · reps · seed</code></td><td>블록 부트스트랩의 블록 길이(거래일), 반복 횟수, 난수 씨앗(같은 결과 재현용).</td></tr>
+<tr data-k="cutoff 자료 기준 시각. &#x27;06:00&#x27;이면 06시까지 알 수 있는 값만, &#x27;08:11&#x27;이면 nxt 08:10 봉까지."><td class="fn"><code>cutoff</code></td><td>자료 기준 시각. &#x27;06:00&#x27;이면 06시까지 알 수 있는 값만, &#x27;08:11&#x27;이면 NXT 08:10 봉까지.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="cols">
+  <h2>열 이름 사전</h2>
+  <p class="sub">함수들이 주고받는 표의 칸 이름. 함수 설명에 자주 나와요</p>
+  <div class="tablewrap"><table><thead><tr><th style="width:36%">열 이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="t 예측 대상 거래일(오늘). 문자열, 예: 20261103."><td class="fn"><code>T</code></td><td>예측 대상 거래일(오늘). 문자열, 예: 20261103.</td></tr>
+<tr data-k="d t 바로 앞 krx 거래일. 기준 종가와 야간 세션(d 18:00 ~ t 06:00)이 이 날짜로 저장된다."><td class="fn"><code>D</code></td><td>T 바로 앞 KRX 거래일. 기준 종가와 야간 세션(D 18:00 ~ T 06:00)이 이 날짜로 저장된다.</td></tr>
+<tr data-k="x 야간 수익률 = d 야간 세션 종가(t 06:00) ÷ d 주간 세션 종가(15:45) − 1. 단위 수익률. t마다 값 하나, 모든 종목 공통. 확정 t 06:00."><td class="fn"><code>x</code></td><td>야간 수익률 = D 야간 세션 종가(T 06:00) ÷ D 주간 세션 종가(15:45) − 1. 단위 수익률. T마다 값 하나, 모든 종목 공통. 확정 T 06:00.</td></tr>
+<tr data-k="ax |x|, 야간 수익률의 절댓값(방향을 뺀 야간 변동 크기). 단위 수익률. 예전 이름 &#x27;밤 크기&#x27;."><td class="fn"><code>ax</code></td><td>|x|, 야간 수익률의 절댓값(방향을 뺀 야간 변동 크기). 단위 수익률. 예전 이름 &#x27;밤 크기&#x27;.</td></tr>
+<tr data-k="signal_valid · signal_reason 그 야간 세션의 x를 써도 되는지(참/거짓)와, 안 되면 이유(missing_night 야간 없음, contract_mismatch 계약 바뀜, official_no_trade 무거래 등)."><td class="fn"><code>signal_valid · signal_reason</code></td><td>그 야간 세션의 x를 써도 되는지(참/거짓)와, 안 되면 이유(missing_night 야간 없음, contract_mismatch 계약 바뀜, official_no_trade 무거래 등).</td></tr>
+<tr data-k="y 실현 시가 갭 = t 시가 ÷ d 종가 − 1. 단위 수익률. 확정 t 09:00. 학습·채점에만 쓰고 그날 계산에는 넣지 않는다."><td class="fn"><code>y</code></td><td>실현 시가 갭 = T 시가 ÷ D 종가 − 1. 단위 수익률. 확정 T 09:00. 학습·채점에만 쓰고 그날 계산에는 넣지 않는다.</td></tr>
+<tr data-k="pc d일 정규장 종가(기준 종가). 단위 원. 확정 d 15:30."><td class="fn"><code>pc</code></td><td>D일 정규장 종가(기준 종가). 단위 원. 확정 D 15:30.</td></tr>
+<tr data-k="m1 절편 포함 회귀 예측 a + β·x. 단위 수익률. a, β는 그날 이전 유효 관측 250개(최소 120)로 추정."><td class="fn"><code>M1</code></td><td>절편 포함 회귀 예측 a + β·x. 단위 수익률. a, β는 그날 이전 유효 관측 250개(최소 120)로 추정.</td></tr>
+<tr data-k="f2 조정 베타 예측 ((β⁰ + 1) ÷ 2)·x. β⁰는 절편 없는 기울기 σxy ÷ σx². 단위 수익률."><td class="fn"><code>F2</code></td><td>조정 베타 예측 ((β⁰ + 1) ÷ 2)·x. β⁰는 절편 없는 기울기 Σxy ÷ Σx². 단위 수익률.</td></tr>
+<tr data-k="r2 절편 포함 회귀의 결정계수 r²(0~1). 그날 이전 유효 관측 250개에서 x가 y 변동을 설명한 비율."><td class="fn"><code>r2</code></td><td>절편 포함 회귀의 결정계수 R²(0~1). 그날 이전 유효 관측 250개에서 x가 y 변동을 설명한 비율.</td></tr>
+<tr data-k="h 시가 갭 점추정치(화면 이름 06시 참고값). r2 &lt; 0.3이면 m1, 아니면 f2. 단위 수익률. 확정 t 06:00."><td class="fn"><code>H</code></td><td>시가 갭 점추정치(화면 이름 06시 참고값). r2 &lt; 0.3이면 M1, 아니면 F2. 단위 수익률. 확정 T 06:00.</td></tr>
+<tr data-k="e 예측오차 = y − h. 단위 수익률(표시는 %p)."><td class="fn"><code>e</code></td><td>예측오차 = y − H. 단위 수익률(표시는 %p).</td></tr>
+<tr data-k="g 구간 중심 열. 06시 표(z)에서는 h와 같다. 08시 표(n)에서는 nxt 프리마켓 갭 = nxt 08:10 체결가 ÷ pc − 1(과거 분석의 t 08:11 사용 가정, 실시간 봉 의미·수신 지연 미확인)."><td class="fn"><code>g</code></td><td>구간 중심 열. 06시 표(z)에서는 H와 같다. 08시 표(n)에서는 NXT 프리마켓 갭 = NXT 08:10 체결가 ÷ pc − 1(과거 분석의 T 08:11 사용 가정, 실시간 봉 의미·수신 지연 미확인).</td></tr>
+<tr data-k="sd06 그날 이전 (y − x)의 지수가중 rms(최근 250개, 최소 60, λ 0.94). 종목이 야간선물과 따로 움직인 정도. 단위 수익률."><td class="fn"><code>sd06</code></td><td>그날 이전 (y − x)의 지수가중 RMS(최근 250개, 최소 60, λ 0.94). 종목이 야간선물과 따로 움직인 정도. 단위 수익률.</td></tr>
+<tr data-k="lsd log(sd06). 방향 일치 확률의 설명변수."><td class="fn"><code>lsd</code></td><td>log(sd06). 방향 일치 확률의 설명변수.</td></tr>
+<tr data-k="sd08 06시 표에서는 그날 이전 예측오차 e의 지수가중 rms(최근 250개, 최소 20, λ 0.94) = 설계서의 s^h. 예측구간 폭의 기본 단위. 단위 수익률. 이름의 08은 원래 08:11 표에서 쓰던 이름이 남은 것."><td class="fn"><code>sd08</code></td><td>06시 표에서는 그날 이전 예측오차 e의 지수가중 RMS(최근 250개, 최소 20, λ 0.94) = 설계서의 s^H. 예측구간 폭의 기본 단위. 단위 수익률. 이름의 08은 원래 08:11 표에서 쓰던 이름이 남은 것.</td></tr>
+<tr data-k="raw80 · raw90 비교 기준 r0의 반폭. 그 종목의 최근 60개 |e| 중 49번째(80%)·55번째(90%)로 작은 값. 유효 e 80개 이상일 때만. 단위 수익률."><td class="fn"><code>raw80 · raw90</code></td><td>비교 기준 R0의 반폭. 그 종목의 최근 60개 |e| 중 49번째(80%)·55번째(90%)로 작은 값. 유효 e 80개 이상일 때만. 단위 수익률.</td></tr>
+<tr data-k="l80 · u80 · l90 · u90 예측구간의 아래 끝·위 끝(80%·90%). 단위 수익률."><td class="fn"><code>L80 · U80 · L90 · U90</code></td><td>예측구간의 아래 끝·위 끝(80%·90%). 단위 수익률.</td></tr>
+<tr data-k="size 크기. 06시 표에서는 |h|, 08시 표에서는 |g|. 단위 수익률."><td class="fn"><code>size</code></td><td>크기. 06시 표에서는 |H|, 08시 표에서는 |g|. 단위 수익률.</td></tr>
+<tr data-k="nxt nxt 08:00~08:10에 실제 체결이 있고 기준 종가도 있는 종목·일이면 참."><td class="fn"><code>nxt</code></td><td>NXT 08:00~08:10에 실제 체결이 있고 기준 종가도 있는 종목·일이면 참.</td></tr>
+<tr data-k="e_earn · e_deal · e_rumor · e_periodic 공시 표시(0/1). 실적 / 계약·증자 등 / 풍문·조회 / 정기보고서. 1이면 d ≤ 접수일 &lt; t인 공시가 있었다(접수 날짜만 있고 시각은 없음)."><td class="fn"><code>e_earn · e_deal · e_rumor · e_periodic</code></td><td>공시 표시(0/1). 실적 / 계약·증자 등 / 풍문·조회 / 정기보고서. 1이면 D ≤ 접수일 &lt; T인 공시가 있었다(접수 날짜만 있고 시각은 없음).</td></tr>
+<tr data-k="mon · hol · exp · fomc · cpi · nfp 0/1. 월요일 / 연휴 뒤(d와 t 사이에 쉰 평일이 있음) / 옵션 만기일 / fomc·cpi·고용 발표 다음 거래일."><td class="fn"><code>mon · hol · exp · fomc · cpi · nfp</code></td><td>0/1. 월요일 / 연휴 뒤(D와 T 사이에 쉰 평일이 있음) / 옵션 만기일 / FOMC·CPI·고용 발표 다음 거래일.</td></tr>
+<tr data-k="vix · dvix · nvz · tv · flow · nq · x_pre · x_post 시장 재료(지금 화면 계산에는 안 씀). log vix와 변화율, 야간 거래량의 log(최근 60일 중앙값 대비), 종목 거래대금의 log(최근 20일 중앙값 대비), 외국인+기관 순매수 ÷ 거래대금, 나스닥 선물 06→08시 수익률, 야간 전반(~자정)·후반(자정~06시) 수익률."><td class="fn"><code>vix · dvix · nvz · tv · flow · nq · x_pre · x_post</code></td><td>시장 재료(지금 화면 계산에는 안 씀). log VIX와 변화율, 야간 거래량의 log(최근 60일 중앙값 대비), 종목 거래대금의 log(최근 20일 중앙값 대비), 외국인+기관 순매수 ÷ 거래대금, 나스닥 선물 06→08시 수익률, 야간 전반(~자정)·후반(자정~06시) 수익률.</td></tr>
+<tr data-k="mkt_g · idio 그날 nxt g의 종목 간 중앙값(시장 공통 성분)과 |g − mkt_g|(개별 성분 크기). 단위 수익률."><td class="fn"><code>mkt_g · idio</code></td><td>그날 NXT g의 종목 간 중앙값(시장 공통 성분)과 |g − mkt_g|(개별 성분 크기). 단위 수익률.</td></tr>
+<tr data-k="t · p · level 방향 일치 확률 시험의 실현값(1 = nxt 방향대로 열림), 로지스틱 확률(0~1), 등급(높음 ≥ 0.90, 보통 0.75~0.90, 낮음 &lt; 0.75)."><td class="fn"><code>t · p · level</code></td><td>방향 일치 확률 시험의 실현값(1 = NXT 방향대로 열림), 로지스틱 확률(0~1), 등급(높음 ≥ 0.90, 보통 0.75~0.90, 낮음 &lt; 0.75).</td></tr>
+<tr data-k="cov · width · score · up · dn 채점 결과(날짜 가중 평균). 포함률(%), 평균 폭(%p), 구간 점수(%p 척도), 위로 벗어난 비율(%), 아래로 벗어난 비율(%)."><td class="fn"><code>cov · width · score · up · dn</code></td><td>채점 결과(날짜 가중 평균). 포함률(%), 평균 폭(%p), 구간 점수(%p 척도), 위로 벗어난 비율(%), 아래로 벗어난 비율(%).</td></tr>
+<tr data-k="개발 종목 · 검증 종목 · split_t 규칙을 정할 때 쓴 종목(107개)과 마지막에 한 번만 평가한 홀드아웃 종목(93개). 기간 경계 20260731(이후가 검증 기간). 예전 이름 &#x27;설계 종목·봉인 종목&#x27;."><td class="fn"><code>개발 종목 · 검증 종목 · SPLIT_T</code></td><td>규칙을 정할 때 쓴 종목(107개)과 마지막에 한 번만 평가한 홀드아웃 종목(93개). 기간 경계 20260731(이후가 검증 기간). 예전 이름 &#x27;설계 종목·봉인 종목&#x27;.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="flow">
+  <h2>아침 카드가 만들어지는 길</h2>
+  <p class="sub">실제 날짜 하나를 넣으면 이 순서로 함수가 불려요</p>
+  <div class="flow"><div class="tl"><div class="t">1. 자료 받기</div><div class="c"><code>live_refresh.main</code></div><div class="d">선물·200종목·NXT 08:00~08:10·코스피200·DART 공시를 받아 live/&lt;날짜&gt;/data/에 이어 붙인다. finished()로 끝난 장만.</div></div><div class="tl"><div class="t">2. 큰 표 만들기</div><div class="c"><code>live_panel.frames → build</code></div><div class="d">i24_panel의 make_calendar(x) → stock_labels(y·pc) → prior_point_models(H) → traded_nxt(NXT g) → build_panel. 06:00판과 08:11판 두 장.</div></div><div class="tl"><div class="t">3. 구간 재료 붙이기</div><div class="c"><code>live_panel.frames_from_panels</code></div><div class="d">e62_band의 event_flags(공시 표시), prior_rms(sd08), raw_band(R0). 결과는 z(06시 표)와 n(08시 표).</div></div><div class="tl key"><div class="t">4. 구간·등급 계산</div><div class="c"><code>morning_card.stock_band · grade</code></div><div class="d">stock_band → run_candidates → forecast_day(split_history·fit_scale·weighted_quantile)로 S1 구간. grade → logit_prob로 08:11 등급.</div></div><div class="tl"><div class="t">5. 카드 내기</div><div class="c"><code>morning_card.build_card · main</code></div><div class="d">주의 문구(실적 공시·월요일)를 붙여 JSON 카드와 해시 파일을 저장한다.</div></div></div>
+  <p>연구 자료로 과거 날짜를 다시 만들 때는 2·3번 대신 <code>e62_band.load_frames</code> → <code>i24_panel.load_panel</code>이 같은 함수로 같은 표를 만들어요. 두 길이 같은 값을 내는지는 <code>tests/test_live_panel.py</code>가 확인해요.</p>
+</section>
+
+<section id="core">
+  <h2>핵심 7개 파일</h2>
+  <p class="sub">아침 카드에 실제로 쓰이는 파일. 함수 하나하나 풀었어요</p>
+  <details class="file" data-k="workbench/live_refresh.py 실제 날짜 자료 받아 오기. 연구 data/는 그대로 두고 live/&lt;이름&gt;/data/에 복사한 뒤 새 날짜를 이어 붙인다." data-open="1" open><summary><code>workbench/live_refresh.py</code> <span class="tag ok">지금 화면에 쓰임</span> <span class="cnt">13</span></summary><p class="line">실제 날짜 자료 받아 오기. 연구 data/는 그대로 두고 live/&lt;이름&gt;/data/에 복사한 뒤 새 날짜를 이어 붙인다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="kis_get(kis, path, tr, params) 한국투자증권 시세 api에 한 번 묻는 도우미. 실패하면 2초 쉬고 다시(최대 5번), &#x27;너무 자주 묻는다&#x27; 답이면 1초 쉬고 다시. 끝내 안 되면 빈 답을 돌려준다."><td class="fn"><code>kis_get(kis, path, tr, params)</code></td><td>한국투자증권 시세 API에 한 번 묻는 도우미. 실패하면 2초 쉬고 다시(최대 5번), &#x27;너무 자주 묻는다&#x27; 답이면 1초 쉬고 다시. 끝내 안 되면 빈 답을 돌려준다.</td></tr>
+<tr data-k="front(day) 그 날짜에 쓰는 선물 근월물 계약 코드(예: a01612)를 common.fronts 표에서 찾는다."><td class="fn"><code>front(day)</code></td><td>그 날짜에 쓰는 선물 근월물 계약 코드(예: A01612)를 common.FRONTS 표에서 찾는다.</td></tr>
+<tr data-k="parse_open(res, day) 국내휴장일조회 응답에서 그날의 개장일 여부(opnd_yn)를 읽는다. 그날이 응답에 없으면 none."><td class="fn"><code>parse_open(res, day)</code></td><td>국내휴장일조회 응답에서 그날의 개장일 여부(opnd_yn)를 읽는다. 그날이 응답에 없으면 None.</td></tr><tr data-k="trading_day(kis, day) 그날이 krx 개장일인지 확인한다(국내휴장일조회 ctca0903r). 조회가 실패하면 주말만 막고 &#x27;휴장일 조회 실패(주말만 확인)&#x27;라고 남긴다."><td class="fn"><code>trading_day(kis, day)</code></td><td>그날이 KRX 개장일인지 확인한다(국내휴장일조회 CTCA0903R). 조회가 실패하면 주말만 막고 &#x27;휴장일 조회 실패(주말만 확인)&#x27;라고 남긴다.</td></tr><tr data-k="premarket_todo(df, days, now) nxt 분봉을 받을 날짜를 고른다. 이미 받은 지난 날짜는 빼고, 오늘은 08:11 뒤에만, 미래 날짜는 뺀다."><td class="fn"><code>premarket_todo(df, days, now)</code></td><td>NXT 분봉을 받을 날짜를 고른다. 이미 받은 지난 날짜는 빼고, 오늘은 08:11 뒤에만, 미래 날짜는 뺀다.</td></tr><tr data-k="pick_base(live_dir, name, base) 이어받을 자료 폴더를 고른다. 같은 이름 폴더에 자료가 있으면 그 폴더, 없으면 이름이 더 앞인 가장 최근 폴더, base=none이면 연구 data/에서 시작."><td class="fn"><code>pick_base(live_dir, name, base)</code></td><td>이어받을 자료 폴더를 고른다. 같은 이름 폴더에 자료가 있으면 그 폴더, 없으면 이름이 더 앞인 가장 최근 폴더, base=none이면 연구 data/에서 시작.</td></tr><tr data-k="finished(session, d, now) 그 장이 끝났는지. 주간장은 그날 15:50 뒤, 야간장은 다음 날 06:05 뒤에야 &#x27;끝남&#x27;. 진행 중인 장의 숫자가 섞이지 않게 한다."><td class="fn"><code>finished(session, d, now)</code></td><td>그 장이 끝났는지. 주간장은 그날 15:50 뒤, 야간장은 다음 날 06:05 뒤에야 &#x27;끝남&#x27;. 진행 중인 장의 숫자가 섞이지 않게 한다.</td></tr>
+<tr data-k="refresh_futures(kis, df, start, until, now) 선물 일봉(주간 f, 야간 cm)을 받아 기존 표 뒤에 붙인다. 근월물·끝난 장만, 이미 있는 날짜는 건드리지 않는다."><td class="fn"><code>refresh_futures(kis, df, start, until, now)</code></td><td>선물 일봉(주간 F, 야간 CM)을 받아 기존 표 뒤에 붙인다. 근월물·끝난 장만, 이미 있는 날짜는 건드리지 않는다.</td></tr>
+<tr data-k="refresh_stocks(kis, df, codes, start, last_close_day) 200종목 일봉의 시가·종가를 받아 붙인다. 종가가 확정되지 않은 날(16시 전 오늘)은 넣지 않는다."><td class="fn"><code>refresh_stocks(kis, df, codes, start, last_close_day)</code></td><td>200종목 일봉의 시가·종가를 받아 붙인다. 종가가 확정되지 않은 날(16시 전 오늘)은 넣지 않는다.</td></tr>
+<tr data-k="refresh_premarket(kis, df, codes, days) 지정한 날짜의 nxt 08:00~08:10 1분봉을 200종목 받아 붙인다. 08:11 방향 일치 등급의 재료."><td class="fn"><code>refresh_premarket(kis, df, codes, days)</code></td><td>지정한 날짜의 NXT 08:00~08:10 1분봉을 200종목 받아 붙인다. 08:11 방향 일치 등급의 재료.</td></tr>
+<tr data-k="refresh_ks200(df, start, until) 코스피200 지수 일봉을 financedatareader로 받아 붙인다."><td class="fn"><code>refresh_ks200(df, start, until)</code></td><td>코스피200 지수 일봉을 FinanceDataReader로 받아 붙인다.</td></tr>
+<tr data-k="refresh_dart(env, universe_codes, start, until) dart 일자별 공시 목록에서 200종목 것만 골라 기존 공시 목록 뒤에 붙인다. 호출 한도를 넘으면 멈춘다."><td class="fn"><code>refresh_dart(env, universe_codes, start, until)</code></td><td>DART 일자별 공시 목록에서 200종목 것만 골라 기존 공시 목록 뒤에 붙인다. 호출 한도를 넘으면 멈춘다.</td></tr>
+<tr data-k="main() 실행 순서: 휴장일 확인(휴장일이면 받지 않고 끝) → 이어받을 폴더 고르기 → 그 폴더의 마지막 날짜 뒤만 받기(선물·종목·지수·nxt·공시) → refresh_manifest.json에 개장일 확인 결과·이어받은 폴더·끝 날짜·파일 해시를 남긴다. 새로 받을 행이 없으면 기존 표를 그대로 둔다. 키 값은 출력하지 않는다. 옵션 --base auto|none|폴더."><td class="fn"><code>main()</code></td><td>실행 순서: 휴장일 확인(휴장일이면 받지 않고 끝) → 이어받을 폴더 고르기 → 그 폴더의 마지막 날짜 뒤만 받기(선물·종목·지수·NXT·공시) → refresh_manifest.json에 개장일 확인 결과·이어받은 폴더·끝 날짜·파일 해시를 남긴다. 새로 받을 행이 없으면 기존 표를 그대로 둔다. 키 값은 출력하지 않는다. 옵션 --base auto|none|폴더.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/live_panel.py 실제 날짜용 입력 연결. 연구 패널과 같은 함수로, 지정한 자료 폴더에서 06:00·08:11 표를 만든다." data-open="1" open><summary><code>workbench/live_panel.py</code> <span class="tag ok">지금 화면에 쓰임</span> <span class="cnt">7</span></summary><p class="line">실제 날짜용 입력 연결. 연구 패널과 같은 함수로, 지정한 자료 폴더에서 06:00·08:11 표를 만든다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha(path) 파일 해시."><td class="fn"><code>sha(path)</code></td><td>파일 해시.</td></tr>
+<tr data-k="night_flags(futures, base) 밤마다 &#x27;무거래 밤인가 / 거래는 있었는데 안 움직였나&#x27;를 표시한다. 기존 438밤 표는 그대로 쓰고, 그 뒤 새 밤만 규칙으로 계산한다."><td class="fn"><code>night_flags(futures, base)</code></td><td>밤마다 &#x27;무거래 밤인가 / 거래는 있었는데 안 움직였나&#x27;를 표시한다. 기존 438밤 표는 그대로 쓰고, 그 뒤 새 밤만 규칙으로 계산한다.</td></tr>
+<tr data-k="add_today(futures, t) 오늘(t) 주간장이 아직 없으면 가격 없는 빈 줄을 넣어 거래일 매칭 표에 오늘을 넣는다. x는 어제 값으로만 계산하니 빈 줄의 가격은 쓰이지 않는다."><td class="fn"><code>add_today(futures, T)</code></td><td>오늘(T) 주간장이 아직 없으면 가격 없는 빈 줄을 넣어 거래일 매칭 표에 오늘을 넣는다. x는 어제 값으로만 계산하니 빈 줄의 가격은 쓰이지 않는다.</td></tr>
+<tr data-k="build(root, cutoff, t, include_targets) 지정한 자료 폴더로 06:00 또는 08:11 패널(종목×날짜 표)을 만든다. 읽은 파일 해시를 같이 돌려준다."><td class="fn"><code>build(root, cutoff, T, include_targets)</code></td><td>지정한 자료 폴더로 06:00 또는 08:11 패널(종목×날짜 표)을 만든다. 읽은 파일 해시를 같이 돌려준다.</td></tr>
+<tr data-k="frames_from_panels(p6, p8, filings, dev, keep_t) 두 패널 + 공시 목록 → z(06시 표)와 n(08시 표). e62_band.load_frames와 똑같은 계산. 오늘 nxt 행은 시가가 없어도 등급 계산용으로 남긴다."><td class="fn"><code>frames_from_panels(p6, p8, filings, dev, keep_T)</code></td><td>두 패널 + 공시 목록 → z(06시 표)와 n(08시 표). e62_band.load_frames와 똑같은 계산. 오늘 NXT 행은 시가가 없어도 등급 계산용으로 남긴다.</td></tr>
+<tr data-k="frames(root, filings_path, t) build 두 번 + frames_from_panels를 한 번에. 아침 카드 --root 모드가 부르는 실행 시작점. manifest에 그날 야간 신호 상태(signal_t)도 넣는다."><td class="fn"><code>frames(root, filings_path, T)</code></td><td>build 두 번 + frames_from_panels를 한 번에. 아침 카드 --root 모드가 부르는 실행 시작점. manifest에 그날 야간 신호 상태(signal_T)도 넣는다.</td></tr><tr data-k="signal_of(p6, t) 그날의 야간 신호 상태 {t, d, valid, reason, x}. 신호가 없는 날 카드가 &#x27;신호 없음&#x27;과 이유를 알리는 데 쓴다."><td class="fn"><code>signal_of(p6, T)</code></td><td>그날의 야간 신호 상태 {T, D, valid, reason, x}. 신호가 없는 날 카드가 &#x27;신호 없음&#x27;과 이유를 알리는 데 쓴다.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/i24_panel.py 패널 공장. 거래일 매칭 표, 실현값, h, nxt 가격, 시장 재료를 모아 종목×날짜 큰 표를 만든다. 연구와 실제 날짜가 같은 함수를 쓴다." data-open="1" open><summary><code>workbench/i24_panel.py</code> <span class="tag ok">지금 화면에 쓰임</span> <span class="cnt">15</span></summary><p class="line">패널 공장. 거래일 매칭 표, 실현값, H, NXT 가격, 시장 재료를 모아 종목×날짜 큰 표를 만든다. 연구와 실제 날짜가 같은 함수를 쓴다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha256(path) 파일 해시."><td class="fn"><code>sha256(path)</code></td><td>파일 해시.</td></tr>
+<tr data-k="positive(values) 숫자가 있고 0보다 큰지. 가격·거래량 검사용."><td class="fn"><code>positive(values)</code></td><td>숫자가 있고 0보다 큰지. 가격·거래량 검사용.</td></tr>
+<tr data-k="validate_sources(root) 연구 재료 파일 해시가 계약에 적힌 값과 같은지 검사. 하나라도 다르면 멈춘다. 연구 재현용이라 실제 날짜 경로에서는 부르지 않는다."><td class="fn"><code>validate_sources(root)</code></td><td>연구 재료 파일 해시가 계약에 적힌 값과 같은지 검사. 하나라도 다르면 멈춘다. 연구 재현용이라 실제 날짜 경로에서는 부르지 않는다.</td></tr>
+<tr data-k="make_calendar(futures, flags) 거래일 매칭 표. 하루마다 d와 t를 짝짓고 x를 계산한다. 같은 계약인지·무거래 밤인지 보고 x를 써도 되는지(signal_valid)와 이유를 붙인다. 월요일(mon)·연휴 뒤(hol) 표시도 여기서."><td class="fn"><code>make_calendar(futures, flags)</code></td><td>거래일 매칭 표. 하루마다 D와 T를 짝짓고 x를 계산한다. 같은 계약인지·무거래 밤인지 보고 x를 써도 되는지(signal_valid)와 이유를 붙인다. 월요일(mon)·연휴 뒤(hol) 표시도 여기서.</td></tr>
+<tr data-k="stock_labels(calendar, prices, label_policy) 종목의 실현값 y와 기준 종가 pc. 그 종목의 직전 거래일이 거래일 매칭 표의 d와 정확히 같을 때만 실현값으로 인정한다."><td class="fn"><code>stock_labels(calendar, prices, label_policy)</code></td><td>종목의 실현값 y와 기준 종가 pc. 그 종목의 직전 거래일이 거래일 매칭 표의 D와 정확히 같을 때만 실현값으로 인정한다.</td></tr>
+<tr data-k="prior_ewma(values, dates, minimum, window, lam) 그날 이전 유효 값 최근 250개로 &#x27;평소 오차 크기(지수가중 rms)&#x27;를 계산(최근일수록 무겁게, λ = 0.94). 개수가 모자라면 비운다. sd06·sd08의 재료."><td class="fn"><code>prior_ewma(values, dates, minimum, window, lam)</code></td><td>그날 이전 유효 값 최근 250개로 &#x27;평소 오차 크기(지수가중 RMS)&#x27;를 계산(최근일수록 무겁게, λ = 0.94). 개수가 모자라면 비운다. sd06·sd08의 재료.</td></tr>
+<tr data-k="prior_point_models(calendar, labels, window, minimum) h를 만든다. 그날 이전 유효 250밤(최소 120)으로 β·절편·r²를 구해 m1과 f2를 계산하고, r² &lt; 0.3이면 m1, 아니면 f2를 h로 고른다."><td class="fn"><code>prior_point_models(calendar, labels, window, minimum)</code></td><td>H를 만든다. 그날 이전 유효 250밤(최소 120)으로 β·절편·R²를 구해 M1과 F2를 계산하고, R² &lt; 0.3이면 M1, 아니면 F2를 H로 고른다.</td></tr>
+<tr data-k="traded_nxt(development, universe, cutoff) nxt 08:00~08:10 1분봉에서 실제 체결된 마지막 가격·첫 가격·고가·저가·거래대금과 &#x27;몇 분 전 가격인지&#x27;를 종목-날마다 한 줄로 정리한다. 08:11 고정."><td class="fn"><code>traded_nxt(development, universe, cutoff)</code></td><td>NXT 08:00~08:10 1분봉에서 실제 체결된 마지막 가격·첫 가격·고가·저가·거래대금과 &#x27;몇 분 전 가격인지&#x27;를 종목-날마다 한 줄로 정리한다. 08:11 고정.</td></tr>
+<tr data-k="build_panel(calendar, prices, universe, nxt, index_prices, development_codes, cutoff, include_targets) 위 재료를 모아 패널을 완성한다(h, sd06, g, sd08 등). 06:00 패널이면 08시 뒤에야 알 수 있는 열을 모두 비워서 미래 정보가 새지 않게 한다."><td class="fn"><code>build_panel(calendar, prices, universe, nxt, index_prices, development_codes, cutoff, include_targets)</code></td><td>위 재료를 모아 패널을 완성한다(H, sd06, g, sd08 등). 06:00 패널이면 08시 뒤에야 알 수 있는 열을 모두 비워서 미래 정보가 새지 않게 한다.</td></tr>
+<tr data-k="calendar_covariates(calendar, root, cutoff) 날짜별 일정·시장 재료를 붙인다. cpi·고용·fomc 다음 아침, 옵션 만기, vix, 야간 거래량 크기(nvz), 야간 전반·후반 움직임, 나스닥 선물 06→08시 변화(nq)."><td class="fn"><code>calendar_covariates(calendar, root, cutoff)</code></td><td>날짜별 일정·시장 재료를 붙인다. CPI·고용·FOMC 다음 아침, 옵션 만기, VIX, 야간 거래량 크기(nvz), 야간 전반·후반 움직임, 나스닥 선물 06→08시 변화(nq).</td></tr>
+<tr data-k="investor_covariates(panel, investors) 종목별 거래대금 크기(tv)와 외국인+기관 순매수 비율(flow)을 전날(d) 기준으로 붙인다."><td class="fn"><code>investor_covariates(panel, investors)</code></td><td>종목별 거래대금 크기(tv)와 외국인+기관 순매수 비율(flow)을 전날(D) 기준으로 붙인다.</td></tr>
+<tr data-k="compare_point_reference(panel, reference) 새로 만든 h·m1·f2가 예전 기준 예측표와 소수점 12자리까지 같은지 확인. 다르면 멈춘다."><td class="fn"><code>compare_point_reference(panel, reference)</code></td><td>새로 만든 H·M1·F2가 예전 기준 예측표와 소수점 12자리까지 같은지 확인. 다르면 멈춘다.</td></tr>
+<tr data-k="load_panel(cutoff, include_targets, root) 연구 패널의 실행 시작점. 검사 → 거래일 매칭 표 → 재료 → 패널 → 대조까지 한 번에. e62_band.load_frames가 부른다."><td class="fn"><code>load_panel(cutoff, include_targets, root)</code></td><td>연구 패널의 실행 시작점. 검사 → 거래일 매칭 표 → 재료 → 패널 → 대조까지 한 번에. e62_band.load_frames가 부른다.</td></tr>
+<tr data-k="load_targets(root, label_policy) 실현값(y)만 따로 꺼내는 실행 시작점."><td class="fn"><code>load_targets(root, label_policy)</code></td><td>실현값(y)만 따로 꺼내는 실행 시작점.</td></tr>
+<tr data-k="main() 패널을 만들어 행 수와 대조 결과만 찍는다. 성능은 계산하지 않는다."><td class="fn"><code>main()</code></td><td>패널을 만들어 행 수와 대조 결과만 찍는다. 성능은 계산하지 않는다.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e62_band.py 예측구간·계좌 예측구간·방향 일치 등급의 중심 파일. 아침 카드가 이 파일의 함수를 그대로 부른다. 같은 파일에 e62~e64 실험 단계(설계·최종 검증)도 들어 있다." data-open="1" open><summary><code>workbench/e62_band.py</code> <span class="tag ok">지금 화면에 쓰임</span> <span class="cnt">29</span></summary><p class="line">예측구간·계좌 예측구간·방향 일치 등급의 중심 파일. 아침 카드가 이 파일의 함수를 그대로 부른다. 같은 파일에 E62~E64 실험 단계(설계·최종 검증)도 들어 있다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="상수 specs 구간 후보 목록. e0(평소 오차 크기(지수가중 rms)만), s1(야간 수익률 절댓값 |x|로 폭 조절, 화면에 쓰는 것), a1(s1의 위아래 비대칭판), s2(재료 4개), s3(재료 + 일정·공시)."><td class="fn"><code>상수 SPECS</code></td><td>구간 후보 목록. E0(평소 오차 크기(지수가중 RMS)만), S1(야간 수익률 절댓값 |x|로 폭 조절, 화면에 쓰는 것), A1(S1의 위아래 비대칭판), S2(재료 4개), S3(재료 + 일정·공시).</td></tr>
+<tr data-k="상수 split_t · seed · nights · b1 · cuts 개발/검증 기간 경계 20260731, 섞기 씨앗 20261102, |x| 3구간(0.5% 미만·0.5~2%·2% 이상), 방향 일치 등급 재료 [size, lsd, r2], 등급 경계(d08은 0.75/0.90)."><td class="fn"><code>상수 SPLIT_T · SEED · NIGHTS · B1 · CUTS</code></td><td>개발/검증 기간 경계 20260731, 섞기 씨앗 20261102, |x| 3구간(0.5% 미만·0.5~2%·2% 이상), 방향 일치 등급 재료 [size, lsd, r2], 등급 경계(D08은 0.75/0.90).</td></tr>
+<tr data-k="split_stocks(codes, dev) 200종목을 개발 종목과 검증 종목으로 나눈다. 개발 14종목은 늘 개발 쪽, 나머지를 고정 씨앗으로 섞어 절반(93종목)을 검증 종목으로 둔다."><td class="fn"><code>split_stocks(codes, dev)</code></td><td>200종목을 개발 종목과 검증 종목으로 나눈다. 개발 14종목은 늘 개발 쪽, 나머지를 고정 씨앗으로 섞어 절반(93종목)을 검증 종목으로 둔다.</td></tr>
+<tr data-k="classify(name) 공시 제목 → 종류(e_earn·e_deal·e_rumor·e_periodic). &#x27;[기재정정]&#x27; 실적 공시는 실적으로 보지 않는다. &#x27;[첨부정정]&#x27;·&#x27;[첨부추가]&#x27;는 지금 실적으로 센다. 늦은 정정·첨부 정정 처리는 E84에서 시험 중."><td class="fn"><code>classify(name)</code></td><td>공시 제목 → 종류(e_earn·e_deal·e_rumor·e_periodic). &#x27;[기재정정]&#x27; 실적 공시는 실적으로 보지 않는다. &#x27;[첨부정정]&#x27;·&#x27;[첨부추가]&#x27;는 지금 실적으로 센다. 늦은 정정·첨부 정정 처리는 E84에서 시험 중.</td></tr>
+<tr data-k="event_flags(filings, calendar) 공시를 날짜 t에 붙인다. d ≤ 접수일 &lt; t인 공시만. 오늘 접수된 공시는 아직 모르는 것으로 친다."><td class="fn"><code>event_flags(filings, calendar)</code></td><td>공시를 날짜 T에 붙인다. D ≤ 접수일 &lt; T인 공시만. 오늘 접수된 공시는 아직 모르는 것으로 친다.</td></tr>
+<tr data-k="interval_score(y, low, high, alpha) 구간 채점(구간점수). 폭 + 밖으로 나간 거리 × (2 ÷ α). 좁을수록 좋지만 놓치면 크게 벌점. 낮을수록 좋다."><td class="fn"><code>interval_score(y, low, high, alpha)</code></td><td>구간 채점(구간점수). 폭 + 밖으로 나간 거리 × (2 ÷ α). 좁을수록 좋지만 놓치면 크게 벌점. 낮을수록 좋다.</td></tr>
+<tr data-k="raw_band(errors, level, minimum) r0 단순 구간. 그날 이전 최근 60개 오차 크기 중 49번째(80%)·55번째(90%). 이력 80개 미만이면 비운다."><td class="fn"><code>raw_band(errors, level, minimum)</code></td><td>R0 단순 구간. 그날 이전 최근 60개 오차 크기 중 49번째(80%)·55번째(90%). 이력 80개 미만이면 비운다.</td></tr>
+<tr data-k="prior_rms(errors, minimum, window, lam) 과거 오차의 평소 오차 크기(지수가중 rms)(sd08). 최근 250개, 최근일수록 무겁게(0.94), 최소 20개."><td class="fn"><code>prior_rms(errors, minimum, window, lam)</code></td><td>과거 오차의 평소 오차 크기(지수가중 RMS)(sd08). 최근 250개, 최근일수록 무겁게(0.94), 최소 20개.</td></tr>
+<tr data-k="fit_scale(train, cont, binary) s1 폭 공식을 배운다. log(|오차| ÷ 평소 오차 크기(지수가중 rms))를 |x| 등에 회귀하고, 튀는 값은 덜 믿는 방식(huber, 8번 반복)으로 맞춘다. 결과: 평소 오차 크기(지수가중 rms) × exp(계수 × |x|)."><td class="fn"><code>fit_scale(train, cont, binary)</code></td><td>S1 폭 공식을 배운다. log(|오차| ÷ 평소 오차 크기(지수가중 RMS))를 |x| 등에 회귀하고, 튀는 값은 덜 믿는 방식(Huber, 8번 반복)으로 맞춘다. 결과: 평소 오차 크기(지수가중 RMS) × exp(계수 × |x|).</td></tr>
+<tr data-k="forecast_day(hist, today, spec, asym) 하루치 구간. 과거를 학습 구간과 최근 20일 보정 구간으로 나눠, 폭 공식을 배우고 보정 20일에서 80%·90%를 덮는 배수를 찾는다. 오늘 구간 = 중심 ± 배수 × 폭."><td class="fn"><code>forecast_day(hist, today, spec, asym)</code></td><td>하루치 구간. 과거를 학습 구간과 최근 20일 보정 구간으로 나눠, 폭 공식을 배우고 보정 20일에서 80%·90%를 덮는 배수를 찾는다. 오늘 구간 = 중심 ± 배수 × 폭.</td></tr>
+<tr data-k="run_candidates(frame, train_codes, eval_codes, days, specs, asym) 날짜마다, 후보마다 forecast_day를 반복한다. 평가할 종목의 행에서는 실현값 y를 빼고 넘긴다."><td class="fn"><code>run_candidates(frame, train_codes, eval_codes, days, specs, asym)</code></td><td>날짜마다, 후보마다 forecast_day를 반복한다. 평가할 종목의 행에서는 실현값 y를 빼고 넘긴다.</td></tr>
+<tr data-k="attach(scored, frame) 계산한 구간에 실현값 y·|x|·중심을 붙인다(채점용)."><td class="fn"><code>attach(scored, frame)</code></td><td>계산한 구간에 실현값 y·|x|·중심을 붙인다(채점용).</td></tr>
+<tr data-k="daily(z, level) 날짜별 성적표. 구간점수, 포함률, 폭, 위·아래로 나간 비율."><td class="fn"><code>daily(z, level)</code></td><td>날짜별 성적표. 구간점수, 포함률, 폭, 위·아래로 나간 비율.</td></tr>
+<tr data-k="describe(day) 전체 요약. 평균 점수·포함률·폭, 가장 나빴던 16일 포함률, |x| 3구간별 포함률."><td class="fn"><code>describe(day)</code></td><td>전체 요약. 평균 점수·포함률·폭, 가장 나빴던 16일 포함률, |x| 3구간별 포함률.</td></tr>
+<tr data-k="compare(base, cand, block) 두 구간의 날짜별 점수 차이 평균, 10일 블록 재표집 신뢰구간·p값, 앞·뒤 절반 각각의 차이."><td class="fn"><code>compare(base, cand, block)</code></td><td>두 구간의 날짜별 점수 차이 평균, 10일 블록 재표집 신뢰구간·p값, 앞·뒤 절반 각각의 차이.</td></tr>
+<tr data-k="choose(names, comps, descr, base_big, order, extra) 미리 정한 규칙으로 후보를 고른다. 통과한 것 중 가장 단순한 것. 더 복잡한 후보는 추가로 확실히 나을 때만."><td class="fn"><code>choose(names, comps, descr, base_big, order, extra)</code></td><td>미리 정한 규칙으로 후보를 고른다. 통과한 것 중 가장 단순한 것. 더 복잡한 후보는 추가로 확실히 나을 때만.</td></tr>
+<tr data-k="account_set(codes, n_each, sizes, seed) 시험용 가상 계좌 600개(1·3·5·10종목 × 150개, 비중 무작위)."><td class="fn"><code>account_set(codes, n_each, sizes, seed)</code></td><td>시험용 가상 계좌 600개(1·3·5·10종목 × 150개, 비중 무작위).</td></tr>
+<tr data-k="account_frame(e, x, accounts) 계좌마다 날짜별 계좌 오차(종목 오차 × 비중의 합)와 그 평소 오차 크기(지수가중 rms)·단순 구간을 계산한 표."><td class="fn"><code>account_frame(E, x, accounts)</code></td><td>계좌마다 날짜별 계좌 오차(종목 오차 × 비중의 합)와 그 평소 오차 크기(지수가중 RMS)·단순 구간을 계산한 표.</td></tr>
+<tr data-k="logit_prob(train, test, cols) 로짓 회귀로 확률을 계산한다(방향 일치 등급). 재료를 표준화하고, 종목이 많은 날이 독차지하지 않게 무게를 맞춘다."><td class="fn"><code>logit_prob(train, test, cols)</code></td><td>로짓 회귀로 확률을 계산한다(방향 일치 등급). 재료를 표준화하고, 종목이 많은 날이 독차지하지 않게 무게를 맞춘다.</td></tr>
+<tr data-k="trust_eval(z, train_codes, eval_codes, days, cols_list, block) 방향 일치 등급 시험. 5일씩 앞으로 가며 과거로만 배우고, brier 점수로 &#x27;그냥 평균&#x27;과 비교하고, 상위 20%와 하위 20%의 실제 차이와 5구간 보정표를 본다."><td class="fn"><code>trust_eval(z, train_codes, eval_codes, days, cols_list, block)</code></td><td>방향 일치 등급 시험. 5일씩 앞으로 가며 과거로만 배우고, Brier 점수로 &#x27;그냥 평균&#x27;과 비교하고, 상위 20%와 하위 20%의 실제 차이와 5구간 보정표를 본다.</td></tr>
+<tr data-k="display_levels(g, column, cuts) 확률을 높음/보통/낮음으로 나누고, 등급마다 실제로 맞은 비율과 비중을 계산한다."><td class="fn"><code>display_levels(g, column, cuts)</code></td><td>확률을 높음/보통/낮음으로 나누고, 등급마다 실제로 맞은 비율과 비중을 계산한다.</td></tr>
+<tr data-k="event_effect(z, fam, block) 같은 날 공시 종목과 나머지를 비교한다. 정규화 오차, 구간 포함률, 방향 일치."><td class="fn"><code>event_effect(z, fam, block)</code></td><td>같은 날 공시 종목과 나머지를 비교한다. 정규화 오차, 구간 포함률, 방향 일치.</td></tr>
+<tr data-k="load_frames() 연구 패널(06:00·08:11) → z(06시 표: h, e, sd08, raw80/90, 공시 표시)와 n(08시 표: nxt g가 있는 행). 거의 모든 실험의 출발점."><td class="fn"><code>load_frames()</code></td><td>연구 패널(06:00·08:11) → z(06시 표: H, e, sd08, raw80/90, 공시 표시)와 n(08시 표: NXT g가 있는 행). 거의 모든 실험의 출발점.</td></tr>
+<tr data-k="trust_targets(z, n) 방향 일치 등급 시험의 실현값 세 가지. d08(nxt 08:10 방향 = 시가 방향), n06(h가 1%p 안), d06(h 방향 = 시가 방향)."><td class="fn"><code>trust_targets(z, n)</code></td><td>방향 일치 등급 시험의 실현값 세 가지. D08(NXT 08:10 방향 = 시가 방향), N06(H가 1%p 안), D06(H 방향 = 시가 방향).</td></tr>
+<tr data-k="sha(path) 파일 해시."><td class="fn"><code>sha(path)</code></td><td>파일 해시.</td></tr>
+<tr data-k="stage_design() 개발 단계 실행(7/31까지, 개발 종목). 구간 후보·계좌 예측구간·방향 일치 등급·공시 효과를 계산하고, 고른 것을 e62_choice.json에 고정한다."><td class="fn"><code>stage_design()</code></td><td>개발 단계 실행(7/31까지, 개발 종목). 구간 후보·계좌 예측구간·방향 일치 등급·공시 효과를 계산하고, 고른 것을 e62_choice.json에 고정한다.</td></tr>
+<tr data-k="amended_pass(desc, cmp_, base_score, strata) 개정 기준 v2 판정. 전체·|x|별 포함률 75~85%, 구간점수가 r0보다 3% 넘게 나쁘지 않을 것, 계좌는 종목 수별 최소 72%."><td class="fn"><code>amended_pass(desc, cmp_, base_score, strata)</code></td><td>개정 기준 v2 판정. 전체·|x|별 포함률 75~85%, 구간점수가 R0보다 3% 넘게 나쁘지 않을 것, 계좌는 종목 수별 최소 72%.</td></tr>
+<tr data-k="stage_sealed() 과거 평가 실행(8/3 이후, 검증 93종목). 이전 연구에서 일부 본 자료이며 미래 검증은 아니다. 한 번만 돈다. 코드·계약·설계 결과 해시가 고정할 때와 같아야 열린다."><td class="fn"><code>stage_sealed()</code></td><td>과거 평가 실행(8/3 이후, 검증 93종목). 이전 연구에서 일부 본 자료이며 미래 검증은 아니다. 한 번만 돈다. 코드·계약·설계 결과 해시가 고정할 때와 같아야 열린다.</td></tr>
+<tr data-k="main() --stage design / --stage sealed 명령 실행 시작점."><td class="fn"><code>main()</code></td><td>--stage design / --stage sealed 명령 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/range_models.py e39 구간 비교 파일. 여기 있는 공용 도구(보정 구간 나누기, 날짜 무게, 분위, 재표집, holm)를 e62_band가 가져다 쓴다." data-open="0"><summary><code>workbench/range_models.py</code> <span class="tag ok">지금 화면에 쓰임</span> <span class="cnt">14</span></summary><p class="line">E39 구간 비교 파일. 여기 있는 공용 도구(보정 구간 나누기, 날짜 무게, 분위, 재표집, Holm)를 e62_band가 가져다 쓴다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="interval_score(y, center, halfwidth, alpha) 구간점수(중심 ± 반폭 형태). e62_band의 것과 같은 계산."><td class="fn"><code>interval_score(y, center, halfwidth, alpha)</code></td><td>구간점수(중심 ± 반폭 형태). e62_band의 것과 같은 계산.</td></tr>
+<tr data-k="require_availability(cutoff) &#x27;08:10 분봉은 08:11부터 쓸 수 있다&#x27; 규칙 검사."><td class="fn"><code>require_availability(cutoff)</code></td><td>&#x27;08:10 분봉은 08:11부터 쓸 수 있다&#x27; 규칙 검사.</td></tr>
+<tr data-k="split_history(frame, day, calibration_days, minimum_train_days) 그날 이전 날짜를 학습 구간과 최근 20일 보정 구간으로 나눈다. 학습이 60일 미만이면 계산하지 않는다."><td class="fn"><code>split_history(frame, day, calibration_days, minimum_train_days)</code></td><td>그날 이전 날짜를 학습 구간과 최근 20일 보정 구간으로 나눈다. 학습이 60일 미만이면 계산하지 않는다.</td></tr>
+<tr data-k="day_weights(frame) 날짜마다 무게 합이 같게 한다. 종목 많은 날이 결과를 독차지하지 않게."><td class="fn"><code>day_weights(frame)</code></td><td>날짜마다 무게 합이 같게 한다. 종목 많은 날이 결과를 독차지하지 않게.</td></tr>
+<tr data-k="weighted_quantile(values, weights, q) 무게를 준 분위(예: 80% 지점)."><td class="fn"><code>weighted_quantile(values, weights, q)</code></td><td>무게를 준 분위(예: 80% 지점).</td></tr>
+<tr data-k="make_scale_model(train, columns, robust, date_weights) fit_scale의 원형(e39)."><td class="fn"><code>make_scale_model(train, columns, robust, date_weights)</code></td><td>fit_scale의 원형(E39).</td></tr>
+<tr data-k="bootstrap_mean(values, block, reps, seed) 날짜를 블록(예: 10일) 덩어리로 다시 뽑아 평균 차이의 신뢰구간·p값을 낸다. 붙은 날끼리 비슷한 점을 반영한다."><td class="fn"><code>bootstrap_mean(values, block, reps, seed)</code></td><td>날짜를 블록(예: 10일) 덩어리로 다시 뽑아 평균 차이의 신뢰구간·p값을 낸다. 붙은 날끼리 비슷한 점을 반영한다.</td></tr>
+<tr data-k="holm(pvalues) 여러 개를 한꺼번에 시험할 때 p값을 엄격하게 고친다(holm 보정)."><td class="fn"><code>holm(pvalues)</code></td><td>여러 개를 한꺼번에 시험할 때 p값을 엄격하게 고친다(Holm 보정).</td></tr>
+<tr data-k="compare_predictions(predictions, mode) e39 후보들 비교표."><td class="fn"><code>compare_predictions(predictions, mode)</code></td><td>E39 후보들 비교표.</td></tr>
+<tr data-k="load_data() e39 재료 읽기."><td class="fn"><code>load_data()</code></td><td>E39 재료 읽기.</td></tr>
+<tr data-k="prediction_feature_record(test) 예측에 쓴 재료 열 기록."><td class="fn"><code>prediction_feature_record(test)</code></td><td>예측에 쓴 재료 열 기록.</td></tr>
+<tr data-k="predict(frame, strict) e39 날짜별 구간 계산 반복."><td class="fn"><code>predict(frame, strict)</code></td><td>E39 날짜별 구간 계산 반복.</td></tr>
+<tr data-k="main() e39 실행."><td class="fn"><code>main()</code></td><td>E39 실행.</td></tr>
+<tr data-k="repair_saved_feature_columns() 저장된 결과의 열 이름 겹침만 고친다. 다시 학습하지 않는다."><td class="fn"><code>repair_saved_feature_columns()</code></td><td>저장된 결과의 열 이름 겹침만 고친다. 다시 학습하지 않는다.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/morning_card.py 아침 카드. 07:30 종목 예측구간·주의 문구와 08:11 방향 일치 등급 등급을 화면 데이터(json)로 낸다. 과거 평가로 선택한 규칙을 쓴다. 자료 재사용 한계가 있으며 운영·미래 성능 승인과 다르다." data-open="1" open><summary><code>workbench/morning_card.py</code> <span class="tag ok">지금 화면에 쓰임</span> <span class="cnt">11</span></summary><p class="line">아침 카드. 07:30 종목 예측구간·주의 문구와 08:11 방향 일치 등급 등급을 화면 데이터(JSON)로 낸다. 과거 평가로 선택한 규칙을 쓴다. 자료 재사용 한계가 있으며 운영·미래 성능 승인과 다르다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="상수 band · cuts · msg · detail · leak 화면 구간은 s1, 등급 경계 0.75/0.90, 주의 문구(실적 공시·월요일)와 자세히 보기 숫자, 계산 입력에서 지우는 열(y·e·target_observed = 그날 실현값)."><td class="fn"><code>상수 BAND · CUTS · MSG · DETAIL · LEAK</code></td><td>화면 구간은 S1, 등급 경계 0.75/0.90, 주의 문구(실적 공시·월요일)와 자세히 보기 숫자, 계산 입력에서 지우는 열(y·e·target_observed = 그날 실현값).</td></tr>
+<tr data-k="sha(path) 파일 해시. 카드에 어느 코드·계약으로 만들었는지 남긴다."><td class="fn"><code>sha(path)</code></td><td>파일 해시. 카드에 어느 코드·계약으로 만들었는지 남긴다.</td></tr>
+<tr data-k="_past_cut(series, day, q, window) 그날 이전 최근 250개 값의 분위(기본 2/3 지점). 60개 미만이면 없음."><td class="fn"><code>_past_cut(series, day, q, window)</code></td><td>그날 이전 최근 250개 값의 분위(기본 2/3 지점). 60개 미만이면 없음.</td></tr>
+<tr data-k="stock_band(z, design, day) 오늘 종목 예측구간(s1). 최종 검증 단계와 같은 run_candidates를 하루치로 부른다."><td class="fn"><code>stock_band(z, design, day)</code></td><td>오늘 종목 예측구간(S1). 최종 검증 단계와 같은 run_candidates를 하루치로 부른다.</td></tr>
+<tr data-k="grade(n, design, day) 08:11 방향 일치 등급. 그날 이전 개발 종목 기록(60일 이상)으로 로짓을 배워 확률을 내고, 0.75/0.90 경계로 낮음/보통/높음. g가 0이거나 유한하지 않은 종목, 확률이 0~1 밖인 종목에는 등급을 내지 않고, 학습 중앙값으로 채운 재료 이름을 imputed_features로 남긴다."><td class="fn"><code>grade(n, design, day)</code></td><td>08:11 방향 일치 등급. 그날 이전 개발 종목 기록(60일 이상)으로 로짓을 배워 확률을 내고, 0.75/0.90 경계로 낮음/보통/높음. g가 0이거나 유한하지 않은 종목, 확률이 0~1 밖인 종목에는 등급을 내지 않고, 학습 중앙값으로 채운 재료 이름을 imputed_features로 남긴다.</td></tr>
+<tr data-k="candidates(z, day) e73 후보(&#x27;어제 시가가 크게 빗나감&#x27;) 값만 기록한다. 화면 문구는 없다."><td class="fn"><code>candidates(z, day)</code></td><td>E73 후보(&#x27;어제 시가가 크게 빗나감&#x27;) 값만 기록한다. 화면 문구는 없다.</td></tr><tr data-k="상수 reasons 구간을 내지 않는 날의 사유 코드 → 사용자 문장. missing_night, contract_mismatch, official_no_trade, holiday 등."><td class="fn"><code>상수 REASONS</code></td><td>구간을 내지 않는 날의 사유 코드 → 사용자 문장. missing_night, contract_mismatch, official_no_trade, holiday 등.</td></tr>
+<tr data-k="상수 live_reasons 실제 날짜 카드의 자료 준비·등급 상태 사유 코드 → 사용자 문장. refresh_manifest_missing, night_refresh_started_too_early, premarket_day_skipped, no_valid_nxt_direction 등."><td class="fn"><code>상수 LIVE_REASONS</code></td><td>실제 날짜 카드의 자료 준비·등급 상태 사유 코드 → 사용자 문장. refresh_manifest_missing, night_refresh_started_too_early, premarket_day_skipped, no_valid_nxt_direction 등.</td></tr><tr data-k="status_card(day, status, reason, d, x) 구간을 내지 않는 날의 카드. status는 no_signal(야간 신호 없음) 또는 holiday(휴장일). 숫자 칸은 비우고 사유만 담는다."><td class="fn"><code>status_card(day, status, reason, D, x)</code></td><td>구간을 내지 않는 날의 카드. status는 no_signal(야간 신호 없음) 또는 holiday(휴장일). 숫자 칸은 비우고 사유만 담는다.</td></tr><tr data-k="card_path(out, out_dir, day, slot) 덮어쓰지 않는 저장 경로. 기본 card_&lt;t&gt;_&lt;slot&gt;.json, 같은 이름이 있으면 _v2, _v3 …을 붙인다."><td class="fn"><code>card_path(out, out_dir, day, slot)</code></td><td>덮어쓰지 않는 저장 경로. 기본 card_&lt;T&gt;_&lt;slot&gt;.json, 같은 이름이 있으면 _v2, _v3 …을 붙인다.</td></tr>
+<tr data-k="build_card(z, n, dev, codes, day, accounts, with_outcome, signal, slot, allow_current_grade) 야간 신호가 없는 날이면 status_card를 돌려준다. slot은 자료 시점 경계라서 0730이거나 allow_current_grade가 거짓이면 08:11 등급을 계산하지 않는다. 종목별 기준 종가·h·80/90% 구간·공시 주의·등급을 조립한다. 예시 계좌 금액은 반올림 전 값으로 계산·합산한 뒤 표시만 반올림하고, 요약은 지원 종목만(summary_scope)이며 제외 종목 가격을 모르면 전체 평가액·비율을 비운다. 유효 종목이 없으면 no_eligible_stocks 상태 카드. 계좌 구간은 후보 상태로만."><td class="fn"><code>build_card(z, n, dev, codes, day, accounts, with_outcome, signal, slot, allow_current_grade)</code></td><td>야간 신호가 없는 날이면 status_card를 돌려준다. slot은 자료 시점 경계라서 0730이거나 allow_current_grade가 거짓이면 08:11 등급을 계산하지 않는다. 종목별 기준 종가·H·80/90% 구간·공시 주의·등급을 조립한다. 예시 계좌 금액은 반올림 전 값으로 계산·합산한 뒤 표시만 반올림하고, 요약은 지원 종목만(summary_scope)이며 제외 종목 가격을 모르면 전체 평가액·비율을 비운다. 유효 종목이 없으면 no_eligible_stocks 상태 카드. 계좌 구간은 후보 상태로만.</td></tr>
+<tr data-k="issuance_timing(day, slot, issued_at, historical_replay) 실제 생성 시각과 슬롯 목표 시각(07:30·08:11)의 관계만 기록한다. 07:30 카드를 08:10 이후에 만들면 0730_issued_at_or_after_0810, 과거 재생은 historical_replay. 장전 봉인 자격을 주지 않는다."><td class="fn"><code>issuance_timing(day, slot, issued_at, historical_replay)</code></td><td>실제 생성 시각과 슬롯 목표 시각(07:30·08:11)의 관계만 기록한다. 07:30 카드를 08:10 이후에 만들면 0730_issued_at_or_after_0810, 과거 재생은 historical_replay. 장전 봉인 자격을 주지 않는다.</td></tr>
+<tr data-k="load_refresh_manifest(root, day, now) 자료 폴더의 refresh_manifest.json을 읽어 형식·시간대·완료 여부·시각 순서·미래 시각·대상일을 확인한다. 하나라도 어긋나면 패널을 읽기 전에 사유 코드를 돌려준다. 기록이 있다는 것이 수신 품질의 증명은 아니다."><td class="fn"><code>load_refresh_manifest(root, day, now)</code></td><td>자료 폴더의 refresh_manifest.json을 읽어 형식·시간대·완료 여부·시각 순서·미래 시각·대상일을 확인한다. 하나라도 어긋나면 패널을 읽기 전에 사유 코드를 돌려준다. 기록이 있다는 것이 수신 품질의 증명은 아니다.</td></tr>
+<tr data-k="night_readiness(refresh, day, signal) 야간 자료 준비 확인. 그 밤(d)이 끝난 d+1 06:05 전에 갱신을 시작했으면 준비 전이다. 준비 시각 뒤인데도 야간 줄이 없으면 휴장·만기로 단정하지 않고 원인 미확인으로 둔다."><td class="fn"><code>night_readiness(refresh, day, signal)</code></td><td>야간 자료 준비 확인. 그 밤(D)이 끝난 D+1 06:05 전에 갱신을 시작했으면 준비 전이다. 준비 시각 뒤인데도 야간 줄이 없으면 휴장·만기로 단정하지 않고 원인 미확인으로 둔다.</td></tr>
+<tr data-k="grade_readiness(refresh, day, n) 08:11 등급 준비 확인. t 08:11 전에 갱신을 시작했거나 갱신 기록에서 그날 nxt 수집이 생략·미시도면 등급만 막고 띠는 유지한다. 당일 nxt 행이 없거나 방향 있는 값이 없으면 사유를 남긴다."><td class="fn"><code>grade_readiness(refresh, day, n)</code></td><td>08:11 등급 준비 확인. T 08:11 전에 갱신을 시작했거나 갱신 기록에서 그날 NXT 수집이 생략·미시도면 등급만 막고 띠는 유지한다. 당일 NXT 행이 없거나 방향 있는 값이 없으면 사유를 남긴다.</td></tr>
+<tr data-k="main() 명령 입구(--date, --root, --events, --slot, --out-dir, --out, --with-outcome). 실제 날짜(--root)는 --slot이 필수이고 --with-outcome을 거절한다. 실제 날짜는 갱신 기록으로 자료 준비를 먼저 확인하고(load_refresh_manifest → night_readiness → grade_readiness), 준비 전이면 data_not_ready 카드를 낸다. issuance_timing으로 목표 시각과 생성 시각의 관계를 남기고, card_path로 덮어쓰지 않게 저장하며 해시 파일(.sha256)을 함께 남긴다."><td class="fn"><code>main()</code></td><td>명령 입구(--date, --root, --events, --slot, --out-dir, --out, --with-outcome). 실제 날짜(--root)는 --slot이 필수이고 --with-outcome을 거절한다. 실제 날짜는 갱신 기록으로 자료 준비를 먼저 확인하고(load_refresh_manifest → night_readiness → grade_readiness), 준비 전이면 data_not_ready 카드를 낸다. issuance_timing으로 목표 시각과 생성 시각의 관계를 남기고, card_path로 덮어쓰지 않게 저장하며 해시 파일(.sha256)을 함께 남긴다.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/core.py 예전 공용 패널(e38~e44 재검증용). 지금 구간은 i24_panel을 쓴다." data-open="0"><summary><code>workbench/core.py</code> <span class="tag ">재검증</span> <span class="cnt">7</span></summary><p class="line">예전 공용 패널(E38~E44 재검증용). 지금 구간은 i24_panel을 쓴다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="available_at(us_date, et_clock) 미국 날짜 + 뉴욕 시각 → 한국 시각. 그 값을 언제부터 알 수 있었나."><td class="fn"><code>available_at(us_date, et_clock)</code></td><td>미국 날짜 + 뉴욕 시각 → 한국 시각. 그 값을 언제부터 알 수 있었나.</td></tr>
+<tr data-k="completed_bar(start, cutoff, minutes) 분봉이 기준 시각 전에 다 끝났나."><td class="fn"><code>completed_bar(start, cutoff, minutes)</code></td><td>분봉이 기준 시각 전에 다 끝났나.</td></tr>
+<tr data-k="asof_daily(frame, dates, cutoff, clock) 날마다 기준 시각에 이미 나와 있던 최신 일봉 값(vix 등)과 그 값이 몇 시간 전 것인지. 미래 값으로 채우지 않는다."><td class="fn"><code>asof_daily(frame, dates, cutoff, clock)</code></td><td>날마다 기준 시각에 이미 나와 있던 최신 일봉 값(VIX 등)과 그 값이 몇 시간 전 것인지. 미래 값으로 채우지 않는다.</td></tr>
+<tr data-k="snapshot_change(selected) 어제 아침 대비 새로 바뀐 만큼."><td class="fn"><code>snapshot_change(selected)</code></td><td>어제 아침 대비 새로 바뀐 만큼.</td></tr>
+<tr data-k="corrected_legacy_panel() 예전 explore22 패널을 고친 기준 예측표로 다시 만든다. 예전 파일은 바꾸지 않는다."><td class="fn"><code>corrected_legacy_panel()</code></td><td>예전 explore22 패널을 고친 기준 예측표로 다시 만든다. 예전 파일은 바꾸지 않는다.</td></tr>
+<tr data-k="_panel(cutoff) 06:00/08:11 예전 패널 + vix 교체 + h."><td class="fn"><code>_panel(cutoff)</code></td><td>06:00/08:11 예전 패널 + VIX 교체 + H.</td></tr>
+<tr data-k="load_panel(cutoff) 예전 패널의 실행 시작점."><td class="fn"><code>load_panel(cutoff)</code></td><td>예전 패널의 실행 시작점.</td></tr>
+</tbody></table></div></details>
+</section>
+
+<section id="inner">
+  <h2>핵심 함수 속 이름</h2>
+  <p class="sub">괄호 안 재료(인자)와 함수 안에서 잠깐 쓰는 이름(중간 변수)의 뜻. 하는 일 순서도 함께 적었어요</p>
+  <p>예를 들어 <code>good</code>은 <code>stock_labels</code> 안에서 "시가·종가가 모두 0보다 큰 날만 남긴 표", <code>minimum</code>은 "창 안의 유효 관측이 이보다 적으면 값을 만들지 않는 최소 개수"예요. 수식과 단위는 <a href="model_design.html">모델 설계서 v2</a> §4·§5와 같은 이름을 써요.</p>
+  <details class="file" data-k="make_calendar(futures, flags) workbench/i24_panel.py" data-open="0"><summary><code>make_calendar(futures, flags)</code> <span class="cnt">16</span></summary><p class="line"><code>workbench/i24_panel.py</code> · 하는 일 순서</p><ol class="steps"><li>주간 세션이 있는 날짜를 순서대로 늘어놓는다.</li><li>바로 붙은 두 날짜를 (D, T) 짝으로 묶는다.</li><li>짝마다 야간 수익률 x를 계산하고, 써도 되는지(signal_valid)를 판정한다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="futures 선물 일봉 표. 한 행 = 한 날짜의 주간 또는 야간 세션(session 열이 day/night)."><td class="fn"><code>futures</code></td><td>선물 일봉 표. 한 행 = 한 날짜의 주간 또는 야간 세션(session 열이 day/night).</td></tr>
+<tr data-k="flags 야간 무거래 표시 표(night_signal_flags.csv). 열 d, no_trade_signal, zero_move_traded."><td class="fn"><code>flags</code></td><td>야간 무거래 표시 표(night_signal_flags.csv). 열 D, no_trade_signal, zero_move_traded.</td></tr>
+<tr data-k="day · night futures에서 주간 행만·야간 행만 날짜로 찾을 수 있게 정리한 표."><td class="fn"><code>day · night</code></td><td>futures에서 주간 행만·야간 행만 날짜로 찾을 수 있게 정리한 표.</td></tr>
+<tr data-k="dates 주간 세션이 있는 날짜 목록(= krx 거래일 목록)."><td class="fn"><code>dates</code></td><td>주간 세션이 있는 날짜 목록(= KRX 거래일 목록).</td></tr>
+<tr data-k="c 결과 표. 인덱스가 t, 열 d가 바로 앞 거래일."><td class="fn"><code>c</code></td><td>결과 표. 인덱스가 T, 열 D가 바로 앞 거래일.</td></tr>
+<tr data-k="day_close · night_close d 주간 종가(15:45), d 야간 세션 종가(t 06:00). 단위 지수포인트."><td class="fn"><code>day_close · night_close</code></td><td>D 주간 종가(15:45), D 야간 세션 종가(T 06:00). 단위 지수포인트.</td></tr>
+<tr data-k="same_contract d 주간·d 야간·t 주간의 근월물 계약 코드가 모두 같으면 참. 다른 계약끼리 나눈 x를 막는 장치다. 지금 자료는 만기일 밤 행 자체가 없어(수집기가 다음 계약을 받지 않음) 이 조건이 거짓인 날은 없다(e82)."><td class="fn"><code>same_contract</code></td><td>D 주간·D 야간·T 주간의 근월물 계약 코드가 모두 같으면 참. 다른 계약끼리 나눈 x를 막는 장치다. 지금 자료는 만기일 밤 행 자체가 없어(수집기가 다음 계약을 받지 않음) 이 조건이 거짓인 날은 없다(E82).</td></tr>
+<tr data-k="night_present · flag_known d 야간 행이 있는가 / 무거래 표시 표에 d가 있는가."><td class="fn"><code>night_present · flag_known</code></td><td>D 야간 행이 있는가 / 무거래 표시 표에 D가 있는가.</td></tr>
+<tr data-k="no_trade_signal · zero_move_traded 무거래 야간 세션(거래량 0, 시가=고가=저가=종가) / 거래는 있었는데 야간 종가 = 주간 종가."><td class="fn"><code>no_trade_signal · zero_move_traded</code></td><td>무거래 야간 세션(거래량 0, 시가=고가=저가=종가) / 거래는 있었는데 야간 종가 = 주간 종가.</td></tr>
+<tr data-k="old_base · legacy_window 예전 규칙의 표본 표시. 기록용이고 계산 대상을 줄이지 않는다."><td class="fn"><code>old_base · legacy_window</code></td><td>예전 규칙의 표본 표시. 기록용이고 계산 대상을 줄이지 않는다.</td></tr>
+<tr data-k="signal_valid 위 조건이 모두 맞고 가격·거래량이 0보다 크면 참. 거짓이면 그날 x·h를 만들지 않는다."><td class="fn"><code>signal_valid</code></td><td>위 조건이 모두 맞고 가격·거래량이 0보다 크면 참. 거짓이면 그날 x·H를 만들지 않는다.</td></tr>
+<tr data-k="signal_reason signal_valid가 거짓인 이유 한 단어."><td class="fn"><code>signal_reason</code></td><td>signal_valid가 거짓인 이유 한 단어.</td></tr>
+<tr data-k="x · ax 야간 수익률(night_close ÷ day_close − 1)과 그 절댓값. signal_valid일 때만 값이 있다."><td class="fn"><code>x · ax</code></td><td>야간 수익률(night_close ÷ day_close − 1)과 그 절댓값. signal_valid일 때만 값이 있다.</td></tr>
+<tr data-k="night_range (야간 고가 − 야간 저가) ÷ 주간 종가. 야간 세션 안의 흔들림 폭."><td class="fn"><code>night_range</code></td><td>(야간 고가 − 야간 저가) ÷ 주간 종가. 야간 세션 안의 흔들림 폭.</td></tr>
+<tr data-k="hol d부터 t 전까지 평일이 2일 이상이면 1(쉰 평일이 끼었음 = 연휴 뒤)."><td class="fn"><code>hol</code></td><td>D부터 T 전까지 평일이 2일 이상이면 1(쉰 평일이 끼었음 = 연휴 뒤).</td></tr>
+<tr data-k="mon t가 월요일이면 1."><td class="fn"><code>mon</code></td><td>T가 월요일이면 1.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="stock_labels(calendar, prices, label_policy) workbench/i24_panel.py" data-open="0"><summary><code>stock_labels(calendar, prices, label_policy)</code> <span class="cnt">9</span></summary><p class="line"><code>workbench/i24_panel.py</code> · 하는 일 순서</p><ol class="steps"><li>실제 거래가 있었던 날(good)만 남긴다.</li><li>각 날의 직전 거래일(previous)을 찾는다.</li><li>y = 그날 시가 ÷ 직전 거래일 종가 − 1을 계산한다.</li><li>직전 거래일이 거래일 매칭 표의 D와 같을 때만 y를 인정한다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="calendar make_calendar의 결과(거래일 매칭 표)."><td class="fn"><code>calendar</code></td><td>make_calendar의 결과(거래일 매칭 표).</td></tr>
+<tr data-k="prices 한 종목의 일봉(date, open, close)."><td class="fn"><code>prices</code></td><td>한 종목의 일봉(date, Open, Close).</td></tr>
+<tr data-k="label_policy 실현값 정의 방식. 기본 &#x27;legacy_close_valid&#x27;(연구·아침 카드). &#x27;open_exact_prior_close&#x27;는 앞으로의 기록용."><td class="fn"><code>label_policy</code></td><td>실현값 정의 방식. 기본 &#x27;legacy_close_valid&#x27;(연구·아침 카드). &#x27;open_exact_prior_close&#x27;는 앞으로의 기록용.</td></tr>
+<tr data-k="pc d일 종가. 0보다 클 때만 값이 있다. 단위 원."><td class="fn"><code>pc</code></td><td>D일 종가. 0보다 클 때만 값이 있다. 단위 원.</td></tr>
+<tr data-k="good 시가·종가가 모두 0보다 큰 날만 남긴 일봉 표. 실제로 거래가 있었던 날이라는 뜻이다. 거래정지일은 빠진다."><td class="fn"><code>good</code></td><td>시가·종가가 모두 0보다 큰 날만 남긴 일봉 표. 실제로 거래가 있었던 날이라는 뜻이다. 거래정지일은 빠진다.</td></tr>
+<tr data-k="previous good 안에서 각 날짜의 바로 앞 거래일."><td class="fn"><code>previous</code></td><td>good 안에서 각 날짜의 바로 앞 거래일.</td></tr>
+<tr data-k="y 그날 시가 ÷ previous의 종가 − 1. 단위 수익률."><td class="fn"><code>y</code></td><td>그날 시가 ÷ previous의 종가 − 1. 단위 수익률.</td></tr>
+<tr data-k="valid previous가 거래일 매칭 표의 d와 같고 y가 숫자면 참. 예: d에 거래정지였다면 previous가 d보다 앞이라 거짓이 되고 y는 결측."><td class="fn"><code>valid</code></td><td>previous가 거래일 매칭 표의 D와 같고 y가 숫자면 참. 예: D에 거래정지였다면 previous가 D보다 앞이라 거짓이 되고 y는 결측.</td></tr>
+<tr data-k="target_observed valid와 같은 값. 실현값이 있는 종목·일인지."><td class="fn"><code>target_observed</code></td><td>valid와 같은 값. 실현값이 있는 종목·일인지.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="prior_ewma(values, dates, minimum, window, lam) workbench/i24_panel.py" data-open="0"><summary><code>prior_ewma(values, dates, minimum, window, lam)</code> <span class="cnt">10</span></summary><p class="line"><code>workbench/i24_panel.py</code> · 하는 일 순서</p><ol class="steps"><li>날짜순으로 한 줄씩 내려간다.</li><li>그 줄보다 앞서 쌓인 유효 값 최근 250개로 지수가중 RMS를 계산한다.</li><li>계산이 끝난 뒤에야 그 줄의 값을 쌓는다(그날 값은 그날 계산에 안 들어감).</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="values 오차 열. sd06이면 y − x, 08:11의 sd08이면 y − g."><td class="fn"><code>values</code></td><td>오차 열. sd06이면 y − x, 08:11의 sd08이면 y − g.</td></tr>
+<tr data-k="dates values와 같은 순서의 날짜."><td class="fn"><code>dates</code></td><td>values와 같은 순서의 날짜.</td></tr>
+<tr data-k="minimum 최소 관측 수. 쌓인 유효 값이 이보다 적으면 결과를 결측(nan)으로 둔다. sd06은 60, sd08(08:11)은 20."><td class="fn"><code>minimum</code></td><td>최소 관측 수. 쌓인 유효 값이 이보다 적으면 결과를 결측(NaN)으로 둔다. sd06은 60, sd08(08:11)은 20.</td></tr>
+<tr data-k="window 창 길이 250. 쌓인 값 가운데 최근 250개만 쓴다(거래일 매칭 표일이 아니라 개수)."><td class="fn"><code>window</code></td><td>창 길이 250. 쌓인 값 가운데 최근 250개만 쓴다(거래일 매칭 표일이 아니라 개수).</td></tr>
+<tr data-k="lam 감쇠 0.94. 가장 최근 값의 가중치 1, 하나 오래될 때마다 0.94배. 10개 전 0.54, 50개 전 0.045."><td class="fn"><code>lam</code></td><td>감쇠 0.94. 가장 최근 값의 가중치 1, 하나 오래될 때마다 0.94배. 10개 전 0.54, 50개 전 0.045.</td></tr>
+<tr data-k="history · history_dates 지금까지 쌓인 유효 값(숫자인 값만)과 그 날짜."><td class="fn"><code>history · history_dates</code></td><td>지금까지 쌓인 유효 값(숫자인 값만)과 그 날짜.</td></tr>
+<tr data-k="h · hd history의 최근 window개."><td class="fn"><code>h · hd</code></td><td>history의 최근 window개.</td></tr>
+<tr data-k="weights h 각각의 가중치 0.94^(오래된 정도)."><td class="fn"><code>weights</code></td><td>h 각각의 가중치 0.94^(오래된 정도).</td></tr>
+<tr data-k="out √(σ 가중치 × 값² ÷ σ 가중치). 평균을 빼지 않는다. 단위는 values와 같다(수익률)."><td class="fn"><code>out</code></td><td>√(Σ 가중치 × 값² ÷ Σ 가중치). 평균을 빼지 않는다. 단위는 values와 같다(수익률).</td></tr>
+<tr data-k="count · first · last 실제로 쓴 개수, 첫 날짜, 마지막 날짜. 나중에 확인하려고 남기는 기록."><td class="fn"><code>count · first · last</code></td><td>실제로 쓴 개수, 첫 날짜, 마지막 날짜. 나중에 확인하려고 남기는 기록.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="prior_point_models(calendar, labels, window, minimum) workbench/i24_panel.py" data-open="0"><summary><code>prior_point_models(calendar, labels, window, minimum)</code> <span class="cnt">18</span></summary><p class="line"><code>workbench/i24_panel.py</code> · 하는 일 순서</p><ol class="steps"><li>x와 y가 모두 있는 유효 관측만 고른다.</li><li>T마다 그 앞 유효 관측 최근 250개의 합(Σx, Σy, Σx², Σy², Σxy)을 구한다(누적합으로 빠르게).</li><li>절편 포함 기울기 β·절편·R²와 절편 없는 기울기 β⁰를 계산한다.</li><li>M1, F2를 계산하고, R² &lt; 0.3이면 M1, 아니면 F2를 H로 고른다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="window 창 길이 250. t 이전 유효 관측 최근 250개."><td class="fn"><code>window</code></td><td>창 길이 250. T 이전 유효 관측 최근 250개.</td></tr>
+<tr data-k="minimum 최소 관측 수 120. 창 안 관측이 120개 미만이면 m1·f2·h를 모두 결측으로 둔다."><td class="fn"><code>minimum</code></td><td>최소 관측 수 120. 창 안 관측이 120개 미만이면 M1·F2·H를 모두 결측으로 둔다.</td></tr>
+<tr data-k="valid signal_valid이고 x, y가 모두 숫자인 날. 회귀에 들어가는 관측."><td class="fn"><code>valid</code></td><td>signal_valid이고 x, y가 모두 숫자인 날. 회귀에 들어가는 관측.</td></tr>
+<tr data-k="history_dates valid인 날짜 목록."><td class="fn"><code>history_dates</code></td><td>valid인 날짜 목록.</td></tr>
+<tr data-k="end · start t보다 앞선 유효 관측의 끝 위치와 시작 위치(end − 250, 0 미만이면 0). 창의 양 끝."><td class="fn"><code>end · start</code></td><td>T보다 앞선 유효 관측의 끝 위치와 시작 위치(end − 250, 0 미만이면 0). 창의 양 끝.</td></tr>
+<tr data-k="n 창 안 관측 수(최대 250). 결과의 point_count."><td class="fn"><code>n</code></td><td>창 안 관측 수(최대 250). 결과의 point_count.</td></tr>
+<tr data-k="cs x, y, x², y², xy의 누적합. 창 합계 = cs[end] − cs[start]로 한 번에 구한다."><td class="fn"><code>cs</code></td><td>x, y, x², y², xy의 누적합. 창 합계 = cs[end] − cs[start]로 한 번에 구한다.</td></tr>
+<tr data-k="sx · sy · sxx · syy · sxy 창 안의 σx, σy, σx², σy², σxy(평균을 빼지 않은 합)."><td class="fn"><code>sx · sy · sxx · syy · sxy</code></td><td>창 안의 Σx, Σy, Σx², Σy², Σxy(평균을 빼지 않은 합).</td></tr>
+<tr data-k="xx · yy · xy 평균을 뺀 제곱합·곱합: σx² − (σx)²/n 등. 절편 포함 회귀용."><td class="fn"><code>xx · yy · xy</code></td><td>평균을 뺀 제곱합·곱합: Σx² − (Σx)²/n 등. 절편 포함 회귀용.</td></tr>
+<tr data-k="beta xy ÷ xx. 절편 포함 ols 기울기 β."><td class="fn"><code>beta</code></td><td>xy ÷ xx. 절편 포함 OLS 기울기 β.</td></tr>
+<tr data-k="intercept (σy − β·σx) ÷ n. 절편 a."><td class="fn"><code>intercept</code></td><td>(Σy − β·Σx) ÷ n. 절편 a.</td></tr>
+<tr data-k="r2 xy² ÷ (xx·yy). 절편 포함 회귀의 r²."><td class="fn"><code>r2</code></td><td>xy² ÷ (xx·yy). 절편 포함 회귀의 R².</td></tr>
+<tr data-k="current_x t의 x(signal_valid일 때만)."><td class="fn"><code>current_x</code></td><td>T의 x(signal_valid일 때만).</td></tr>
+<tr data-k="f2 (sxy ÷ sxx + 1) ÷ 2 × current_x. sxy ÷ sxx는 평균을 빼지 않은 합이라 절편 없는 기울기 β⁰다. 절편은 쓰지 않는다(절편을 넣은 식은 e80에서 더 빗나가 채택하지 않음)."><td class="fn"><code>f2</code></td><td>(sxy ÷ sxx + 1) ÷ 2 × current_x. sxy ÷ sxx는 평균을 빼지 않은 합이라 절편 없는 기울기 β⁰다. 절편은 쓰지 않는다(절편을 넣은 식은 E80에서 더 빗나가 채택하지 않음).</td></tr>
+<tr data-k="m1 intercept + beta × current_x."><td class="fn"><code>m1</code></td><td>intercept + beta × current_x.</td></tr>
+<tr data-k="usable n ≥ 120이고 xx, yy, sxx가 0보다 클 때 참. 거짓이면 결측."><td class="fn"><code>usable</code></td><td>n ≥ 120이고 xx, yy, sxx가 0보다 클 때 참. 거짓이면 결측.</td></tr>
+<tr data-k="h r2 &lt; 0.3이면 m1, 아니면 f2."><td class="fn"><code>H</code></td><td>r2 &lt; 0.3이면 M1, 아니면 F2.</td></tr>
+<tr data-k="point_first · point_last 창의 첫 날짜와 마지막 날짜(기록용)."><td class="fn"><code>point_first · point_last</code></td><td>창의 첫 날짜와 마지막 날짜(기록용).</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="raw_band(errors, level, minimum) workbench/e62_band.py" data-open="0"><summary><code>raw_band(errors, level, minimum)</code> <span class="cnt">6</span></summary><p class="line"><code>workbench/e62_band.py</code> · 하는 일 순서</p><ol class="steps"><li>날짜순으로 내려가며 그 앞 유효 오차를 쌓는다.</li><li>80개 이상 쌓였으면 최근 60개의 |오차|를 작은 순으로 정렬해 정해진 순번 값을 반폭으로 쓴다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="errors 한 종목의 날짜순 예측오차 e = y − h."><td class="fn"><code>errors</code></td><td>한 종목의 날짜순 예측오차 e = y − H.</td></tr>
+<tr data-k="level 0.8(80% 구간) 또는 0.9(90% 구간)."><td class="fn"><code>level</code></td><td>0.8(80% 구간) 또는 0.9(90% 구간).</td></tr>
+<tr data-k="minimum 80. 쌓인 유효 오차가 80개 이상일 때만 계산."><td class="fn"><code>minimum</code></td><td>80. 쌓인 유효 오차가 80개 이상일 때만 계산.</td></tr>
+<tr data-k="rank ⌈61 × level⌉ − 1. 0부터 세는 순번이라 0.8 → 48(49번째), 0.9 → 54(55번째)."><td class="fn"><code>rank</code></td><td>⌈61 × level⌉ − 1. 0부터 세는 순번이라 0.8 → 48(49번째), 0.9 → 54(55번째).</td></tr>
+<tr data-k="hist 지금까지 쌓인 유효 오차."><td class="fn"><code>hist</code></td><td>지금까지 쌓인 유효 오차.</td></tr>
+<tr data-k="out 각 날짜의 r0 반폭. 단위 수익률."><td class="fn"><code>out</code></td><td>각 날짜의 R0 반폭. 단위 수익률.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="prior_rms(errors, minimum, window, lam) workbench/e62_band.py" data-open="0"><summary><code>prior_rms(errors, minimum, window, lam)</code> <span class="cnt">3</span></summary><p class="line"><code>workbench/e62_band.py</code> · 하는 일 순서</p><ol class="steps"><li>prior_ewma와 같은 계산을 더 짧게 쓴 판. 06시 예측구간의 sd08(= s^H)을 만든다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="errors 한 종목의 날짜순 예측오차 e = y − h."><td class="fn"><code>errors</code></td><td>한 종목의 날짜순 예측오차 e = y − H.</td></tr>
+<tr data-k="minimum 20. 쌓인 유효 오차가 20개 미만이면 결측."><td class="fn"><code>minimum</code></td><td>20. 쌓인 유효 오차가 20개 미만이면 결측.</td></tr>
+<tr data-k="window · lam 250, 0.94(prior_ewma와 같음)."><td class="fn"><code>window · lam</code></td><td>250, 0.94(prior_ewma와 같음).</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="split_history(frame, day, calibration_days, minimum_train_days) workbench/range_models.py" data-open="0"><summary><code>split_history(frame, day, calibration_days, minimum_train_days)</code> <span class="cnt">5</span></summary><p class="line"><code>workbench/range_models.py</code> · 하는 일 순서</p><ol class="steps"><li>day보다 앞선 날짜를 모은다.</li><li>가장 최근 20개를 보정 표본, 나머지를 학습 표본으로 나눈다.</li><li>학습이 60일보다 적으면(전체 80일 미만) None을 돌려 계산을 멈춘다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="frame 개발 종목의 과거 표(실현값 포함)."><td class="fn"><code>frame</code></td><td>개발 종목의 과거 표(실현값 포함).</td></tr>
+<tr data-k="day 예측 대상일 t."><td class="fn"><code>day</code></td><td>예측 대상일 T.</td></tr>
+<tr data-k="calibration_days 20. 보정 표본의 거래일 수."><td class="fn"><code>calibration_days</code></td><td>20. 보정 표본의 거래일 수.</td></tr>
+<tr data-k="minimum_train_days 60. 학습 표본의 최소 거래일 수."><td class="fn"><code>minimum_train_days</code></td><td>60. 학습 표본의 최소 거래일 수.</td></tr>
+<tr data-k="train · cal 학습 표본 행, 보정 표본 행. 날짜가 겹치지 않고 train &lt; cal &lt; day 순서인지 assert로 확인한다."><td class="fn"><code>train · cal</code></td><td>학습 표본 행, 보정 표본 행. 날짜가 겹치지 않고 train &lt; cal &lt; day 순서인지 assert로 확인한다.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="fit_scale(train, cont, binary) workbench/e62_band.py" data-open="0"><summary><code>fit_scale(train, cont, binary)</code> <span class="cnt">18</span></summary><p class="line"><code>workbench/e62_band.py</code> · 하는 일 순서</p><ol class="steps"><li>설명변수를 학습 표본의 1%·99% 분위에서 자르고 표준화한다.</li><li>목표 log(|y − g| ÷ sd08 + 0.001)를 설명변수에 회귀한다(날짜 가중 + Huber, 8번 반복).</li><li>척도 함수 fitted를 돌려준다: 오늘 행을 넣으면 σ̂ = sd08 × exp(계수 · 설명변수).</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="train 학습 표본(개발 종목, 보정 구간 앞의 종목·일 행)."><td class="fn"><code>train</code></td><td>학습 표본(개발 종목, 보정 구간 앞의 종목·일 행).</td></tr>
+<tr data-k="cont 연속형 설명변수 이름. s1은 [&#x27;ax&#x27;] 하나(야간 수익률 절댓값)."><td class="fn"><code>cont</code></td><td>연속형 설명변수 이름. S1은 [&#x27;ax&#x27;] 하나(야간 수익률 절댓값).</td></tr>
+<tr data-k="binary 0/1 설명변수 이름. s1은 없음. s3은 공시·요일·일정."><td class="fn"><code>binary</code></td><td>0/1 설명변수 이름. S1은 없음. S3은 공시·요일·일정.</td></tr>
+<tr data-k="columns cont + binary. 비어 있으면 e0(σ̂ = sd08 그대로)."><td class="fn"><code>columns</code></td><td>cont + binary. 비어 있으면 E0(σ̂ = sd08 그대로).</td></tr>
+<tr data-k="lo · hi 학습 표본 연속형 변수의 1%·99% 분위. 이 밖의 값은 경계값으로 자른다(극단값 하나가 회귀를 좌우하지 않게)."><td class="fn"><code>lo · hi</code></td><td>학습 표본 연속형 변수의 1%·99% 분위. 이 밖의 값은 경계값으로 자른다(극단값 하나가 회귀를 좌우하지 않게).</td></tr>
+<tr data-k="clipped(d) 표 d의 변수를 lo~hi로 자르는 내부 함수."><td class="fn"><code>clipped(d)</code></td><td>표 d의 변수를 lo~hi로 자르는 내부 함수.</td></tr>
+<tr data-k="mu · sd 자른 학습 표본의 평균·표준편차. 표준편차가 0이면 1로 둔다."><td class="fn"><code>mu · sd</code></td><td>자른 학습 표본의 평균·표준편차. 표준편차가 0이면 1로 둔다.</td></tr>
+<tr data-k="design(d) [1, (값 − mu) ÷ sd] 행렬. 결측은 0(= 평균)으로."><td class="fn"><code>design(d)</code></td><td>[1, (값 − mu) ÷ sd] 행렬. 결측은 0(= 평균)으로.</td></tr>
+<tr data-k="a 학습 표본의 design 행렬."><td class="fn"><code>A</code></td><td>학습 표본의 design 행렬.</td></tr>
+<tr data-k="target log(|y − g| ÷ sd08 + 0.001). 06시에서 g = h이므로 log(|e| ÷ s^h + 0.001). 평소보다 몇 배 빗나갔는지의 로그."><td class="fn"><code>target</code></td><td>log(|y − g| ÷ sd08 + 0.001). 06시에서 g = H이므로 log(|e| ÷ s^H + 0.001). 평소보다 몇 배 빗나갔는지의 로그.</td></tr>
+<tr data-k="base 날짜 가중치 = 1 ÷ 그날 행 수(평균이 1이 되게 맞춤)."><td class="fn"><code>base</code></td><td>날짜 가중치 = 1 ÷ 그날 행 수(평균이 1이 되게 맞춤).</td></tr>
+<tr data-k="weights 이번 반복의 가중치 = base × huber 가중."><td class="fn"><code>weights</code></td><td>이번 반복의 가중치 = base × Huber 가중.</td></tr>
+<tr data-k="beta 가중 최소제곱 해(계수). s1이면 [b₀, b₁]."><td class="fn"><code>beta</code></td><td>가중 최소제곱 해(계수). S1이면 [b₀, b₁].</td></tr>
+<tr data-k="err target − a·beta. 회귀 잔차."><td class="fn"><code>err</code></td><td>target − A·beta. 회귀 잔차.</td></tr>
+<tr data-k="scale 잔차의 강건한 표준편차 = 중앙절대편차(mad) ÷ 0.6745."><td class="fn"><code>scale</code></td><td>잔차의 강건한 표준편차 = 중앙절대편차(MAD) ÷ 0.6745.</td></tr>
+<tr data-k="1.35 huber 상수. |err| &gt; 1.35 × scale인 행의 가중치를 1.35 × scale ÷ |err|로 줄인다."><td class="fn"><code>1.35</code></td><td>Huber 상수. |err| &gt; 1.35 × scale인 행의 가중치를 1.35 × scale ÷ |err|로 줄인다.</td></tr>
+<tr data-k="fitted 결과 척도 함수. fitted(d) = sd08 × exp(clip(design(d) · beta, −8, 8)) = σ̂."><td class="fn"><code>fitted</code></td><td>결과 척도 함수. fitted(d) = sd08 × exp(clip(design(d) · beta, −8, 8)) = σ̂.</td></tr>
+<tr data-k="fitted.beta 계수 기록. 예: {&#x27;const&#x27;: −0.641, &#x27;ax&#x27;: 0.119}."><td class="fn"><code>fitted.beta</code></td><td>계수 기록. 예: {&#x27;const&#x27;: −0.641, &#x27;ax&#x27;: 0.119}.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="forecast_day(hist, today, spec, asym) workbench/e62_band.py" data-open="0"><summary><code>forecast_day(hist, today, spec, asym)</code> <span class="cnt">13</span></summary><p class="line"><code>workbench/e62_band.py</code> · 하는 일 순서</p><ol class="steps"><li>hist를 학습·보정으로 나눈다(split_history).</li><li>학습 표본으로 척도 함수를 만든다(fit_scale).</li><li>보정 표본에서 u = |y − g| ÷ σ̂의 날짜 가중 80%·90% 분위를 구한다.</li><li>오늘 반폭 = 분위 × 오늘 σ̂, 구간 = g ± 반폭.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="hist 그날 이전의 개발 종목 표(실현값 포함)."><td class="fn"><code>hist</code></td><td>그날 이전의 개발 종목 표(실현값 포함).</td></tr>
+<tr data-k="today 그날 계산할 종목들의 행. 실현값 y가 없다."><td class="fn"><code>today</code></td><td>그날 계산할 종목들의 행. 실현값 y가 없다.</td></tr>
+<tr data-k="spec (cont, binary) 후보 정의. s1 = ([&#x27;ax&#x27;], [])."><td class="fn"><code>spec</code></td><td>(cont, binary) 후보 정의. S1 = ([&#x27;ax&#x27;], []).</td></tr>
+<tr data-k="asym 비대칭 후보(a1)일 때만 참. 화면의 s1은 거짓."><td class="fn"><code>asym</code></td><td>비대칭 후보(A1)일 때만 참. 화면의 S1은 거짓.</td></tr>
+<tr data-k="parts split_history 결과 (train, cal). none이면 그날은 계산하지 않는다."><td class="fn"><code>parts</code></td><td>split_history 결과 (train, cal). None이면 그날은 계산하지 않는다.</td></tr>
+<tr data-k="scale fit_scale이 돌려준 척도 함수."><td class="fn"><code>scale</code></td><td>fit_scale이 돌려준 척도 함수.</td></tr>
+<tr data-k="s_cal · w 보정 표본의 σ̂과 날짜 가중치."><td class="fn"><code>s_cal · w</code></td><td>보정 표본의 σ̂과 날짜 가중치.</td></tr>
+<tr data-k="s 오늘 종목들의 σ̂."><td class="fn"><code>s</code></td><td>오늘 종목들의 σ̂.</td></tr>
+<tr data-k="g 오늘 중심(06시에서는 h)."><td class="fn"><code>g</code></td><td>오늘 중심(06시에서는 H).</td></tr>
+<tr data-k="u 보정 표본의 |y − g| ÷ σ̂. &#x27;척도 대비 몇 배 빗나갔나&#x27;."><td class="fn"><code>u</code></td><td>보정 표본의 |y − g| ÷ σ̂. &#x27;척도 대비 몇 배 빗나갔나&#x27;.</td></tr>
+<tr data-k="q 0.8 또는 0.9."><td class="fn"><code>q</code></td><td>0.8 또는 0.9.</td></tr>
+<tr data-k="h weighted_quantile(u, w, q) × s. 오늘 반폭. 단위 수익률."><td class="fn"><code>h</code></td><td>weighted_quantile(u, w, q) × s. 오늘 반폭. 단위 수익률.</td></tr>
+<tr data-k="l80 · u80 · l90 · u90 g − h, g + h."><td class="fn"><code>L80 · U80 · L90 · U90</code></td><td>g − h, g + h.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="weighted_quantile(values, weights, q) workbench/range_models.py" data-open="0"><summary><code>weighted_quantile(values, weights, q)</code> <span class="cnt">3</span></summary><p class="line"><code>workbench/range_models.py</code> · 하는 일 순서</p><ol class="steps"><li>값을 작은 순으로 정렬한다.</li><li>가중치를 앞에서부터 더해, 누적 비율이 q 이상이 되는 첫 값을 돌려준다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="values u 같은 값 목록."><td class="fn"><code>values</code></td><td>u 같은 값 목록.</td></tr>
+<tr data-k="weights 각 값의 가중치(날짜 가중치)."><td class="fn"><code>weights</code></td><td>각 값의 가중치(날짜 가중치).</td></tr>
+<tr data-k="q 0.8이면 80% 지점."><td class="fn"><code>q</code></td><td>0.8이면 80% 지점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="day_weights(frame) workbench/range_models.py" data-open="0"><summary><code>day_weights(frame)</code> <span class="cnt">1</span></summary><p class="line"><code>workbench/range_models.py</code> · 하는 일 순서</p><ol class="steps"><li>행마다 1 ÷ 그날 행 수를 주고, 평균이 1이 되게 나눈다. 종목 수가 많은 날과 적은 날의 무게를 같게 만든다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="frame 날짜 열 t가 있는 표."><td class="fn"><code>frame</code></td><td>날짜 열 T가 있는 표.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="run_candidates(frame, train_codes, eval_codes, days, specs, asym) workbench/e62_band.py" data-open="0"><summary><code>run_candidates(frame, train_codes, eval_codes, days, specs, asym)</code> <span class="cnt">8</span></summary><p class="line"><code>workbench/e62_band.py</code> · 하는 일 순서</p><ol class="steps"><li>쓸 수 있는 행(usable)을 고른다.</li><li>학습 종목 행(tr)과, 실현값을 뺀 평가 종목 행(ev)을 나눈다.</li><li>날마다 hist = tr의 그날 이전, today = ev의 그날로 forecast_day를 부른다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="frame 06시 표 z."><td class="fn"><code>frame</code></td><td>06시 표 z.</td></tr>
+<tr data-k="train_codes 계수를 배울 종목(개발 종목 107개)."><td class="fn"><code>train_codes</code></td><td>계수를 배울 종목(개발 종목 107개).</td></tr>
+<tr data-k="eval_codes 구간을 계산할 종목. 최종 검증에서는 검증 종목 93개, 아침 카드에서는 200종목 전부."><td class="fn"><code>eval_codes</code></td><td>구간을 계산할 종목. 최종 검증에서는 검증 종목 93개, 아침 카드에서는 200종목 전부.</td></tr>
+<tr data-k="days 계산할 날짜 목록."><td class="fn"><code>days</code></td><td>계산할 날짜 목록.</td></tr>
+<tr data-k="specs 후보 사전(이름 → (cont, binary))."><td class="fn"><code>specs</code></td><td>후보 사전(이름 → (cont, binary)).</td></tr>
+<tr data-k="usable y, g, sd08이 모두 있고 sd08 &gt; 0인 행."><td class="fn"><code>usable</code></td><td>y, g, sd08이 모두 있고 sd08 &gt; 0인 행.</td></tr>
+<tr data-k="tr usable 가운데 학습 종목 행."><td class="fn"><code>tr</code></td><td>usable 가운데 학습 종목 행.</td></tr>
+<tr data-k="ev 평가 종목 행에서 y 열을 뺀 것(미래 정보 차단)."><td class="fn"><code>ev</code></td><td>평가 종목 행에서 y 열을 뺀 것(미래 정보 차단).</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="logit_prob(train, test, cols) workbench/e62_band.py" data-open="0"><summary><code>logit_prob(train, test, cols)</code> <span class="cnt">9</span></summary><p class="line"><code>workbench/e62_band.py</code> · 하는 일 순서</p><ol class="steps"><li>학습 표본의 중앙값으로 결측을 채운다.</li><li>학습 표본 평균·표준편차로 표준화한다.</li><li>날짜 가중 로지스틱 회귀를 맞추고, test 행마다 확률을 낸다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="train 과거 행과 실현값 t(1 = nxt 방향대로 열림)."><td class="fn"><code>train</code></td><td>과거 행과 실현값 t(1 = NXT 방향대로 열림).</td></tr>
+<tr data-k="test 확률을 낼 행(실현값 없음)."><td class="fn"><code>test</code></td><td>확률을 낼 행(실현값 없음).</td></tr>
+<tr data-k="cols 설명변수. b1 = [&#x27;size&#x27;, &#x27;lsd&#x27;, &#x27;r2&#x27;] = |g|, log sd06, r²."><td class="fn"><code>cols</code></td><td>설명변수. B1 = [&#x27;size&#x27;, &#x27;lsd&#x27;, &#x27;r2&#x27;] = |g|, log sd06, R².</td></tr>
+<tr data-k="med 학습 표본 중앙값(결측 채우기용)."><td class="fn"><code>med</code></td><td>학습 표본 중앙값(결측 채우기용).</td></tr>
+<tr data-k="a · b 결측을 채운 학습 표·평가 표."><td class="fn"><code>a · b</code></td><td>결측을 채운 학습 표·평가 표.</td></tr>
+<tr data-k="mu · sd 학습 표본 평균·표준편차."><td class="fn"><code>mu · sd</code></td><td>학습 표본 평균·표준편차.</td></tr>
+<tr data-k="w 1 ÷ 그날 행 수(평균 1로 맞춤)."><td class="fn"><code>w</code></td><td>1 ÷ 그날 행 수(평균 1로 맞춤).</td></tr>
+<tr data-k="c=1. l2 벌점의 세기(scikit-learn 기본값). c가 작을수록 계수를 0 쪽으로 더 당긴다."><td class="fn"><code>C=1.</code></td><td>L2 벌점의 세기(scikit-learn 기본값). C가 작을수록 계수를 0 쪽으로 더 당긴다.</td></tr>
+<tr data-k="max_iter=400 최적화 반복 최대 횟수."><td class="fn"><code>max_iter=400</code></td><td>최적화 반복 최대 횟수.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="grade(n, design, day) workbench/morning_card.py" data-open="0"><summary><code>grade(n, design, day)</code> <span class="cnt">7</span></summary><p class="line"><code>workbench/morning_card.py</code> · 하는 일 순서</p><ol class="steps"><li>그날 이전·개발 종목·g ≠ 0·y ≠ 0인 08시 행으로 학습 표본을 만든다.</li><li>학습 표본이 60거래일 미만이면 등급을 내지 않는다.</li><li>logit_prob로 확률 p를 내고 0.75·0.90 경계로 등급을 매긴다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="n 08시 표(nxt 08:00~08:10 체결이 있는 종목·일)."><td class="fn"><code>n</code></td><td>08시 표(NXT 08:00~08:10 체결이 있는 종목·일).</td></tr>
+<tr data-k="design 개발 종목 목록."><td class="fn"><code>design</code></td><td>개발 종목 목록.</td></tr>
+<tr data-k="day t."><td class="fn"><code>day</code></td><td>T.</td></tr>
+<tr data-k="past 그날 이전·개발 종목·방향이 있는 행."><td class="fn"><code>past</code></td><td>그날 이전·개발 종목·방향이 있는 행.</td></tr>
+<tr data-k="train past + t(부호(g) = 부호(y)이면 1)."><td class="fn"><code>train</code></td><td>past + t(부호(g) = 부호(y)이면 1).</td></tr>
+<tr data-k="test 그날 행에서 실현값 열(y·e·target_observed)을 지운 것."><td class="fn"><code>test</code></td><td>그날 행에서 실현값 열(y·e·target_observed)을 지운 것.</td></tr>
+<tr data-k="p · lv 확률(0~1)과 등급(낮음 &lt; 0.75 ≤ 보통 &lt; 0.90 ≤ 높음)."><td class="fn"><code>p · lv</code></td><td>확률(0~1)과 등급(낮음 &lt; 0.75 ≤ 보통 &lt; 0.90 ≤ 높음).</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="event_flags(filings, calendar) workbench/e62_band.py" data-open="0"><summary><code>event_flags(filings, calendar)</code> <span class="cnt">5</span></summary><p class="line"><code>workbench/e62_band.py</code> · 하는 일 순서</p><ol class="steps"><li>공시 제목을 종류로 나눈다(classify).</li><li>공시마다 접수일보다 뒤인 첫 T를 찾는다.</li><li>D ≤ 접수일 &lt; T가 맞으면 그 (T, 종목)에 종류 표시 1을 붙인다.</li></ol><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="filings dart 공시 목록(code, rcept_dt 접수일, report_nm 제목)."><td class="fn"><code>filings</code></td><td>DART 공시 목록(code, rcept_dt 접수일, report_nm 제목).</td></tr>
+<tr data-k="fam 그 공시의 종류 집합(e_earn 등)."><td class="fn"><code>fam</code></td><td>그 공시의 종류 집합(e_earn 등).</td></tr>
+<tr data-k="t · d 거래일 매칭 표의 t, d 배열."><td class="fn"><code>t · d</code></td><td>거래일 매칭 표의 T, D 배열.</td></tr>
+<tr data-k="i searchsorted(t, 접수일, &#x27;right&#x27;): 접수일보다 뒤인 첫 t의 위치."><td class="fn"><code>i</code></td><td>searchsorted(t, 접수일, &#x27;right&#x27;): 접수일보다 뒤인 첫 T의 위치.</td></tr>
+<tr data-k="결과 (t, code)마다 e_earn, e_deal, e_rumor, e_periodic 0/1."><td class="fn"><code>결과</code></td><td>(T, code)마다 e_earn, e_deal, e_rumor, e_periodic 0/1.</td></tr>
+</tbody></table></div></details>
+</section>
+
+<section id="exp">
+  <h2>실험 실행기(E45~E51)</h2>
+  <p class="sub">workbench 바로 아래 있는 실험 파일. 결과는 실험 장부 카드에 있어요</p>
+  <details class="file" data-k="workbench/e45_reference.py e45. 왜 기준을 15:45로 했나. 주식 마감(15:30)에 맞춘 선물 기준가와 비교한다." data-open="0"><summary><code>workbench/e45_reference.py</code> <span class="tag ph">실험</span> <span class="cnt">9</span></summary><p class="line">E45. 왜 기준을 15:45로 했나. 주식 마감(15:30)에 맞춘 선물 기준가와 비교한다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha(path) 파일 해시."><td class="fn"><code>sha(path)</code></td><td>파일 해시.</td></tr>
+<tr data-k="nw_p(d) newey–west p값."><td class="fn"><code>nw_p(d)</code></td><td>Newey–West p값.</td></tr>
+<tr data-k="holm(ps) holm 보정."><td class="fn"><code>holm(ps)</code></td><td>Holm 보정.</td></tr>
+<tr data-k="summarize(name, d, rows) 비교 하나의 요약."><td class="fn"><code>summarize(name, d, rows)</code></td><td>비교 하나의 요약.</td></tr>
+<tr data-k="mae(frame, col, date_weighted) 평균 절대 오차(날짜 무게 선택)."><td class="fn"><code>mae(frame, col, date_weighted)</code></td><td>평균 절대 오차(날짜 무게 선택).</td></tr>
+<tr data-k="futures_reference() 날짜마다 x(야간 ÷ 주간 15:45), delta(15:45 선물 ÷ 15:30 선물), x30을 계산한다. 같은 계약일 때만."><td class="fn"><code>futures_reference()</code></td><td>날짜마다 x(야간 ÷ 주간 15:45), delta(15:45 선물 ÷ 15:30 선물), x30을 계산한다. 같은 계약일 때만.</td></tr>
+<tr data-k="index_frame(x) 코스피200 지수 시가 갭과 지수 f2·f2_30."><td class="fn"><code>index_frame(X)</code></td><td>코스피200 지수 시가 갭과 지수 F2·F2_30.</td></tr>
+<tr data-k="stock_shrink(base) 종목별 β를 같은 규칙(250행, 최소 120행)으로 다시 추정한다."><td class="fn"><code>stock_shrink(base)</code></td><td>종목별 β를 같은 규칙(250행, 최소 120행)으로 다시 추정한다.</td></tr>
+<tr data-k="main() e45 실행."><td class="fn"><code>main()</code></td><td>E45 실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e45f1_contrast.py e45-f1. delta(15:30~15:45 차이)가 x와 평균 보정을 넘는 정보인가." data-open="0"><summary><code>workbench/e45f1_contrast.py</code> <span class="tag ph">실험</span> <span class="cnt">2</span></summary><p class="line">E45-F1. delta(15:30~15:45 차이)가 x와 평균 보정을 넘는 정보인가.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="rows() e45 평가 행과 날짜별 x·delta."><td class="fn"><code>rows()</code></td><td>E45 평가 행과 날짜별 x·delta.</td></tr>
+<tr data-k="main() 실행."><td class="fn"><code>main()</code></td><td>실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e45_corrected_sensitivity.py e45-f1 교정 민감도. 기본 실행은 예전 결과 재현만 한다." data-open="0"><summary><code>workbench/e45_corrected_sensitivity.py</code> <span class="tag ph">실험</span> <span class="cnt">17</span></summary><p class="line">E45-F1 교정 민감도. 기본 실행은 예전 결과 재현만 한다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha256(path) 파일 해시."><td class="fn"><code>sha256(path)</code></td><td>파일 해시.</td></tr>
+<tr data-k="validate_frozen_inputs() 고정된 입력 파일 해시 확인."><td class="fn"><code>validate_frozen_inputs()</code></td><td>고정된 입력 파일 해시 확인.</td></tr>
+<tr data-k="read_table(path) 표 읽기."><td class="fn"><code>read_table(path)</code></td><td>표 읽기.</td></tr>
+<tr data-k="anchor_dates() 기준 날짜 목록."><td class="fn"><code>anchor_dates()</code></td><td>기준 날짜 목록.</td></tr>
+<tr data-k="stage_frame(point_table, reference, stage, no_trade_days) 단계별 입력·키 교정. 계수는 맞추지 않는다."><td class="fn"><code>stage_frame(point_table, reference, stage, no_trade_days)</code></td><td>단계별 입력·키 교정. 계수는 맞추지 않는다.</td></tr>
+<tr data-k="prepare_stages() 단계 표 준비."><td class="fn"><code>prepare_stages()</code></td><td>단계 표 준비.</td></tr>
+<tr data-k="fit_f1(frame, evaluation_dates, minimum) 원래 f1 계산(날짜가 늘어나며 다시 맞추는 회귀) 그대로."><td class="fn"><code>fit_f1(frame, evaluation_dates, minimum)</code></td><td>원래 F1 계산(날짜가 늘어나며 다시 맞추는 회귀) 그대로.</td></tr>
+<tr data-k="compare_legacy(predicted, coefficients, saved_rows, saved_coefs, tolerance) 예전 저장 결과와 같은지."><td class="fn"><code>compare_legacy(predicted, coefficients, saved_rows, saved_coefs, tolerance)</code></td><td>예전 저장 결과와 같은지.</td></tr>
+<tr data-k="legacy_reproduction() 예전 결과 재현."><td class="fn"><code>legacy_reproduction()</code></td><td>예전 결과 재현.</td></tr>
+<tr data-k="matched_support(predictions, anchor) 모든 단계·모델이 정확히 같은 행을 쓰게 맞춘다."><td class="fn"><code>matched_support(predictions, anchor)</code></td><td>모든 단계·모델이 정확히 같은 행을 쓰게 맞춘다.</td></tr>
+<tr data-k="daily_losses(rows) 날짜별 오차."><td class="fn"><code>daily_losses(rows)</code></td><td>날짜별 오차.</td></tr>
+<tr data-k="original_key_exclusions(original_keys, frame, predicted, availability) 원래 평가 행 가운데 빠진 것 목록."><td class="fn"><code>original_key_exclusions(original_keys, frame, predicted, availability)</code></td><td>원래 평가 행 가운데 빠진 것 목록.</td></tr>
+<tr data-k="performance_reports(predictions, anchor) 성적 계산. 승인 뒤에만 부른다."><td class="fn"><code>performance_reports(predictions, anchor)</code></td><td>성적 계산. 승인 뒤에만 부른다.</td></tr>
+<tr data-k="require_execution_approval(plan, approval, hashes) 승인 파일 확인."><td class="fn"><code>require_execution_approval(plan, approval, hashes)</code></td><td>승인 파일 확인.</td></tr>
+<tr data-k="json_safe(value) · write_json(path, value) json으로 저장할 수 있게 바꾸기 / 저장."><td class="fn"><code>json_safe(value) · write_json(path, value)</code></td><td>JSON으로 저장할 수 있게 바꾸기 / 저장.</td></tr>
+<tr data-k="execute_corrected(approval_path, output) 교정판 실행."><td class="fn"><code>execute_corrected(approval_path, output)</code></td><td>교정판 실행.</td></tr>
+<tr data-k="main() 실행 시작점."><td class="fn"><code>main()</code></td><td>실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e46_leadlag.py e46. 선물 움직임이 nxt 가격보다 앞서가나. 이 파일의 nxt 정리 함수 두 개는 지금 패널(i24_panel.traded_nxt)도 쓴다." data-open="0"><summary><code>workbench/e46_leadlag.py</code> <span class="tag ph">실험</span> <span class="cnt">18</span></summary><p class="line">E46. 선물 움직임이 NXT 가격보다 앞서가나. 이 파일의 NXT 정리 함수 두 개는 지금 패널(i24_panel.traded_nxt)도 쓴다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha256 · write_json 해시 / 저장."><td class="fn"><code>sha256 · write_json</code></td><td>해시 / 저장.</td></tr>
+<tr data-k="validate_protocol(protocol) 계약 파일과 코드 선언이 같은지. 다르면 계산 전에 멈춘다."><td class="fn"><code>validate_protocol(protocol)</code></td><td>계약 파일과 코드 선언이 같은지. 다르면 계산 전에 멈춘다.</td></tr>
+<tr data-k="timing_fields(day, target) 시각 칸 만들기."><td class="fn"><code>timing_fields(day, target)</code></td><td>시각 칸 만들기.</td></tr>
+<tr data-k="tradedsnapshots 분마다 &#x27;관측됨/체결됨&#x27; 표 묶음."><td class="fn"><code>TradedSnapshots</code></td><td>분마다 &#x27;관측됨/체결됨&#x27; 표 묶음.</td></tr>
+<tr data-k="clean_trade_snapshots(source) 가격 &gt; 0, 거래량 &gt; 0인 실제 체결만 남긴다. (지금도 쓰임)"><td class="fn"><code>clean_trade_snapshots(source)</code></td><td>가격 &gt; 0, 거래량 &gt; 0인 실제 체결만 남긴다. (지금도 쓰임)</td></tr>
+<tr data-k="combine_nxt_sources(development, universe) nxt 두 파일을 합친다. 같은 분이 겹치면 개발 파일 우선. (지금도 쓰임)"><td class="fn"><code>combine_nxt_sources(development, universe)</code></td><td>NXT 두 파일을 합친다. 같은 분이 겹치면 개발 파일 우선. (지금도 쓰임)</td></tr>
+<tr data-k="load_local_prices() 가격·거래 활동·나이를 한 곳에서 읽기."><td class="fn"><code>load_local_prices()</code></td><td>가격·거래 활동·나이를 한 곳에서 읽기.</td></tr>
+<tr data-k="fresh_trimmed_mean(values) 위아래 10%씩 잘라낸 평균. 신선한 값 10개 이상일 때만."><td class="fn"><code>fresh_trimmed_mean(values)</code></td><td>위아래 10%씩 잘라낸 평균. 신선한 값 10개 이상일 때만.</td></tr>
+<tr data-k="build_features(nxt, future) 기준 시각 전 재료만으로 특징 만들기."><td class="fn"><code>build_features(nxt, future)</code></td><td>기준 시각 전 재료만으로 특징 만들기.</td></tr>
+<tr data-k="attach_targets(features, nxt) 실현값 붙이기."><td class="fn"><code>attach_targets(features, nxt)</code></td><td>실현값 붙이기.</td></tr>
+<tr data-k="coverage_report(nxt, future, features) 개수·형식만 센다. 성적은 계산하지 않는다."><td class="fn"><code>coverage_report(nxt, future, features)</code></td><td>개수·형식만 센다. 성적은 계산하지 않는다.</td></tr>
+<tr data-k="equal_date_weights(frame) 날짜 무게 같게."><td class="fn"><code>equal_date_weights(frame)</code></td><td>날짜 무게 같게.</td></tr>
+<tr data-k="predict_chronologically(frame, training) 날짜 순서대로, 과거만으로 예측."><td class="fn"><code>predict_chronologically(frame, training)</code></td><td>날짜 순서대로, 과거만으로 예측.</td></tr>
+<tr data-k="stratum_masks(frame) 층(구간) 나누기."><td class="fn"><code>stratum_masks(frame)</code></td><td>층(구간) 나누기.</td></tr>
+<tr data-k="block_with_mde(values, block, descriptive) 블록 재표집 + 이 표본으로 찾을 수 있는 최소 효과 크기."><td class="fn"><code>block_with_mde(values, block, descriptive)</code></td><td>블록 재표집 + 이 표본으로 찾을 수 있는 최소 효과 크기.</td></tr>
+<tr data-k="paired_record(...) 두 후보 짝 비교 한 줄."><td class="fn"><code>paired_record(...)</code></td><td>두 후보 짝 비교 한 줄.</td></tr>
+<tr data-k="summarize(predictions) 요약."><td class="fn"><code>summarize(predictions)</code></td><td>요약.</td></tr>
+<tr data-k="verify_approval · create_fresh_run · execute · main 승인 확인 / 새 결과 폴더 / 실행 / 실행 시작점."><td class="fn"><code>verify_approval · create_fresh_run · execute · main</code></td><td>승인 확인 / 새 결과 폴더 / 실행 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e47_wait_policy.py e47. 08:11에 &#x27;조금 더 기다려 볼 종목&#x27; 절반을 고르는 규칙." data-open="0"><summary><code>workbench/e47_wait_policy.py</code> <span class="tag ph">실험</span> <span class="cnt">12</span></summary><p class="line">E47. 08:11에 &#x27;조금 더 기다려 볼 종목&#x27; 절반을 고르는 규칙.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="dependency_paths · dependency_hashes · check_frozen_hashes 의존 파일 목록과 해시, 바뀌었는지 확인."><td class="fn"><code>dependency_paths · dependency_hashes · check_frozen_hashes</code></td><td>의존 파일 목록과 해시, 바뀌었는지 확인.</td></tr>
+<tr data-k="validate_plan(plan) 계획 검사."><td class="fn"><code>validate_plan(plan)</code></td><td>계획 검사.</td></tr>
+<tr data-k="freeze_cohort(panel) 08:11 재료만으로 대상 종목을 고정한다."><td class="fn"><code>freeze_cohort(panel)</code></td><td>08:11 재료만으로 대상 종목을 고정한다.</td></tr>
+<tr data-k="attach_late_snapshot(cohort, source) 더 늦은 관측을 붙인다. 늦은 관측이 대상 선정을 바꾸지 못하게."><td class="fn"><code>attach_late_snapshot(cohort, source)</code></td><td>더 늦은 관측을 붙인다. 늦은 관측이 대상 선정을 바꾸지 못하게.</td></tr>
+<tr data-k="load_late_source() 늦은 관측 자료 읽기."><td class="fn"><code>load_late_source()</code></td><td>늦은 관측 자료 읽기.</td></tr>
+<tr data-k="date_weights · raw_features 날짜 무게 / 원재료."><td class="fn"><code>date_weights · raw_features</code></td><td>날짜 무게 / 원재료.</td></tr>
+<tr data-k="benefittransform · fit_transform &#x27;기다리면 얻는 이득&#x27; 점수 변환과 그 학습."><td class="fn"><code>BenefitTransform · fit_transform</code></td><td>&#x27;기다리면 얻는 이득&#x27; 점수 변환과 그 학습.</td></tr>
+<tr data-k="quota_selection(frame, score) 정확히 절반을 고른다(동점은 코드 순)."><td class="fn"><code>quota_selection(frame, score)</code></td><td>정확히 절반을 고른다(동점은 코드 순).</td></tr>
+<tr data-k="score_current_day(train_cohort, past_outcomes, today) 오늘 점수. 오늘 실현값·늦은 정보는 못 쓴다."><td class="fn"><code>score_current_day(train_cohort, past_outcomes, today)</code></td><td>오늘 점수. 오늘 실현값·늦은 정보는 못 쓴다.</td></tr>
+<tr data-k="assign_policies · evaluate_assignments 배정을 먼저 얼리고, 그 뒤에 결과로 채점."><td class="fn"><code>assign_policies · evaluate_assignments</code></td><td>배정을 먼저 얼리고, 그 뒤에 결과로 채점.</td></tr>
+<tr data-k="comparison_slices · summarize_policy 비교 구간 / 요약."><td class="fn"><code>comparison_slices · summarize_policy</code></td><td>비교 구간 / 요약.</td></tr>
+<tr data-k="verify_approval · load_cutoff_cohort · coverage_only · _execute_body · execute · main 승인 확인 / 대상 읽기 / 개수만 보기 / 실행 / 실행 시작점."><td class="fn"><code>verify_approval · load_cutoff_cohort · coverage_only · _execute_body · execute · main</code></td><td>승인 확인 / 대상 읽기 / 개수만 보기 / 실행 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e48_no_trade_nights.py e48. 무거래 밤(거래량 0, 가격 평탄)을 x = 0이 아니라 &#x27;야간 신호 없음&#x27;으로 다룬다. 이 규칙이 지금 make_calendar에 들어 있다." data-open="0"><summary><code>workbench/e48_no_trade_nights.py</code> <span class="tag ph">실험</span> <span class="cnt">9</span></summary><p class="line">E48. 무거래 밤(거래량 0, 가격 평탄)을 x = 0이 아니라 &#x27;야간 신호 없음&#x27;으로 다룬다. 이 규칙이 지금 make_calendar에 들어 있다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha(path) 해시."><td class="fn"><code>sha(path)</code></td><td>해시.</td></tr>
+<tr data-k="night_flags(raw) 무거래 밤 표시. 거래량 0이고 시가·고가·저가·종가가 모두 그날 주간 종가."><td class="fn"><code>night_flags(raw)</code></td><td>무거래 밤 표시. 거래량 0이고 시가·고가·저가·종가가 모두 그날 주간 종가.</td></tr>
+<tr data-k="closure_confirmation(flags, sources) 자료상 무거래 밤을 공식 휴장 공지와 대조한다."><td class="fn"><code>closure_confirmation(flags, sources)</code></td><td>자료상 무거래 밤을 공식 휴장 공지와 대조한다.</td></tr>
+<tr data-k="stock_models(base, raw) 종목별 앞 250행(최소 120)으로 기울기 계산. 결과 크기로 거르지 않는다."><td class="fn"><code>stock_models(base, raw)</code></td><td>종목별 앞 250행(최소 120)으로 기울기 계산. 결과 크기로 거르지 않는다.</td></tr>
+<tr data-k="build_table · index_f2 종목 전체 예측표 / 지수 f2."><td class="fn"><code>build_table · index_f2</code></td><td>종목 전체 예측표 / 지수 F2.</td></tr>
+<tr data-k="construct() v1(그때 규칙)과 v2(무거래 밤 제거)를 만들고 회귀 검사."><td class="fn"><code>construct()</code></td><td>V1(그때 규칙)과 V2(무거래 밤 제거)를 만들고 회귀 검사.</td></tr>
+<tr data-k="nw_p · compare(both, col, dates, primary) newey–west p값 / v2가 나은지 비교."><td class="fn"><code>nw_p · compare(both, col, dates, primary)</code></td><td>Newey–West p값 / V2가 나은지 비교.</td></tr>
+<tr data-k="verify_approval · application_rates 승인 확인 / x로 참고값을 낼 수 있는 비율."><td class="fn"><code>verify_approval · application_rates</code></td><td>승인 확인 / x로 참고값을 낼 수 있는 비율.</td></tr>
+<tr data-k="run_tests · write_x · run · main 시험 / 새 파일로만 쓰기 / 실행 / 실행 시작점."><td class="fn"><code>run_tests · write_x · run · main</code></td><td>시험 / 새 파일로만 쓰기 / 실행 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e49_aftermarket.py e49. 종목 자신의 저녁(nxt 애프터마켓) 가격이 다음 날 시가 갭에 보태나(개발 14종목)." data-open="0"><summary><code>workbench/e49_aftermarket.py</code> <span class="tag ph">실험</span> <span class="cnt">13</span></summary><p class="line">E49. 종목 자신의 저녁(NXT 애프터마켓) 가격이 다음 날 시가 갭에 보태나(개발 14종목).</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha · key_sha · require_unique 해시 / 키 해시 / 키 중복 금지."><td class="fn"><code>sha · key_sha · require_unique</code></td><td>해시 / 키 해시 / 키 중복 금지.</td></tr>
+<tr data-k="validate_nxt · dedupe_nxt nxt 자료 형식 검사 / 같은 키에 다른 값이 있으면 충돌로 본다."><td class="fn"><code>validate_nxt · dedupe_nxt</code></td><td>NXT 자료 형식 검사 / 같은 키에 다른 값이 있으면 충돌로 본다.</td></tr>
+<tr data-k="select_evening(nxt, slots, window) 날짜·종목마다 저녁 값 하나."><td class="fn"><code>select_evening(nxt, slots, window)</code></td><td>날짜·종목마다 저녁 값 하나.</td></tr>
+<tr data-k="peer_median(frame) 같은 날 다른 종목들의 저녁 움직임 중앙값(자기 제외)."><td class="fn"><code>peer_median(frame)</code></td><td>같은 날 다른 종목들의 저녁 움직임 중앙값(자기 제외).</td></tr>
+<tr data-k="targetless_inputs · assemble 실현값 없이 쓸 재료 / 합치기."><td class="fn"><code>targetless_inputs · assemble</code></td><td>실현값 없이 쓸 재료 / 합치기.</td></tr>
+<tr data-k="design · date_weights · fit_wls 회귀 설계표 / 날짜 무게 / 가중 최소제곱."><td class="fn"><code>design · date_weights · fit_wls</code></td><td>회귀 설계표 / 날짜 무게 / 가중 최소제곱.</td></tr>
+<tr data-k="eligible · predict(panel, labels) 대상 고르기 / 그날 이전 실현값만으로 학습해 예측."><td class="fn"><code>eligible · predict(panel, labels)</code></td><td>대상 고르기 / 그날 이전 실현값만으로 학습해 예측.</td></tr>
+<tr data-k="nw_p · holm · halves · label_rule p값 / 보정 / 앞·뒤 절반 / 판정 이름 붙이기."><td class="fn"><code>nw_p · holm · halves · label_rule</code></td><td>p값 / 보정 / 앞·뒤 절반 / 판정 이름 붙이기.</td></tr>
+<tr data-k="final_keys · daily_errors · evaluation_frames · evaluate 공통 행 / 날짜별 오차 / 채점 표 / 채점."><td class="fn"><code>final_keys · daily_errors · evaluation_frames · evaluate</code></td><td>공통 행 / 날짜별 오차 / 채점 표 / 채점.</td></tr>
+<tr data-k="descriptive · descriptive_summary · sensitivity_comparison 9/14 앞뒤 서술 / 요약 / 창 크기 민감도."><td class="fn"><code>descriptive · descriptive_summary · sensitivity_comparison</code></td><td>9/14 앞뒤 서술 / 요약 / 창 크기 민감도.</td></tr>
+<tr data-k="attrition(panel, pred, labels) 단계마다 빠진 행 수."><td class="fn"><code>attrition(panel, pred, labels)</code></td><td>단계마다 빠진 행 수.</td></tr>
+<tr data-k="required_hashes · verify_approval · verify_run_integrity 필요 해시 / 승인 / 실행 무결성."><td class="fn"><code>required_hashes · verify_approval · verify_run_integrity</code></td><td>필요 해시 / 승인 / 실행 무결성.</td></tr>
+<tr data-k="write_x · load_real · h_parity · run 새 파일로만 쓰기 / 실제 자료 읽기 / h가 기준 h와 같은지 / 실행."><td class="fn"><code>write_x · load_real · h_parity · run</code></td><td>새 파일로만 쓰기 / 실제 자료 읽기 / H가 기준 H와 같은지 / 실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/e51_preopen_ranges.py e51. h 과거 오차로 만든 단순 구간(지금 r0의 원형)와 계좌 예측구간." data-open="0"><summary><code>workbench/e51_preopen_ranges.py</code> <span class="tag ph">실험</span> <span class="cnt">8</span></summary><p class="line">E51. H 과거 오차로 만든 단순 구간(지금 R0의 원형)와 계좌 예측구간.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha(path) 해시."><td class="fn"><code>sha(path)</code></td><td>해시.</td></tr>
+<tr data-k="scale_before(errors) 그날 이전 오차 크기."><td class="fn"><code>scale_before(errors)</code></td><td>그날 이전 오차 크기.</td></tr>
+<tr data-k="interval_from_history(errors, dates, coverage) 과거 오차로 구간. 입력은 예측 날짜보다 앞서야 한다."><td class="fn"><code>interval_from_history(errors, dates, coverage)</code></td><td>과거 오차로 구간. 입력은 예측 날짜보다 앞서야 한다.</td></tr>
+<tr data-k="account_weights(prices, holdings, cash) 계좌 비중."><td class="fn"><code>account_weights(prices, holdings, cash)</code></td><td>계좌 비중.</td></tr>
+<tr data-k="account_projection(errors, weights) 계좌 오차. 빠진 종목을 몰래 0으로 채우지 않는다."><td class="fn"><code>account_projection(errors, weights)</code></td><td>계좌 오차. 빠진 종목을 몰래 0으로 채우지 않는다.</td></tr>
+<tr data-k="forecast_series · build_inputs · account_forecasts 구간 계산 / 입력 준비 / 계좌 예측구간."><td class="fn"><code>forecast_series · build_inputs · account_forecasts</code></td><td>구간 계산 / 입력 준비 / 계좌 예측구간.</td></tr>
+<tr data-k="bs · finite_mean · evaluate 블록 재표집 / 유한값 평균 / 채점."><td class="fn"><code>bs · finite_mean · evaluate</code></td><td>블록 재표집 / 유한값 평균 / 채점.</td></tr>
+<tr data-k="current_hashes · main 해시 / 실행 시작점."><td class="fn"><code>current_hashes · main</code></td><td>해시 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+</section>
+
+<section id="runs">
+  <h2>실험 스크립트(E54~E92)</h2>
+  <p class="sub">workbench/runs/ 아래 실험별 폴더. 파일 하나가 실험 하나예요. 안의 함수는 그 실험에서만 써요</p>
+  <div class="tablewrap"><table><thead><tr><th style="width:36%">파일</th><th>무슨 실험</th></tr></thead><tbody>
+<tr data-k="runs/claude_book_r1/e54.py e54. 구간 포함률 저하가 우연인가, 며칠을 더 봐야 아나(이항분포·kupiec)."><td class="fn"><code>runs/claude_book_r1/e54.py</code></td><td>E54. 구간 포함률 저하가 우연인가, 며칠을 더 봐야 아나(이항분포·Kupiec).</td></tr>
+<tr data-k="runs/claude_book_r1/e55.py e55. 오차에 시간 구조가 남았나, 어제까지 오차로 오늘을 보정하면 나아지나(arima류)."><td class="fn"><code>runs/claude_book_r1/e55.py</code></td><td>E55. 오차에 시간 구조가 남았나, 어제까지 오차로 오늘을 보정하면 나아지나(ARIMA류).</td></tr>
+<tr data-k="runs/claude_book_r1/e56.py e56. 06시에 &#x27;오늘 계좌는 조용/큼&#x27;을 구분할 수 있나(로짓)."><td class="fn"><code>runs/claude_book_r1/e56.py</code></td><td>E56. 06시에 &#x27;오늘 계좌는 조용/큼&#x27;을 구분할 수 있나(로짓).</td></tr>
+<tr data-k="runs/claude_book_r1/e57.py e57. 반도체 밖 보유자에게 h가 과장을 줄이나(집단 차이 검정)."><td class="fn"><code>runs/claude_book_r1/e57.py</code></td><td>E57. 반도체 밖 보유자에게 H가 과장을 줄이나(집단 차이 검정).</td></tr>
+<tr data-k="runs/claude_book_r1/e58.py e58. 06시와 nxt 08:10이 같은/반대 방향일 때 시가·종가는 어디로 갔나."><td class="fn"><code>runs/claude_book_r1/e58.py</code></td><td>E58. 06시와 NXT 08:10이 같은/반대 방향일 때 시가·종가는 어디로 갔나.</td></tr>
+<tr data-k="runs/claude_combo_r1/e59.py e59. 나스닥 선물·애프터 조합을 랜덤 날짜로 시험."><td class="fn"><code>runs/claude_combo_r1/e59.py</code></td><td>E59. 나스닥 선물·애프터 조합을 랜덤 날짜로 시험.</td></tr>
+<tr data-k="runs/claude_band_r1/e60.py e60. 06시 단순 구간을 처음 보는 186종목과 계좌로 넓혀도 포함률이 유지되나."><td class="fn"><code>runs/claude_band_r1/e60.py</code></td><td>E60. 06시 단순 구간을 처음 보는 186종목과 계좌로 넓혀도 포함률이 유지되나.</td></tr>
+<tr data-k="runs/claude_trust_r1/e61.py e61. &#x27;오늘 이 종목이 잘 따라갈 확률&#x27;로 방향 일치 등급을 표시할 수 있나(로짓)."><td class="fn"><code>runs/claude_trust_r1/e61.py</code></td><td>E61. &#x27;오늘 이 종목이 잘 따라갈 확률&#x27;로 방향 일치 등급을 표시할 수 있나(로짓).</td></tr>
+<tr data-k="workbench/e62_band.py e62~e64. 예측구간·계좌 예측구간·방향 일치 등급·공시(위 핵심 파일)."><td class="fn"><code>workbench/e62_band.py</code></td><td>E62~E64. 예측구간·계좌 예측구간·방향 일치 등급·공시(위 핵심 파일).</td></tr>
+<tr data-k="runs/claude_band_design_r1/diag_calm.py · diag_calm_events.py e63 사후 진단. 계좌 예측구간이 조용한 밤에 72.2%였던 이유 서술(판정 불변)."><td class="fn"><code>runs/claude_band_design_r1/diag_calm.py · diag_calm_events.py</code></td><td>E63 사후 진단. 계좌 예측구간이 조용한 밤에 72.2%였던 이유 서술(판정 불변).</td></tr>
+<tr data-k="runs/claude_twoyear_r1/e65.py · qa_creon.py e65. 2년 자료에서도 결론이 유지되나 / 크레온 분봉 품질 점검."><td class="fn"><code>runs/claude_twoyear_r1/e65.py · qa_creon.py</code></td><td>E65. 2년 자료에서도 결론이 유지되나 / 크레온 분봉 품질 점검.</td></tr>
+<tr data-k="runs/claude_calendar_r1/e67.py e67. 공식 일정이 있는 아침에 덜 맞나(월요일 주의의 근거)."><td class="fn"><code>runs/claude_calendar_r1/e67.py</code></td><td>E67. 공식 일정이 있는 아침에 덜 맞나(월요일 주의의 근거).</td></tr>
+<tr data-k="runs/claude_calendar_r1/e68.py e68. 잘 맞은/덜 맞은 아침의 속성 목록과 06시 아침 신뢰 점수."><td class="fn"><code>runs/claude_calendar_r1/e68.py</code></td><td>E68. 잘 맞은/덜 맞은 아침의 속성 목록과 06시 아침 신뢰 점수.</td></tr>
+<tr data-k="runs/claude_calendar_r1/e69.py e69. 겹친 일정, 미국 관련 기업 실적 밤, 얇은 시가."><td class="fn"><code>runs/claude_calendar_r1/e69.py</code></td><td>E69. 겹친 일정, 미국 관련 기업 실적 밤, 얇은 시가.</td></tr>
+<tr data-k="runs/claude_news_r1/e70.py e70. 미국 ai·반도체 뉴스가 몰린 밤에 덜 맞나(alpaca, 로컬 전용)."><td class="fn"><code>runs/claude_news_r1/e70.py</code></td><td>E70. 미국 AI·반도체 뉴스가 몰린 밤에 덜 맞나(Alpaca, 로컬 전용).</td></tr>
+<tr data-k="runs/claude_news_r1/e71.py e71. 국내 기사가 몰린 밤에 그 종목이 더 빗나갔나."><td class="fn"><code>runs/claude_news_r1/e71.py</code></td><td>E71. 국내 기사가 몰린 밤에 그 종목이 더 빗나갔나.</td></tr>
+<tr data-k="runs/claude_news_r1/e72.py · fetch_hk_titles.py e72. 국내 기사가 쏟아진 밤·06시 뒤에 덜 맞나(공개 사이트맵) / 서술용 제목."><td class="fn"><code>runs/claude_news_r1/e72.py · fetch_hk_titles.py</code></td><td>E72. 국내 기사가 쏟아진 밤·06시 뒤에 덜 맞나(공개 사이트맵) / 서술용 제목.</td></tr>
+<tr data-k="runs/claude_calendar_r1/e73.py e73. 전날 장이 거칠었으면 다음 날 아침 반영이 달라지나."><td class="fn"><code>runs/claude_calendar_r1/e73.py</code></td><td>E73. 전날 장이 거칠었으면 다음 날 아침 반영이 달라지나.</td></tr>
+<tr data-k="runs/claude_live_r1/e74.py e74. 처음 보는 날짜(10/27~11/3)로 아침 카드 연결·표시 점검."><td class="fn"><code>runs/claude_live_r1/e74.py</code></td><td>E74. 처음 보는 날짜(10/27~11/3)로 아침 카드 연결·표시 점검.</td></tr>
+<tr data-k="runs/claude_advanced_r1/e75.py e75. 경험적 베이즈로 종목 기울기를 업종 평균 쪽으로 당기면 나아지나."><td class="fn"><code>runs/claude_advanced_r1/e75.py</code></td><td>E75. 경험적 베이즈로 종목 기울기를 업종 평균 쪽으로 당기면 나아지나.</td></tr>
+<tr data-k="runs/claude_advanced_r1/e76.py e76. 구간 위·아래 끝을 분위 회귀로 직접 구하면(비대칭) s1보다 나은가."><td class="fn"><code>runs/claude_advanced_r1/e76.py</code></td><td>E76. 구간 위·아래 끝을 분위 회귀로 직접 구하면(비대칭) S1보다 나은가.</td></tr>
+<tr data-k="runs/claude_advanced_r1/e77.py e77. 계좌 예측구간에 &#x27;바닥&#x27;을 두면 조용한 밤 문제가 풀리나. 함수: floor_series(계좌별 바닥), strata(종목 수별 포함률), evaluate(설계·최종 검증 채점)."><td class="fn"><code>runs/claude_advanced_r1/e77.py</code></td><td>E77. 계좌 예측구간에 &#x27;바닥&#x27;을 두면 조용한 밤 문제가 풀리나. 함수: floor_series(계좌별 바닥), strata(종목 수별 포함률), evaluate(설계·최종 검증 채점).</td></tr>
+<tr data-k="runs/claude_advanced_r1/e78.py e78. 08:11 nxt g를 &#x27;시장 기준 추정 h + 관측과의 차이 g − h(사건 인과효과 아님)&#x27;로 나눠 보여 줄 근거가 있나. 함수: stats(기울기·r²·방향 일치)."><td class="fn"><code>runs/claude_advanced_r1/e78.py</code></td><td>E78. 08:11 NXT g를 &#x27;시장 기준 추정 H + 관측과의 차이 g − H(사건 인과효과 아님)&#x27;로 나눠 보여 줄 근거가 있나. 함수: stats(기울기·R²·방향 일치).</td></tr>
+<tr data-k="runs/claude_advanced_r1/e79.py · collect_nxt_universe.py e79. 전날 저녁 &#x27;그 종목만의 움직임&#x27;을 h에 더하면 200종목에서도 덜 빗나가나 / 그 재료(nxt 일봉) 받기."><td class="fn"><code>runs/claude_advanced_r1/e79.py · collect_nxt_universe.py</code></td><td>E79. 전날 저녁 &#x27;그 종목만의 움직임&#x27;을 H에 더하면 200종목에서도 덜 빗나가나 / 그 재료(NXT 일봉) 받기.</td></tr>
+<tr data-k="runs/claude_intercept_r1/e80.py · e80_bias_check.py e80. f2에 절편을 넣고 같은 1/2 당김을 하면 나아지나 / 공통 편향 점검."><td class="fn"><code>runs/claude_intercept_r1/e80.py · e80_bias_check.py</code></td><td>E80. F2에 절편을 넣고 같은 1/2 당김을 하면 나아지나 / 공통 편향 점검.</td></tr>
+<tr data-k="runs/claude_krx_crosscheck_r1/e81.py · e81_posthoc.py · fetch_krx.py e81. 팀 저장소 krx 백테스트(반도체 15종목)로 입력·점예측 함수·지표 교차 검증 / 사후 점검 / krx 원자료 받기(지금은 권한 없음)."><td class="fn"><code>runs/claude_krx_crosscheck_r1/e81.py · e81_posthoc.py · fetch_krx.py</code></td><td>E81. 팀 저장소 KRX 백테스트(반도체 15종목)로 입력·점예측 함수·지표 교차 검증 / 사후 점검 / KRX 원자료 받기(지금은 권한 없음).</td></tr>
+<tr data-k="runs/claude_expiry_night_r1/e82.py · collect_expiry.py e82. 만기일 밤을 다음 계약으로 받아 만기 다음 날 x 살리기 / 만기일 밤 자료 받기."><td class="fn"><code>runs/claude_expiry_night_r1/e82.py · collect_expiry.py</code></td><td>E82. 만기일 밤을 다음 계약으로 받아 만기 다음 날 x 살리기 / 만기일 밤 자료 받기.</td></tr>
+<tr data-k="runs/claude_d08_size_r1/e83.py e83. 08:11 등급 로짓(재료 3개)과 nxt 갭 크기 하나 비교."><td class="fn"><code>runs/claude_d08_size_r1/e83.py</code></td><td>E83. 08:11 등급 로짓(재료 3개)과 NXT 갭 크기 하나 비교.</td></tr>
+<tr data-k="workbench/protocol_e84.json e84. 실적 정정 공시를 어떻게 셀지. 앞으로 쌓이는 날로만 판정하는 계약이며 실행기는 아직 없다."><td class="fn"><code>workbench/protocol_e84.json</code></td><td>E84. 실적 정정 공시를 어떻게 셀지. 앞으로 쌓이는 날로만 판정하는 계약이며 실행기는 아직 없다.</td></tr>
+<tr data-k="runs/claude_account_diag_r1/diag.py · diag_nxt.py e85 사후 진단. 계좌 구간이 조용한 밤에 빠진 날·방향·계좌 크기와 08:10 nxt 공통 신호(판정 아님)."><td class="fn"><code>runs/claude_account_diag_r1/diag.py · diag_nxt.py</code></td><td>E85 사후 진단. 계좌 구간이 조용한 밤에 빠진 날·방향·계좌 크기와 08:10 NXT 공통 신호(판정 아님).</td></tr>
+<tr data-k="runs/claude_sensitivity_r1/e86.py · e86_sameday.py e86. 노란띠·믿을 정도 세부 설정 16가지를 바꿔도 결론이 유지되나."><td class="fn"><code>runs/claude_sensitivity_r1/e86.py · e86_sameday.py</code></td><td>E86. 노란띠·믿을 정도 세부 설정 16가지를 바꿔도 결론이 유지되나.</td></tr>
+<tr data-k="workbench/e87_account.py · e87_run.py · e87_report.py e87(codex). 계좌 띠 as1에서 부호 분위·공동 표준화 rms 후보 비교. 계산 함수 / 한 번만 도는 실행기 / 집계·검정."><td class="fn"><code>workbench/e87_account.py · e87_run.py · e87_report.py</code></td><td>E87(Codex). 계좌 띠 AS1에서 부호 분위·공동 표준화 RMS 후보 비교. 계산 함수 / 한 번만 도는 실행기 / 집계·검정.</td></tr>
+<tr data-k="runs/claude_creon_usb_r1/e88.py · e88_posthoc.py · e88_posthoc2.py e88. 크레온 1분봉(usb)으로 한투 nxt 분봉 시각 표기·일봉·기업 행사일·nxt 저녁 가격 검증 / 사후 점검 2개."><td class="fn"><code>runs/claude_creon_usb_r1/e88.py · e88_posthoc.py · e88_posthoc2.py</code></td><td>E88. 크레온 1분봉(USB)으로 한투 NXT 분봉 시각 표기·일봉·기업 행사일·NXT 저녁 가격 검증 / 사후 점검 2개.</td></tr>
+<tr data-k="runs/claude_creon_usb_r1/e89.py e89. 크레온 보충으로 08:11 등급(d08)·e78 분해를 nxt 값이 없던 기간에서 확인."><td class="fn"><code>runs/claude_creon_usb_r1/e89.py</code></td><td>E89. 크레온 보충으로 08:11 등급(D08)·E78 분해를 NXT 값이 없던 기간에서 확인.</td></tr>
+<tr data-k="runs/claude_creon_usb_r1/e90_e91.py e90·e91. 200종목 2년치 장중 지속(e23 확장)과 장 초반 흔들림 예보(e24·e44 확장)."><td class="fn"><code>runs/claude_creon_usb_r1/e90_e91.py</code></td><td>E90·E91. 200종목 2년치 장중 지속(E23 확장)과 장 초반 흔들림 예보(E24·E44 확장).</td></tr>
+<tr data-k="workbench/e92_account.py · e92_run.py · e92_report.py e92(codex). 08:11 계좌 띠: nxt 중심 고정 조건부 폭 대 g0·gr0. 계산 함수 / 한 번만 도는 실행기 / 집계·검정."><td class="fn"><code>workbench/e92_account.py · e92_run.py · e92_report.py</code></td><td>E92(Codex). 08:11 계좌 띠: NXT 중심 고정 조건부 폭 대 G0·GR0. 계산 함수 / 한 번만 도는 실행기 / 집계·검정.</td></tr>
+<tr data-k="runs/claude_events_r1/collect_dart.py 200종목 dart 공시 목록 수집(접수 날짜만)."><td class="fn"><code>runs/claude_events_r1/collect_dart.py</code></td><td>200종목 DART 공시 목록 수집(접수 날짜만).</td></tr>
+<tr data-k="runs/claude_news_r1/collect_*.py 뉴스 재료 수집(alpaca·gdelt·국내 사이트맵). 본문은 받지 않는다."><td class="fn"><code>runs/claude_news_r1/collect_*.py</code></td><td>뉴스 재료 수집(Alpaca·GDELT·국내 사이트맵). 본문은 받지 않는다.</td></tr>
+<tr data-k="runs/claude_night_minutes_r1/fill.py 야간선물 1분봉 빈 밤(10/26~10/30) 채우기."><td class="fn"><code>runs/claude_night_minutes_r1/fill.py</code></td><td>야간선물 1분봉 빈 밤(10/26~10/30) 채우기.</td></tr>
+<tr data-k="runs/claude_e50a_r1/e50a.py · by_group.py e50 a. 06시 계좌 숫자의 가치 / 업종별 서술."><td class="fn"><code>runs/claude_e50a_r1/e50a.py · by_group.py</code></td><td>E50 A. 06시 계좌 숫자의 가치 / 업종별 서술.</td></tr>
+<tr data-k="runs/claude_fail_days_r1/fail_days.py 안 맞은 날의 공통 특징 찾기(탐색)."><td class="fn"><code>runs/claude_fail_days_r1/fail_days.py</code></td><td>안 맞은 날의 공통 특징 찾기(탐색).</td></tr>
+<tr data-k="runs/claude_nxt_vs_h_r1/nxt_vs_h.py nxt 08:10이 h보다 시가에서 먼 종목을 미리 가려낼 수 있나(탐색)."><td class="fn"><code>runs/claude_nxt_vs_h_r1/nxt_vs_h.py</code></td><td>NXT 08:10이 H보다 시가에서 먼 종목을 미리 가려낼 수 있나(탐색).</td></tr>
+<tr data-k="runs/claude_replay_*/*.py 10/27·11/2 하루 사후 재생."><td class="fn"><code>runs/claude_replay_*/*.py</code></td><td>10/27·11/2 하루 사후 재생.</td></tr>
+<tr data-k="runs/claude_rerun_r1/*.py 전체 재실행을 복사본에서 돌리고 원본과 숫자 단위로 비교."><td class="fn"><code>runs/claude_rerun_r1/*.py</code></td><td>전체 재실행을 복사본에서 돌리고 원본과 숫자 단위로 비교.</td></tr>
+<tr data-k="runs/codex_*/ · round1~3/ codex 쪽 실행 기록(i16 단계별 사본, e45·e46·e47·e51 실행, 예전 라운드). 같은 파일의 그때 사본이다."><td class="fn"><code>runs/codex_*/ · round1~3/</code></td><td>Codex 쪽 실행 기록(I16 단계별 사본, E45·E46·E47·E51 실행, 예전 라운드). 같은 파일의 그때 사본이다.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="safety">
+  <h2>실시간 기록 안전장치(I16·L1)</h2>
+  <p class="sub">"미리 낸 숫자"를 나중에 고칠 수 없게 기록하는 장치. 아직 실제 수신 0건이에요</p>
+  <p>여기 함수들은 대부분 <b>검사하고, 틀리면 멈추고, 한 번 쓴 것은 덮어쓰지 않는</b> 일을 해요. 숫자를 계산하는 곳이 아니라 기록을 지키는 곳이라 이름이 낯설어요.</p>
+  <details class="file" data-k="workbench/l1_run.py l1. 사람이 손으로 한 번 켜는 수신 칸. 예약 실행·키 갱신·재시도 없음." data-open="0"><summary><code>workbench/l1_run.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">9</span></summary><p class="line">L1. 사람이 손으로 한 번 켜는 수신 칸. 예약 실행·키 갱신·재시도 없음.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="local(now) · window(now, start, end) 한국 시각 / 허용 시간 안인가."><td class="fn"><code>local(now) · window(now, start, end)</code></td><td>한국 시각 / 허용 시간 안인가.</td></tr>
+<tr data-k="safe_reason(exc) 오류를 정해진 안전한 이유 문구로 바꾼다(키 같은 값이 새지 않게)."><td class="fn"><code>safe_reason(exc)</code></td><td>오류를 정해진 안전한 이유 문구로 바꾼다(키 같은 값이 새지 않게).</td></tr>
+<tr data-k="load_packet() 준비 묶음(승인·계약) 읽기."><td class="fn"><code>load_packet()</code></td><td>준비 묶음(승인·계약) 읽기.</td></tr>
+<tr data-k="no_registration() 예약 작업이 걸려 있지 않은지."><td class="fn"><code>no_registration()</code></td><td>예약 작업이 걸려 있지 않은지.</td></tr>
+<tr data-k="has_e19_process · e19_ready 예전 e19 매일 기록과 겹치지 않는지."><td class="fn"><code>has_e19_process · e19_ready</code></td><td>예전 E19 매일 기록과 겹치지 않는지.</td></tr>
+<tr data-k="credential_preflight() 키가 준비됐는지(값은 출력하지 않음)."><td class="fn"><code>credential_preflight()</code></td><td>키가 준비됐는지(값은 출력하지 않음).</td></tr>
+<tr data-k="classify(returned, returned_at) 받은 결과 분류."><td class="fn"><code>classify(returned, returned_at)</code></td><td>받은 결과 분류.</td></tr>
+<tr data-k="once(confirm_live_read, normal_session_confirmed) 한 번 실행. 확인 두 개가 다 있어야 돈다."><td class="fn"><code>once(confirm_live_read, normal_session_confirmed)</code></td><td>한 번 실행. 확인 두 개가 다 있어야 돈다.</td></tr>
+<tr data-k="main(argv) 실행 시작점."><td class="fn"><code>main(argv)</code></td><td>실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/forward_gate.py 사전 공개 관문(배포 안 됨). 06:00 자료 → 06:10까지, 08:11 자료 → 08:15까지 내야 &#x27;미리 낸 숫자&#x27;로 인정." data-open="0"><summary><code>workbench/forward_gate.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">3</span></summary><p class="line">사전 공개 관문(배포 안 됨). 06:00 자료 → 06:10까지, 08:11 자료 → 08:15까지 내야 &#x27;미리 낸 숫자&#x27;로 인정.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="aware(value, name) 시간대가 붙은 시각인지."><td class="fn"><code>aware(value, name)</code></td><td>시간대가 붙은 시각인지.</td></tr>
+<tr data-k="validate_forecast(payload, received_at) 예측 묶음 검사. 날짜가 받은 날과 같은지, 입력이 기준 시각 전에 나왔는지, 마감 전에 받았는지. 늦으면 &#x27;재구성&#x27;이지 실시간 증거가 아니다."><td class="fn"><code>validate_forecast(payload, received_at)</code></td><td>예측 묶음 검사. 날짜가 받은 날과 같은지, 입력이 기준 시각 전에 나왔는지, 마감 전에 받았는지. 늦으면 &#x27;재구성&#x27;이지 실시간 증거가 아니다.</td></tr>
+<tr data-k="record(payload) 날짜·칸마다 한 번만 기록."><td class="fn"><code>record(payload)</code></td><td>날짜·칸마다 한 번만 기록.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/capture_probe.py i16 b. 승인된 nxt 시세를 딱 한 번 받아 저장만 한다. 예측이 아니다." data-open="0"><summary><code>workbench/capture_probe.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">10</span></summary><p class="line">I16 B. 승인된 NXT 시세를 딱 한 번 받아 저장만 한다. 예측이 아니다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="probeerror · require 정해진 이유만 담는 오류 / 조건이 틀리면 그 오류로 멈춤."><td class="fn"><code>ProbeError · require</code></td><td>정해진 이유만 담는 오류 / 조건이 틀리면 그 오류로 멈춤.</td></tr>
+<tr data-k="blob · digest 값을 정렬된 json 바이트로 / 해시."><td class="fn"><code>blob · digest</code></td><td>값을 정렬된 JSON 바이트로 / 해시.</td></tr>
+<tr data-k="clock · dt · check_clock 지금 시각(벽시계 + 단조 시계) / 시각 해석 / 두 시계가 5초 넘게 어긋나면 이상."><td class="fn"><code>clock · dt · check_clock</code></td><td>지금 시각(벽시계 + 단조 시계) / 시각 해석 / 두 시계가 5초 넘게 어긋나면 이상.</td></tr>
+<tr data-k="parent_fd · read_file · exclusive · load_json 링크를 따라가지 않고 폴더 열기 / 크기 제한 읽기 / 덮어쓰기 불가 쓰기 / json 읽기."><td class="fn"><code>parent_fd · read_file · exclusive · load_json</code></td><td>링크를 따라가지 않고 폴더 열기 / 크기 제한 읽기 / 덮어쓰기 불가 쓰기 / JSON 읽기.</td></tr>
+<tr data-k="validate_manifest · due 준비 파일 검사 / 지금 받을 시각인가(날짜·휴장 검사)."><td class="fn"><code>validate_manifest · due</code></td><td>준비 파일 검사 / 지금 받을 시각인가(날짜·휴장 검사).</td></tr>
+<tr data-k="credentials · credentials 키 묶음 / 키·토큰을 한 번만 읽기."><td class="fn"><code>Credentials · credentials</code></td><td>키 묶음 / 키·토큰을 한 번만 읽기.</td></tr>
+<tr data-k="safe_date · parse_payload · header_values 서버 시각 헤더 검사 / 응답 해석 / 반복 헤더 다 보기."><td class="fn"><code>safe_date · parse_payload · header_values</code></td><td>서버 시각 헤더 검사 / 응답 해석 / 반복 헤더 다 보기.</td></tr>
+<tr data-k="noredirect · _fetch 다른 주소로 넘어가기 금지 / 고정 주소로만 한 번 요청."><td class="fn"><code>NoRedirect · _fetch</code></td><td>다른 주소로 넘어가기 금지 / 고정 주소로만 한 번 요청.</td></tr>
+<tr data-k="_worker · supervised · _execute 별도 프로세스에서 요청, 제한 시간 넘으면 멈춤, 결과 저장."><td class="fn"><code>_worker · supervised · _execute</code></td><td>별도 프로세스에서 요청, 제한 시간 넘으면 멈춤, 결과 저장.</td></tr>
+<tr data-k="run_synthetic · run_actual · inventory 가짜 자료 시험 / 별도 승인이 있을 때만 실제 / 실패도 분모에 남기는 목록."><td class="fn"><code>run_synthetic · run_actual · inventory</code></td><td>가짜 자료 시험 / 별도 승인이 있을 때만 실제 / 실패도 분모에 남기는 목록.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/prospective_journal.py i16 a. 사전 예측 기록장(연습판). 한 번 쓴 기록은 고칠 수 없다." data-open="0"><summary><code>workbench/prospective_journal.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">4</span></summary><p class="line">I16 A. 사전 예측 기록장(연습판). 한 번 쓴 기록은 고칠 수 없다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="journalerror · commitindeterminate 정해진 이유만 담는 오류 / &#x27;확인은 났는데 최종 저장 확인 실패&#x27; — 다시 시도하지 않는다."><td class="fn"><code>JournalError · CommitIndeterminate</code></td><td>정해진 이유만 담는 오류 / &#x27;확인은 났는데 최종 저장 확인 실패&#x27; — 다시 시도하지 않는다.</td></tr>
+<tr data-k="need · keys · identifier · digest · day · stamp · number · encoded · sha 입력 검사 도우미(필수 조건, 키 목록, 이름 형식, 해시, 날짜, 시각, 숫자, 인코딩)."><td class="fn"><code>need · keys · identifier · digest · day · stamp · number · encoded · sha</code></td><td>입력 검사 도우미(필수 조건, 키 목록, 이름 형식, 해시, 날짜, 시각, 숫자, 인코딩).</td></tr>
+<tr data-k="artifactref 저장 파일 참조."><td class="fn"><code>ArtifactRef</code></td><td>저장 파일 참조.</td></tr>
+<tr data-k="journal 기록장 본체. register_protocol(계약 등록), register_artifact(파일 등록), append_receipt(받은 기록), reserve_forecast(예측 자리 예약), commit_forecast(예측 확정), mark_incomplete(미완료 표시), inspect_slot(칸 확인), append_outcome(결과 붙이기). 밑줄 함수는 안쪽 도우미."><td class="fn"><code>Journal</code></td><td>기록장 본체. register_protocol(계약 등록), register_artifact(파일 등록), append_receipt(받은 기록), reserve_forecast(예측 자리 예약), commit_forecast(예측 확정), mark_incomplete(미완료 표시), inspect_slot(칸 확인), append_outcome(결과 붙이기). 밑줄 함수는 안쪽 도우미.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/provider_evidence.py c2-1. 받은 기록을 오프라인으로 쌓는 저장 다리. 가져온 수신 시각을 인증하지 않는다." data-open="0"><summary><code>workbench/provider_evidence.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">4</span></summary><p class="line">C2-1. 받은 기록을 오프라인으로 쌓는 저장 다리. 가져온 수신 시각을 인증하지 않는다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="evidenceerror · _need · _hash · _stamp · _order · _load 오류 / 검사 / 해시 / 시각 / 순서 검사 / 읽기."><td class="fn"><code>EvidenceError · _need · _hash · _stamp · _order · _load</code></td><td>오류 / 검사 / 해시 / 시각 / 순서 검사 / 읽기.</td></tr>
+<tr data-k="_exclusive · _read · _publish_ack · _root · _safe 덮어쓰기 불가 쓰기 / 읽기 / 확인 신호 / 저장 폴더 / 안전 감싸기."><td class="fn"><code>_exclusive · _read · _publish_ack · _root · _safe</code></td><td>덮어쓰기 불가 쓰기 / 읽기 / 확인 신호 / 저장 폴더 / 안전 감싸기.</td></tr>
+<tr data-k="_bundle · _snapshot_dirs · _scan · _public · _commit 묶음 검사 / 스냅샷 폴더 / 훑기 / 공개용 결과 / 확정."><td class="fn"><code>_bundle · _snapshot_dirs · _scan · _public · _commit</code></td><td>묶음 검사 / 스냅샷 폴더 / 훑기 / 공개용 결과 / 확정.</td></tr>
+<tr data-k="register · append · inspect 등록 / 추가 / 확인."><td class="fn"><code>register · append · inspect</code></td><td>등록 / 추가 / 확인.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/provider_outcome.py c2-0. 저장된 관측 묶음을 오프라인으로 재생해 검사한다." data-open="0"><summary><code>workbench/provider_outcome.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">4</span></summary><p class="line">C2-0. 저장된 관측 묶음을 오프라인으로 재생해 검사한다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="outcomeerror · _need · canonical · digest · metadata_anchor 오류 / 검사 / 정렬된 표기 / 해시 / 기준 해시."><td class="fn"><code>OutcomeError · _need · canonical · digest · metadata_anchor</code></td><td>오류 / 검사 / 정렬된 표기 / 해시 / 기준 해시.</td></tr>
+<tr data-k="_keys · _identifier · _hash · _code · _date · _time · _positive · _items · _load 형식 검사 도우미."><td class="fn"><code>_keys · _identifier · _hash · _code · _date · _time · _positive · _items · _load</code></td><td>형식 검사 도우미.</td></tr>
+<tr data-k="_registration · _receipt · _observation 등록·수신·관측 기록 검사."><td class="fn"><code>_registration · _receipt · _observation</code></td><td>등록·수신·관측 기록 검사.</td></tr>
+<tr data-k="replay · _replay 묶음 전체를 검사한 뒤에만 결과를 돌려준다."><td class="fn"><code>replay · _replay</code></td><td>묶음 전체를 검사한 뒤에만 결과를 돌려준다.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/frozen_range.py i16 c0. e39 구간 상태를 숫자만으로 얼려 두고, 실현값 없이 계산한다." data-open="0"><summary><code>workbench/frozen_range.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">5</span></summary><p class="line">I16 C0. E39 구간 상태를 숫자만으로 얼려 두고, 실현값 없이 계산한다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="_require · _keys · _date · _number · _frame · _sha · _exact_float · _history_metadata · _day_weights · _weighted_quantile · _nullable_list 검사·변환 도우미."><td class="fn"><code>_require · _keys · _date · _number · _frame · _sha · _exact_float · _history_metadata · _day_weights · _weighted_quantile · _nullable_list</code></td><td>검사·변환 도우미.</td></tr>
+<tr data-k="_design · _scale · _fit_model 설계표 / 폭 / 학습."><td class="fn"><code>_design · _scale · _fit_model</code></td><td>설계표 / 폭 / 학습.</td></tr>
+<tr data-k="fit_state(history, target_date) 고정 공식을 맞춰 json 숫자 상태로 만든다."><td class="fn"><code>fit_state(history, target_date)</code></td><td>고정 공식을 맞춰 JSON 숫자 상태로 만든다.</td></tr>
+<tr data-k="validate_state(state) 숨은 행 배열·여분 키·이상한 숫자를 거부."><td class="fn"><code>validate_state(state)</code></td><td>숨은 행 배열·여분 키·이상한 숫자를 거부.</td></tr>
+<tr data-k="predict_frozen(state, inputs) 상태 + 입력만으로 계산(학습·파일 접근 없음)."><td class="fn"><code>predict_frozen(state, inputs)</code></td><td>상태 + 입력만으로 계산(학습·파일 접근 없음).</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/i16_inference_parity.py 얼린 상태로 계산한 값이 원래 계산과 같은지 대조." data-open="0"><summary><code>workbench/i16_inference_parity.py</code> <span class="tag ">실시간 기록 안전장치</span> <span class="cnt">1</span></summary><p class="line">얼린 상태로 계산한 값이 원래 계산과 같은지 대조.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha · write_json · input_hashes · run 해시 / 저장 / 입력 해시 / 대조 실행."><td class="fn"><code>sha · write_json · input_hashes · run</code></td><td>해시 / 저장 / 입력 해시 / 대조 실행.</td></tr>
+</tbody></table></div></details>
+</section>
+
+<section id="audit">
+  <h2>재검증·관리 도구</h2>
+  <p class="sub">예전 결과를 다시 확인한 도구(E38~E44)와 상태판·그림 도구</p>
+  <details class="file" data-k="workbench/account_range_audit.py e44. 계좌 범위 표본을 결과로 고르지 않았는지 재검증." data-open="0"><summary><code>workbench/account_range_audit.py</code> <span class="tag ">재검증</span> <span class="cnt">1</span></summary><p class="line">E44. 계좌 범위 표본을 결과로 고르지 않았는지 재검증.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="run(complete_minutes) · main() 실행 / 실행 시작점."><td class="fn"><code>run(complete_minutes) · main()</code></td><td>실행 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/direction_audit.py e42. 방향을 오름·보합·내림 셋으로 고정 비교." data-open="0"><summary><code>workbench/direction_audit.py</code> <span class="tag ">재검증</span> <span class="cnt">2</span></summary><p class="line">E42. 방향을 오름·보합·내림 셋으로 고정 비교.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="three_class(values, deadband) 작은 움직임은 보합으로."><td class="fn"><code>three_class(values, deadband)</code></td><td>작은 움직임은 보합으로.</td></tr>
+<tr data-k="build_prices · make_predictions · uncertainty · evaluate · main 가격 / 예측 / 불확실성 / 채점 / 실행 시작점."><td class="fn"><code>build_prices · make_predictions · uncertainty · evaluate · main</code></td><td>가격 / 예측 / 불확실성 / 채점 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/lineage_audit.py 계보 점검. 저장된 예측이 어디서 왔는지와 e41 민감도." data-open="0"><summary><code>workbench/lineage_audit.py</code> <span class="tag ">재검증</span> <span class="cnt">4</span></summary><p class="line">계보 점검. 저장된 예측이 어디서 왔는지와 E41 민감도.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="digest · clean · save_json · raw_night_panel 해시 / 정리 / 저장 / 원래 야간 표."><td class="fn"><code>digest · clean · save_json · raw_night_panel</code></td><td>해시 / 정리 / 저장 / 원래 야간 표.</td></tr>
+<tr data-k="audit_lineage · block_uncertainty · audit_strata 계보 확인 / 블록 불확실성 / 층별 확인."><td class="fn"><code>audit_lineage · block_uncertainty · audit_strata</code></td><td>계보 확인 / 블록 불확실성 / 층별 확인.</td></tr>
+<tr data-k="rolling_point_models(valid) 앞 250행(최소 120) 기울기를 독립적으로 다시 계산."><td class="fn"><code>rolling_point_models(valid)</code></td><td>앞 250행(최소 120) 기울기를 독립적으로 다시 계산.</td></tr>
+<tr data-k="full_main · main 전체 / 실행 시작점."><td class="fn"><code>full_main · main</code></td><td>전체 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/microstructure_sensitivity.py 유동성·실현값 정의 민감도 진단." data-open="0"><summary><code>workbench/microstructure_sensitivity.py</code> <span class="tag ">재검증</span> <span class="cnt">1</span></summary><p class="line">유동성·실현값 정의 민감도 진단.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="main() 실행."><td class="fn"><code>main()</code></td><td>실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/rule_audit.py e38/e35 규칙 기준 재현." data-open="0"><summary><code>workbench/rule_audit.py</code> <span class="tag ">재검증</span> <span class="cnt">3</span></summary><p class="line">E38/E35 규칙 기준 재현.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="declared_pass(rules) 선언한 통과 기준."><td class="fn"><code>declared_pass(rules)</code></td><td>선언한 통과 기준.</td></tr>
+<tr data-k="strict_rule_tree(max_depth, random_state) 깊이를 제한한 결정나무."><td class="fn"><code>strict_rule_tree(max_depth, random_state)</code></td><td>깊이를 제한한 결정나무.</td></tr>
+<tr data-k="main() 실행."><td class="fn"><code>main()</code></td><td>실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/target_filter_fix.py 결과 크기로 거르지 않고 h 입력표를 다시 만든다." data-open="0"><summary><code>workbench/target_filter_fix.py</code> <span class="tag ">재검증</span> <span class="cnt">1</span></summary><p class="line">결과 크기로 거르지 않고 H 입력표를 다시 만든다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="main() 실행."><td class="fn"><code>main()</code></td><td>실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/time_patterns.py e40/e43. 시각별 진단과 08:00~08:10 경로 시험." data-open="0"><summary><code>workbench/time_patterns.py</code> <span class="tag ">재검증</span> <span class="cnt">5</span></summary><p class="line">E40/E43. 시각별 진단과 08:00~08:10 경로 시험.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="write_json · holm · block_summary 저장 / 보정 / 날짜 블록 재표집 요약."><td class="fn"><code>write_json · holm · block_summary</code></td><td>저장 / 보정 / 날짜 블록 재표집 요약.</td></tr>
+<tr data-k="matching_breaks · fixed_cohort · boundary_sensitivity 시간 경계 짝짓기 / 모든 분에 유효한 행만 / 경계 민감도."><td class="fn"><code>matching_breaks · fixed_cohort · boundary_sensitivity</code></td><td>시간 경계 짝짓기 / 모든 분에 유효한 행만 / 경계 민감도.</td></tr>
+<tr data-k="load_minutes · daily_reference · slices 분봉 읽기 / 일 기준값 / 기간 나누기."><td class="fn"><code>load_minutes · daily_reference · slices</code></td><td>분봉 읽기 / 일 기준값 / 기간 나누기.</td></tr>
+<tr data-k="run_time · path_features · temporal_path_predictions · run_paths 시각 진단 / 08:00~08:10 경로 특징 / 과거만으로 경로 예측 / 실행."><td class="fn"><code>run_time · path_features · temporal_path_predictions · run_paths</code></td><td>시각 진단 / 08:00~08:10 경로 특징 / 과거만으로 경로 예측 / 실행.</td></tr>
+<tr data-k="validate_saved_outputs · main 저장 결과 점검 / 실행 시작점."><td class="fn"><code>validate_saved_outputs · main</code></td><td>저장 결과 점검 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/wide_models.py e41. 넓은 거시 재료로 다시 보기." data-open="0"><summary><code>workbench/wide_models.py</code> <span class="tag ">재검증</span> <span class="cnt">3</span></summary><p class="line">E41. 넓은 거시 재료로 다시 보기.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="cut_at · daily_available_frame · last_asof · daily_interval · hourly_asof 기준 시각에 알 수 있던 값만 고르기."><td class="fn"><code>cut_at · daily_available_frame · last_asof · daily_interval · hourly_asof</code></td><td>기준 시각에 알 수 있던 값만 고르기.</td></tr>
+<tr data-k="build_features · date_weights · date_folds 특징 / 날짜 무게 / 날짜로 나눈 접기."><td class="fn"><code>build_features · date_weights · date_folds</code></td><td>특징 / 날짜 무게 / 날짜로 나눈 접기.</td></tr>
+<tr data-k="preprocessor · estimator · fit_model · tune · run_walk · compare · main 전처리 / 모델 / 학습 / 조율 / 앞으로 걸어가며 시험 / 비교 / 실행 시작점."><td class="fn"><code>Preprocessor · estimator · fit_model · tune · run_walk · compare · main</code></td><td>전처리 / 모델 / 학습 / 조율 / 앞으로 걸어가며 시험 / 비교 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/futures_analysis.py e40 보충. 같은 시각 상관만 본다." data-open="0"><summary><code>workbench/futures_analysis.py</code> <span class="tag ">재검증</span> <span class="cnt">1</span></summary><p class="line">E40 보충. 같은 시각 상관만 본다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="corr_summary · main 상관 요약 / 실행."><td class="fn"><code>corr_summary · main</code></td><td>상관 요약 / 실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/i24_reanalysis.py e39/e41 교정 민감도." data-open="0"><summary><code>workbench/i24_reanalysis.py</code> <span class="tag ">재검증</span> <span class="cnt">2</span></summary><p class="line">E39/E41 교정 민감도.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="sha · point_only_panel · matched · differences 해시 / 점 예측 표 / 맞추기 / 차이."><td class="fn"><code>sha · point_only_panel · matched · differences</code></td><td>해시 / 점 예측 표 / 맞추기 / 차이.</td></tr>
+<tr data-k="range_extras · wide_twelve · approval_inputs · run · main 구간 추가 / 12개 비교 / 승인 입력 / 실행 / 실행 시작점."><td class="fn"><code>range_extras · wide_twelve · approval_inputs · run · main</code></td><td>구간 추가 / 12개 비교 / 승인 입력 / 실행 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/render_status.py 상태판(status.html)을 대기열·결과 색인 두 파일로 만든다." data-open="0"><summary><code>workbench/render_status.py</code> <span class="tag ">관리</span> <span class="cnt">2</span></summary><p class="line">상태판(status.html)을 대기열·결과 색인 두 파일로 만든다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="text · artifact_link · links · paragraphs · counter 글 / 작업대 안 파일 링크만 / 링크 목록 / 문단 / 개수."><td class="fn"><code>text · artifact_link · links · paragraphs · counter</code></td><td>글 / 작업대 안 파일 링크만 / 링크 목록 / 문단 / 개수.</td></tr>
+<tr data-k="render · main 그리기 / 실행 시작점."><td class="fn"><code>render · main</code></td><td>그리기 / 실행 시작점.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/run_round.py 예전 라운드 재현 실행 시작점. 새 결과 폴더, 해시 기록, 덮어쓰기 금지." data-open="0"><summary><code>workbench/run_round.py</code> <span class="tag ">관리</span> <span class="cnt">1</span></summary><p class="line">예전 라운드 재현 실행 시작점. 새 결과 폴더, 해시 기록, 덮어쓰기 금지.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="main() 실행."><td class="fn"><code>main()</code></td><td>실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/plot_results.py 저장 결과로 그림만 다시 뽑는다." data-open="0"><summary><code>workbench/plot_results.py</code> <span class="tag ">관리</span> <span class="cnt">1</span></summary><p class="line">저장 결과로 그림만 다시 뽑는다.</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="main() 실행."><td class="fn"><code>main()</code></td><td>실행.</td></tr>
+</tbody></table></div></details>
+<details class="file" data-k="workbench/collect_futures_context.py e40용 선물 맥락 시세 조회(읽기 전용)." data-open="0"><summary><code>workbench/collect_futures_context.py</code> <span class="tag ">관리</span> <span class="cnt">1</span></summary><p class="line">E40용 선물 맥락 시세 조회(읽기 전용).</p><div class="tablewrap"><table><thead><tr><th style="width:36%">함수·이름</th><th>뜻</th></tr></thead><tbody>
+<tr data-k="query · main 조회 / 실행."><td class="fn"><code>query · main</code></td><td>조회 / 실행.</td></tr>
+</tbody></table></div></details>
+</section>
+
+<section id="src">
+  <h2>옛 코드(src)</h2>
+  <p class="sub">처음 탐색할 때(E1~E37) 쓴 코드. 과거 재현용으로 보존해요. 지금 카드가 쓰는 건 common.py와 collect.py의 KIS뿐이에요</p>
+  <div class="tablewrap"><table><thead><tr><th style="width:36%">파일</th><th>무엇·주요 함수</th></tr></thead><tbody>
+<tr data-k="src/common.py 공통 설정. stocks(개발 15종목), fronts(근월물 계약표), accounts(예시 계좌 5개 a~e). 지금 카드도 fronts·accounts를 쓴다."><td class="fn"><code>src/common.py</code></td><td>공통 설정. STOCKS(개발 15종목), FRONTS(근월물 계약표), ACCOUNTS(예시 계좌 5개 A~E). 지금 카드도 FRONTS·ACCOUNTS를 쓴다.</td></tr>
+<tr data-k="src/collect.py 자료 수집. kis(한국투자증권 로그인·daily 일봉 조회), collect_futures(선물 일봉), collect_kr(국내 일봉), collect_us_daily·collect_us_hourly(미국), collect_night_minutes(야간선물 1분봉), collect_nxt_daily(nxt 일봉), collect_nxt_premarket(nxt 프리마켓 1분봉), collect_krx_intraday(정규장 1분봉), official_close(KIS J 종가 반환값, KRX 공식 동등성 미확인), fix_after_market_close(9/14부터 20:00 가격이 종가로 들어온 문제 고치기), collect_us_peers(미국 짝 종목)."><td class="fn"><code>src/collect.py</code></td><td>자료 수집. KIS(한국투자증권 로그인·daily 일봉 조회), collect_futures(선물 일봉), collect_kr(국내 일봉), collect_us_daily·collect_us_hourly(미국), collect_night_minutes(야간선물 1분봉), collect_nxt_daily(NXT 일봉), collect_nxt_premarket(NXT 프리마켓 1분봉), collect_krx_intraday(정규장 1분봉), official_close(KIS J 종가 반환값, KRX 공식 동등성 미확인), fix_after_market_close(9/14부터 20:00 가격이 종가로 들어온 문제 고치기), collect_us_peers(미국 짝 종목).</td></tr>
+<tr data-k="src/sector_study.py 200종목 m1·f2 예측표를 처음 만든 곳(h의 출처). norm_p, group_of(업종), load_universe(200종목), load_prices, load_etfs, lin(회귀)."><td class="fn"><code>src/sector_study.py</code></td><td>200종목 M1·F2 예측표를 처음 만든 곳(H의 출처). norm_p, group_of(업종), load_universe(200종목), load_prices, load_etfs, lin(회귀).</td></tr>
+<tr data-k="src/backtest.py 첫 백테스트. build_dataset, train_window(앞 window밤만), walk_forward(날짜마다 과거로만), walk_forward_accounts, wilson(비율 신뢰구간), metrics, summarize."><td class="fn"><code>src/backtest.py</code></td><td>첫 백테스트. build_dataset, train_window(앞 WINDOW밤만), walk_forward(날짜마다 과거로만), walk_forward_accounts, wilson(비율 신뢰구간), metrics, summarize.</td></tr>
+<tr data-k="src/forward_log.py e19 매일 기록. refresh(최근 며칠 사본), universe_beta_mean, second_thursday(만기일), morning(06:00 판정), nq_moves, nxt_0810, run_day, report."><td class="fn"><code>src/forward_log.py</code></td><td>E19 매일 기록. refresh(최근 며칠 사본), universe_beta_mean, second_thursday(만기일), morning(06:00 판정), nq_moves, nxt_0810, run_day, report.</td></tr>
+<tr data-k="src/explain_day.py 하루 따라가기. 날짜와 대상 하나를 넣으면 원자료부터 판정까지 단계별로 찍는다."><td class="fn"><code>src/explain_day.py</code></td><td>하루 따라가기. 날짜와 대상 하나를 넣으면 원자료부터 판정까지 단계별로 찍는다.</td></tr>
+<tr data-k="src/after_0600.py 06:00 뒤 움직임이 시가 오차를 얼마나 만드나 + 미국 서머타임 앞뒤."><td class="fn"><code>src/after_0600.py</code></td><td>06:00 뒤 움직임이 시가 오차를 얼마나 만드나 + 미국 서머타임 앞뒤.</td></tr>
+<tr data-k="src/compare_models.py · compare_report.py · report.py 모델 비교 / 반도체 15종목 리포트와 대조 / results/report.md 만들기."><td class="fn"><code>src/compare_models.py · compare_report.py · report.py</code></td><td>모델 비교 / 반도체 15종목 리포트와 대조 / results/report.md 만들기.</td></tr>
+<tr data-k="src/check_close.py · krx_snapshot.py · universe_asof.py 종가를 krx 공식 종가와 대조 / krx 공식 자료 받기 / 그때 기준 시가총액 상위 200종목."><td class="fn"><code>src/check_close.py · krx_snapshot.py · universe_asof.py</code></td><td>종가를 KRX 공식 종가와 대조 / KRX 공식 자료 받기 / 그때 기준 시가총액 상위 200종목.</td></tr>
+<tr data-k="src/collect_*.py (5개) 1분봉·투자자 매매동향·밤사이 지표를 받는 수집기."><td class="fn"><code>src/collect_*.py (5개)</code></td><td>1분봉·투자자 매매동향·밤사이 지표를 받는 수집기.</td></tr>
+<tr data-k="src/explore.py ~ explore27.py &#x27;더 파 보기&#x27; 실험(e1~e37). 파일 맨 위 설명이 그 실험의 질문이다. 예: explore16 = e26 긴 기간 검증, explore21 = e31 미국 지표·fomc, explore22 = e32 종합 탐색. 과거 재현용으로 보존한다."><td class="fn"><code>src/explore.py ~ explore27.py</code></td><td>&#x27;더 파 보기&#x27; 실험(E1~E37). 파일 맨 위 설명이 그 실험의 질문이다. 예: explore16 = E26 긴 기간 검증, explore21 = E31 미국 지표·FOMC, explore22 = E32 종합 탐색. 과거 재현용으로 보존한다.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="tests">
+  <h2>시험 파일</h2>
+  <p class="sub">workbench/tests/test_이름.py = 이름.py의 함수를 가짜 자료로 시험</p>
+  <p>예를 들어 <code>test_e62_band.py</code>는 예측구간 함수가 미래 값을 쓰지 않는지, <code>test_morning_card.py</code>는 카드에 그날 실현값이 섞이지 않는지, <code>test_live_panel.py</code>는 실제 날짜 길과 연구 길이 같은 값을 내는지 확인해요. 작업대 전체 시험은 504개예요. E87·E92 연구 실행기는 <code>test_e87_account.py</code>·<code>test_e87_run.py</code>·<code>test_e87_report.py</code>·<code>test_e92_contract.py</code>가 합성 자료로 누출·분모·저장 경계를 시험해요.</p>
+</section>
+<p class="empty" id="empty">찾는 이름이 없어요. 철자를 바꿔 보거나 낱말 일부만 넣어 보세요.</p>
+</main>
+</div>
+<script>
+(function(){
+  var q = document.getElementById('q'), hint = document.getElementById('hint'), empty = document.getElementById('empty');
+  var defaultHint = hint.textContent;
+  function apply(){
+    var s = q.value.trim().toLowerCase(), total = 0;
+    document.querySelectorAll('details.file').forEach(function(d){
+      var fileHit = s && d.dataset.k.indexOf(s) >= 0, any = false;
+      d.querySelectorAll('tr[data-k]').forEach(function(tr){
+        var show = !s || fileHit || tr.dataset.k.indexOf(s) >= 0;
+        tr.hidden = !show; if (show && s) { any = true; total++; }
+      });
+      if (!s) { d.hidden = false; d.open = d.dataset.open === '1'; }
+      else { d.hidden = !any; if (any) d.open = true; }
+    });
+    document.querySelectorAll('section > .tablewrap tr[data-k]').forEach(function(tr){
+      var show = !s || tr.dataset.k.indexOf(s) >= 0;
+      tr.hidden = !show; if (show && s) total++;
+    });
+    document.querySelectorAll('main > section').forEach(function(sec){
+      if (!s) { sec.hidden = false; return; }
+      var vis = sec.querySelector('tr[data-k]:not([hidden])');
+      sec.hidden = !vis;
+    });
+    hint.textContent = s ? (total + '줄 찾았어요.') : defaultHint;
+    empty.style.display = (s && total === 0) ? 'block' : 'none';
+  }
+  q.addEventListener('input', apply);
+})();
+</script>
+</body>
+</html>

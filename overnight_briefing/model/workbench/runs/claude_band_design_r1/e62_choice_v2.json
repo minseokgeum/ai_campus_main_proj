@@ -1,0 +1,26 @@
+{
+ "v1": {
+  "stock": "R0",
+  "account": "AR0",
+  "trust": {
+   "D08": true,
+   "N06": true,
+   "D06": false
+  },
+  "event_trust": {
+   "D08": false,
+   "N06": false,
+   "D06": false
+  },
+  "events": [
+   "e_earn"
+  ],
+  "design_sha256": "d648dea1741bcc7cbfffba4cf5ec6ec3357913ce100013fe752ef06e60e6a961",
+  "code_sha256": "02e7afe85e6642d6eccf4917f53724d7483935ea5ecac0da4ab046cf33da8f3a",
+  "protocol_sha256": "64dcda8627459903e02efe9ff2fdaefb48f6053c84438fcfb466e5d615cc4d57"
+ },
+ "amendment": "protocol_e62_band.json amendment_v2",
+ "design_sha256": "d648dea1741bcc7cbfffba4cf5ec6ec3357913ce100013fe752ef06e60e6a961",
+ "protocol_sha256": "e0b892fec7f416984d73105fbbbc4dacc2f16364dc08ab2082ed65c10c2c1976",
+ "code_sha256": "b9599c96c6ad2e180f8a0c93a16f5899a9c3cd1acdfef17659321a9de23939ac"
+}

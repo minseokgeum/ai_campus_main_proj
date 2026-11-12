@@ -1,0 +1,140 @@
+{
+  "experiment": "E46",
+  "version": "1.2-review-draft",
+  "status": "implementation_for_review_only_performance_not_authorized",
+  "registered_at_kst": "2026-10-29",
+  "classification": "reused_historical_exploration_not_untouched_validation",
+  "review_changes": [{
+    "version": "1.1-review-draft",
+    "reason": "Independent review found separate cleaned-volume and helper-price paths. Replace them with one valid-trade snapshot source, persist raw/trade/carry/age provenance, retain future-no-trade rows, and require both futures predictor endpoints to be actual trades known at cutoff.",
+    "prior_protocol_sha256": "731670516a0eafa374fc46fa844b032e655ecbc4847eb51a1d9c74cdaa09e118",
+    "prior_code_sha256": "a9b7c9fe06cd9cd734124be83e26dd230d908e5e6804f5203c348b5425ee3df8",
+    "performance_executed_before_change": false,
+    "unchanged": "4 models, 2 targets, 60/120-date windows, weighting, Ridge alpha, 6-comparison family, and decision rules"
+  }, {
+    "version": "1.2-review-draft",
+    "reason": "Before performance, accept Claude review A/C and bounded B: descriptive MSE, fresh-return trimmed-mean alternative-control pair, regime strata, approximate block MDE, test-hash approval and executable declaration checks. These are diagnostics, not alternate acceptance routes.",
+    "review_source": "workbench/exchange/16_claude_e46_plan_review.md",
+    "prior_protocol_sha256": "3c3f3ca302d85fbb7f823a2a4e7a81986912356f993e011d82c3560ce23abec9",
+    "prior_code_sha256": "00c3962fafe241be4b8ff39e4904e73df13c75e10b63b75e36a43da838ca4280",
+    "performance_executed_before_change": false,
+    "unchanged": "Primary 4 models, 2 targets, 6-comparison MAE Holm family, 60/120-date windows, weighting, Ridge alpha, and primary acceptance rules"
+  }],
+  "hypothesis": "An earlier same-contract futures return adds predictive information for a later NXT return beyond the already-observed own-stock return, NXT market return, and price age.",
+  "scope_exclusions": ["E45 reference-price correction", "industry hypotheses", "range/disagreement feature reuse", "causal attribution", "trading profit or execution simulation"],
+  "timing": {
+    "publication_kst": "08:47:00",
+    "futures_feature": "100*(F[08:46]/F[08:45]-1)",
+    "own_return_feature": "100*(P[08:46]/P[08:45]-1)",
+    "feature_last_bar": "08:46",
+    "feature_available_no_earlier_than": "08:47:00",
+    "primary_target": "100*(P[08:49]/P[08:46]-1)",
+    "primary_target_interval_kst": ["08:47:00", "08:50:00"],
+    "buffer_target": "100*(P[08:49]/P[08:47]-1)",
+    "buffer_target_interval_kst": ["08:48:00", "08:50:00"],
+    "buffer_interpretation": "Forecast made at 08:47 for a future interval beginning at 08:48. Its starting price is a future target component and never an input or claimed execution price.",
+    "target_available_no_earlier_than": "08:50:00",
+    "assumption": "Conservative start-label plus one-minute completion convention; exact vendor timestamp semantics and receipt latency remain unverified. Shared endpoint at 08:47 does not create an overlapping return interval."
+  },
+  "inputs": ["data/nxt_premarket.csv", "data/universe_premarket.csv", "workbench/runs/round1/futures_context.csv"],
+  "feature_policy": {
+    "price_source": "One normalized raw source for all prices, volume activity and age. A trade requires finite price>0 and finite volume>0. Only actual valid traded prices are carried forward within the same date/stock; raw volume-zero or invalid prices never update the snapshot.",
+    "source_priority": "Development source wins only at an exact day/code/minute duplicate key. A future-only row or newly appearing code must not remove earlier universe-source observations.",
+    "eligibility": "Finite positive last-observed traded-price NXT snapshots at 08:45 and 08:46, and valid actual trades at both 08:45 and 08:46 same-contract futures endpoints. Eligibility and market return use no bars after 08:46.",
+    "futures_nontrade_policy": "If either predictor endpoint lacks a finite positive-price, positive-volume futures trade, the day's futures shock is unavailable and that day is excluded using cutoff information only. A carried futures quote is not interpreted as a zero new shock. Record excluded-day count and both endpoint provenance.",
+    "market_return": "Median own-stock 08:45-to08:46 return across the eligible NXT stock-day universe before attaching future targets. It is a sample market proxy, not an official weighted index.",
+    "price_age": "46 minus the last minute label with positive volume at or before 08:46; log1p(age) enters the controls. Future activity never sets the age.",
+    "targets": "Last-observed traded-price snapshot returns. Attach only after cutoff features; preserve every cutoff-eligible row for both targets. When no valid trade arrives later, carry the same-day last trade forward and retain the row. No future trade-existence or magnitude-based selection. An impossible missing carried endpoint fails the run for audit instead of silently dropping a row.",
+    "target_provenance": "Persist raw-observed, actually-traded, forward-filled and last-trade-age fields at each NXT predictor and target endpoint; save whether the target interval contains any valid trade. Report no-observed-future-trade counts/shares. Carried zero changes do not establish actual market nonmovement, and no trade cannot be distinguished from missing feed observations.",
+    "raw_diagnostics": "Count invalid/nonfinite prices/volumes and raw volume-zero prices differing from the preceding valid trade. These counts are schema/coverage diagnostics, not performance tests.",
+    "stale_definition": "age_minutes > 0 at the publication cutoff",
+    "residualization": "None. Raw futures return enters the joint controls-plus-futures model; the nested-model comparison tests conditional incremental value without full-sample residualization.",
+    "metadata": "No current industry classification, market-cap weights, daily opening target or legacy predicted target enters E46. Existing-universe selection bias remains."
+  },
+  "models": {
+    "zero": [],
+    "raw_future": ["future_return_pp"],
+    "controls": ["own_return_pp", "market_return_pp", "log1p_age"],
+    "controls_plus_future": ["own_return_pp", "market_return_pp", "log1p_age", "future_return_pp"]
+  },
+  "diagnostic_models": {
+    "controls_alt": ["own_return_pp", "market_trimmed_return_pp", "log1p_age"],
+    "controls_alt_plus_future": ["own_return_pp", "market_trimmed_return_pp", "log1p_age", "future_return_pp"]
+  },
+  "alternative_control": {
+    "fresh_endpoint_labels": ["084500", "084600"],
+    "tail_fraction": 0.1,
+    "minimum_fresh_stocks": 10,
+    "definition": "Within the cutoff-eligible NXT universe, require valid actual trades at BOTH 08:45 and 08:46, sort those own-stock returns, remove floor(0.1*n) from EACH tail, and average the remainder. At least ten fresh stock-return pairs are required. All inputs are known by 08:47.",
+    "comparison": "Only controls_alt_plus_future versus controls_alt, separately for each target, as descriptive paired same-date MAE and MSE with block 5/10 CIs. Also report the original controls-plus-future increment on that exact diagnostic support for denominator alignment.",
+    "training": "Same Ridge alpha, scaling, date weights and original last-120-date training window. Diagnostic fitting needs 60 dates with an available alternative control; it never reaches farther back or removes primary observations.",
+    "missing_policy": "If the cutoff fresh-stock count is below ten or past diagnostic training dates are insufficient, keep all primary predictions and mark only alternative-model predictions unavailable.",
+    "acceptance": "No additional Holm family, discovery claim or acceptance path. If the original increment is positive but alternative point increment is nonpositive on the same support, downgrade a propagation interpretation to measurement-sensitive. A positive estimate with a CI including zero is uncertain, not proof of vanished effect or measurement causation."
+  },
+  "known_calendar_absences": {
+    "dates": ["20251113", "20260102"],
+    "observed_fact": "These dates occur in the futures source but have no 08:45/08:46 morning rows; report the observed absence explicitly. They are automatically unavailable under the cutoff trade requirement, not excluded based on returns.",
+    "context": "Claude review identifies delayed market opening schedules on these dates. E46 does not infer absence means zero return, nor fabricate a normal-time observation.",
+    "source": "workbench/exchange/16_claude_e46_plan_review.md"
+  },
+  "training": {
+    "estimator": "training-only weighted StandardScaler followed by Ridge",
+    "ridge_alpha": 1.0,
+    "min_train_dates": 60,
+    "max_train_dates": 120,
+    "refit_every_dates": 1,
+    "date_weight": "Every training date has total weight one; each stock receives 1/n_stocks_on_date. The scaler uses the same weights.",
+    "training_end": "Only dates strictly before each evaluation date; all training outcomes available by their own 08:50, earlier than evaluation-day 08:47.",
+    "tuning": "None. No globally selected thresholds, windows, features, residuals, or hyperparameters.",
+    "embargo": "No extra day embargo; targets end within the prior trading date, and strict train-date < test-date is enforced."
+  },
+  "inference": {
+    "primary_metric": "Paired absolute-error reduction in percentage points; mean over stocks within date, then equally over dates. Positive means the listed candidate improves on its comparator.",
+    "secondary_metric": "MSE in percentage-points squared for the same models and same paired dates; block 5/10 CIs are descriptive only and never enter the six-test MAE family or an acceptance rule.",
+    "targets": ["primary_0846_0849", "buffer_0847_0849"],
+    "comparisons_per_target": [
+      {"candidate": "raw_future", "comparator": "zero"},
+      {"candidate": "controls_plus_future", "comparator": "zero"},
+      {"candidate": "controls_plus_future", "comparator": "controls"}
+    ],
+    "holm_family": "Exactly six all-date comparisons: the three listed comparisons for each of the two targets.",
+    "bootstrap": "Paired circular moving-date-block bootstrap, 1000 replicates, seed 20261029, block lengths 5 and 10. All rows in a date remain together.",
+    "bootstrap_config": {"reps": 1000, "seed": 20261029, "blocks": [5, 10]},
+    "minimum_detectable_effect": "Report 2.8 times the bootstrap standard error of paired mean improvement for each block length and the larger MAE value. This is a normal-approximation, roughly 80%-power/two-sided-5% sensitivity scale, not prospective power validation or a selection threshold. Report unavailable for fewer than 20 dates.",
+    "max_p_rule": "Take the larger centered two-sided bootstrap p across block lengths for each comparison, then Holm-adjust the six max-p values.",
+    "ci_rule": "Report both percentile 95% CIs; require positive lower endpoints under both block lengths for a superiority decision.",
+    "test_alpha": 0.05,
+    "minimum_stratum_unique_dates": 20,
+    "strata": ["all", "early through 2026-04-30", "late after 2026-04-30", "fresh at 08:46", "stale at 08:46", "before 2026-08-12", "2026-08-12 through 2026-09-11", "from 2026-09-14"],
+    "strata_status": "Prespecified diagnostics, not extra discoveries or alternate routes to a successful primary claim. An uncertain fresh-stratum estimate is not proof of absent fresh-price predictability."
+  },
+  "decision_rules": {
+    "primary_historical_candidate": "For the primary target, controls_plus_future must beat both zero and controls with Holm(max-p)<=0.05, both block CI lower endpoints>0, and positive early and late mean reductions for both comparisons. This only identifies a historical candidate, not practical or causal superiority.",
+    "latency_robust_historical_candidate": "The primary rule must hold, and the same two comparisons must also satisfy it for the buffer target. The buffer cannot rescue a failed primary result.",
+    "materiality": "Report absolute reduction and relative percent reduction versus zero and controls. No post-result minimum effect cutoff will be introduced; no execution-cost or product-utility claim follows from statistical significance.",
+    "staleness": "If gains are concentrated in stale quotes and fresh-price superiority remains uncertain, describe a delayed-price-update candidate; do not call it universal information propagation.",
+    "null": "Report effect, uncertainty, approximate block MDE and sample counts. Ridge fits under L2 loss, so failure against zero under MAE does not establish absent conditional-mean signal; descriptive MSE addresses this distinction without changing acceptance. E46 non-support does not contradict E40's contemporaneous relationship. Neither null implies information efficiency or absence of all lead-lag relationships."
+  },
+  "outputs": ["protocol.json", "source_snapshot/", "manifest.json", "predictions.csv.gz", "fit_metadata.csv.gz", "daily_metrics.csv.gz", "model_metrics.csv", "comparisons.json", "summary.json", "completed.json"],
+  "execution_gate": {
+    "cli": "Default is read-only coverage; performance execution requires --execute-reviewed-plan, --approval-file and --run-dir.",
+    "approval_schema": "JSON with experiment=E46, approved_for_execution=true, protocol_sha256, code_sha256, helper_sha256, tests_sha256 and reviewer. All four hashes must match the current files.",
+    "declaration_checks": "Before fitting or run-directory creation, validate primary/diagnostic model columns, target names, six-family comparison pairs, bootstrap parameters, alpha/date minimum, fixed Ridge/training windows, alternative-control definition parameters and interval boundaries against executable constants.",
+    "fresh_output": "Only a previously nonexistent direct child directory of workbench/runs; no overwrite or reuse. completed.json is written last. Incomplete attempts remain without completion status."
+  },
+  "helper_review": {
+    "reused": ["time_patterns.block_summary (date-block statistic)", "time_patterns.holm"],
+    "not_used": "Neither time_patterns.load_minutes nor core.load_panel supplies prices. E46 uses one directly normalized traded-price source; daily opening targets and legacy prediction selection are unnecessary.",
+    "immutability": "Freeze source, protocol, helper and test hashes in approval and manifest; copy the exact code/helper/tests into each fresh execution directory."
+  },
+  "security_disposition": {
+    "skill": "/Users/betterkim/.codex/plugins/cache/claude-cowork/hawkscan/2.6.0/skills/hawkscan/SKILL.md",
+    "skill_read": true,
+    "hawk_version": "6.6.0",
+    "config_command": "available",
+    "skills_status": "Cached status says up to date; remote latest-version fetch failed, so live freshness is unverified.",
+    "DAST_applicable": false,
+    "reason": "Offline local CSV/JSON batch pipeline with no HTTP/API listener, route, authentication surface, browser, network request, or service deployment. No live target is introduced. HawkScan DAST was not run and no scanned-secure claim is made.",
+    "applicable_checks": ["No credentials read or printed", "No network or subprocess execution in analysis module", "Fixed local input paths", "Fresh-directory and exclusive-write guards", "No pickle/deserialization of executable objects", "Synthetic timing, weighting, leakage, approval and overwrite regression tests"]
+  }
+}
