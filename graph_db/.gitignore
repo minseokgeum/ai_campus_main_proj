@@ -1,0 +1,4 @@
+# 지시문의 결과 스키마(루트 .gitignore가 *.json을 막으므로 다시 포함). 노트북이 지시문과 함께 읽는다
+!prompts/*.schema.json
+# 사람이 만든 검토표(LLM 결과를 정리하는 기준)
+!review/*.csv

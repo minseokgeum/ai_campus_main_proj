@@ -1,0 +1,325 @@
+{
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "relevant",
+  "article_type",
+  "sectors",
+  "topics",
+  "evidence",
+  "entities",
+  "relations",
+  "events",
+  "notes"
+ ],
+ "properties": {
+  "relevant": {
+   "type": "boolean"
+  },
+  "article_type": {
+   "type": "string",
+   "enum": [
+    "실적",
+    "거래",
+    "계약·수주",
+    "제품·기술",
+    "공급망·차질",
+    "정책·규제",
+    "시장·가격",
+    "사고·소송",
+    "기타"
+   ]
+  },
+  "sectors": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "IT가전",
+     "IT하드웨어",
+     "건강관리",
+     "건설",
+     "기계",
+     "디스플레이",
+     "미디어,교육",
+     "반도체",
+     "보험",
+     "비철금속",
+     "상사,자본재",
+     "소매(유통)",
+     "소프트웨어",
+     "에너지",
+     "운송",
+     "유틸리티",
+     "은행",
+     "자동차",
+     "조선",
+     "증권",
+     "철강",
+     "통신서비스",
+     "필수소비재",
+     "호텔,레저",
+     "화장품,의류",
+     "화학"
+    ]
+   },
+   "maxItems": 3
+  },
+  "topics": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "maxItems": 5
+  },
+  "evidence": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "text"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "entities": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "name_en",
+     "type",
+     "category",
+     "search_terms",
+     "country",
+     "parent",
+     "ticker",
+     "mention"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "name_en": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "기업",
+       "제품·기술",
+       "상품·브랜드",
+       "원자재·지표",
+       "프로젝트·계약",
+       "시설",
+       "정책·규제",
+       "기관"
+      ]
+     },
+     "category": {
+      "type": "string"
+     },
+     "search_terms": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 3
+     },
+     "country": {
+      "type": "string"
+     },
+     "parent": {
+      "type": "string"
+     },
+     "ticker": {
+      "type": "string"
+     },
+     "mention": {
+      "type": "string",
+      "enum": [
+       "중심",
+       "실질",
+       "스침"
+      ]
+     }
+    }
+   }
+  },
+  "relations": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "subject",
+     "role",
+     "role_note",
+     "object",
+     "product",
+     "amount_text",
+     "period_text",
+     "status",
+     "certainty",
+     "importance_text",
+     "direction",
+     "evidence_id"
+    ],
+    "properties": {
+     "subject": {
+      "type": "string"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "공급",
+       "구매·사용",
+       "생산",
+       "수주·발주",
+       "인수·투자",
+       "매각",
+       "합작·제휴",
+       "라이선스",
+       "경쟁",
+       "규제·인허가",
+       "시설 건설·운영",
+       "영향",
+       "소송·분쟁",
+       "자금 지원",
+       "정책 입장",
+       "기타"
+      ]
+     },
+     "role_note": {
+      "type": "string"
+     },
+     "object": {
+      "type": "string"
+     },
+     "product": {
+      "type": "string"
+     },
+     "amount_text": {
+      "type": "string"
+     },
+     "period_text": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "체결",
+       "MoU·검토",
+       "진행",
+       "완료",
+       "차질",
+       "철회",
+       "유예",
+       "불명"
+      ]
+     },
+     "certainty": {
+      "type": "string",
+      "enum": [
+       "회사 발표",
+       "보도",
+       "소식통",
+       "소문"
+      ]
+     },
+     "importance_text": {
+      "type": "string"
+     },
+     "direction": {
+      "type": "string",
+      "enum": [
+       "+",
+       "−",
+       ""
+      ]
+     },
+     "evidence_id": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "events": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "kind",
+     "description_ko",
+     "entities",
+     "date_text",
+     "direction",
+     "evidence_ids"
+    ],
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "실적",
+       "가격·지표 변동",
+       "정책",
+       "공급 차질",
+       "사고",
+       "소송·조사",
+       "경영진 교체",
+       "거래·계약",
+       "제품·사업 변화"
+      ]
+     },
+     "description_ko": {
+      "type": "string"
+     },
+     "entities": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "date_text": {
+      "type": "string"
+     },
+     "direction": {
+      "type": "string",
+      "enum": [
+       "+",
+       "−",
+       "불명"
+      ]
+     },
+     "evidence_ids": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 3
+     }
+    }
+   }
+  },
+  "notes": {
+   "type": "string"
+  }
+ }
+}
