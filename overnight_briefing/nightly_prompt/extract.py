@@ -1,4 +1,4 @@
-"""밤사이 뉴스 묶음 하나를 nightly_extract_v1 지시문으로 추출하고, 코드로 근거·금지어를 검사한다.
+"""밤사이 뉴스 묶음 하나를 nightly_extract 지시문(판은 P_EXTRACT)으로 추출하고, 코드로 근거·금지어를 검사한다.
 
 LLM 호출은 OpenAI Responses API(엄격 JSON 스키마, store=False)만 쓴다. 같은 입력·지시문·모델이면 저장해 둔
 원본 응답을 다시 쓰고 API를 부르지 않는다. 키는 .env에서 읽고 어디에도 쓰지 않는다.
@@ -22,6 +22,10 @@ ENV_FILE = Path(os.environ.get('NIGHTLY_ENV_FILE', '~/4Digit-solo/.env')).expand
 
 FORBIDDEN = ['적중', '매수하', '매도하', '사세요', '파세요', '추천합니다', '확실히 오', '확실히 내']
 CAUSAL = ['때문', '로 인해', '으로 인해', '덕분', '탓에', '탓으로']
+# 11/17 v2: 과거 통계·역대 패턴 문장(앞날을 말하는 것처럼 읽힘)을 코드로도 거른다
+HISTORY = re.compile(r'\d{4}년 이후|역대|매번|해마다|때마다|이후 모두|이후 한 번도')
+# 지금 쓰는 지시문 판(바꾸면 brief.json의 prompt_version·해시가 따라 바뀐다)
+P_EXTRACT, P_COMBINE, P_MARKET = 'nightly_extract_v2', 'combine_v2', 'market_v2'
 TYPE_KO = {'earnings_financials': '실적·재무', 'merger_acquisition': '인수합병·지분', 'investment_capacity': '투자·설비',
            'product_technology': '제품·기술', 'supply_customer_contract': '계약·공급망', 'management_strategy': '경영·인사',
            'regulation_trade': '규제·통상', 'litigation_safety': '소송·사고', 'analyst_rating': '증권사 의견',
@@ -165,5 +169,5 @@ def check(result: dict, c: dict) -> list[str]:
 
 def extract_cluster(llm: LLM, c: dict) -> dict:
     text = cluster_text(c)
-    result, cached, cost = llm.call('extract', 'nightly_extract_v1', text)
+    result, cached, cost = llm.call('extract', P_EXTRACT, text)
     return dict(result=result, issues=check(result, c), cached=cached, cost=cost)

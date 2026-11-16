@@ -19,7 +19,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from combine import combine_stock, load_card, market_line  # noqa: E402
-from extract import EFFORT, LLM, MODEL, TYPE_KO, cluster_text, extract_cluster, prompt  # noqa: E402
+from extract import EFFORT, LLM, MODEL, P_COMBINE, P_EXTRACT, P_MARKET, TYPE_KO, cluster_text, extract_cluster, prompt  # noqa: E402
 
 REPO = HERE.parents[1]
 NIGHTLY = REPO / 'news_search' / 'source' / 'nightly'
@@ -109,7 +109,7 @@ def main():
     use = [c for c in rows if c['article'].get('body_ok')]
     skipped = [c for c in rows if not c['article'].get('body_ok')]
     chars = sum(len(cluster_text(c)) for c in use)
-    instr_chars = len(prompt('nightly_extract_v1')[0])
+    instr_chars = len(prompt(P_EXTRACT)[0])
     est_in = (chars + instr_chars * len(use)) / 3.5
     est_out = 3500 * len(use)
     print(f'{T}: 묶음 {len(rows)}개(본문 있음 {len(use)}, 건너뜀 {len(skipped)}) / 예상 입력 {est_in/1e3:.0f}k·출력 {est_out/1e3:.0f}k 토큰,'
@@ -171,10 +171,10 @@ def main():
             stocks[key] = val
     mk = market_line(llm, market, market_items)
 
-    versions = {n: prompt(n)[2] for n in ('nightly_extract_v1', 'combine_v1', 'market_v1')}
+    versions = {n: prompt(n)[2] for n in (P_EXTRACT, P_COMBINE, P_MARKET)}
     brief = dict(
         T=T, generated_at=dt.datetime.now(KST).isoformat(timespec='seconds'), model=MODEL, effort=EFFORT,
-        prompt_version='nightly_extract_v1+combine_v1+market_v1', prompt_hashes=versions,
+        prompt_version='+'.join((P_EXTRACT, P_COMBINE, P_MARKET)), prompt_hashes=versions,
         note=('뉴스·LLM은 노란띠의 중심·폭을 바꾸지 않는다(띠는 07:30 카드 그대로). 장 전 자료만 입력. '
               '사건과 가격의 인과는 기사 표현만 옮기고 단정하지 않는다.'),
         inputs=dict(clusters=len(rows), used=len(use), skipped_no_body=len(skipped)),

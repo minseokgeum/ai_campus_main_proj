@@ -11,7 +11,7 @@ import os
 import re
 from pathlib import Path
 
-from extract import CAUSAL, FORBIDDEN, LLM
+from extract import CAUSAL, FORBIDDEN, HISTORY, LLM, P_COMBINE, P_MARKET
 
 DAYS_DIR = Path(os.environ.get('NIGHTLY_DAYS_DIR', '~/4Digit/src/app/data/model/days')).expanduser()
 
@@ -44,6 +44,7 @@ def _numbers(s):
 
 def check_line(line: str, allowed: set[str]) -> list[str]:
     issues = [f'인과 단정 "{w}"' for w in CAUSAL if w in line] + [f'금지어 "{w}"' for w in FORBIDDEN if w in line]
+    issues += [f'과거 통계 "{m.group(0)}"' for m in HISTORY.finditer(line)]
     for n in _numbers(line):
         if n.lstrip('+-') not in allowed:
             issues.append(f'입력에 없는 숫자 {n}')
@@ -73,7 +74,7 @@ def combine_stock(llm: LLM, name: str, band: dict | None, news: list[dict]) -> d
                              종목쪽_방향=n['impact'], 방향_근거=n['impact_basis'], 주요_사실=n.get('facts', [])[:3])
                          for n in news[:3]])
     text = json.dumps(payload, ensure_ascii=False, indent=1)
-    res, cached, cost = llm.call('combine', 'combine_v1', text)
+    res, cached, cost = llm.call('combine', P_COMBINE, text)
     allowed = set()
     if band:
         for k in ('H', 'L80', 'U80'):
@@ -99,7 +100,7 @@ def market_line(llm: LLM, market: dict, items: list[dict]) -> dict:
     payload = dict(야간선물_변화율=pct(x, 2) if x is not None else '없음',
                    시장_뉴스=[dict(id=i['id'], 요약=i['short_summary_ko'], 주제=i['topics'], 매체수=i['media_count']) for i in items[:5]])
     text = json.dumps(payload, ensure_ascii=False, indent=1)
-    res, cached, cost = llm.call('market', 'market_v1', text)
+    res, cached, cost = llm.call('market', P_MARKET, text)
     allowed = {f'{abs(x * 100):.2f}', f'{abs(x * 100):.1f}'} if x is not None else set()
     allowed |= {'200', '1', '2', '3', '5'} | {n.lstrip('+-') for n in _numbers(text)}
     issues = check_line(res['line_ko'], allowed)
