@@ -35,6 +35,28 @@ def _track_summary(track: dict, T: str, codes: set[str]) -> dict:
                 hi_match=round(100 * mean(r["dm"] for r in hi), 3) if hi else None, hi_n=len(hi), daily=daily)
 
 
+def _cases(track: dict, T: str, held: list[dict], uni: dict) -> list[dict]:
+    """사후 복기 재료(11/17): 규칙을 고정한 뒤의 날마다, 지금 보유 금액 비중으로 본 계좌 예상(Σw·H)·실제 시가(Σw·y)·야간선물(x).
+    계좌 범위(띠)는 내지 않는다(계좌 띠 숫자는 보류). 보유 종목이 모두 채점된 날만 넣는다."""
+    val = {h["code"]: h["q"] * (uni[h["code"]].get("pc") or 0) for h in held if h["q"] > 0}
+    tot = sum(val.values())
+    if not tot:
+        return []
+    cols, x = track["cols"], track.get("x") or {}
+    by: dict[str, list] = {}
+    for r in track["rows"]:
+        if r[1] in val and track["freeze_t"] <= r[0] <= T:
+            by.setdefault(r[0], []).append(dict(zip(cols, r)))
+    out = []
+    for t, rs in sorted(by.items()):
+        rs = [r for r in rs if r["y"] is not None and r["H"] is not None]
+        if len(rs) < len(val) or x.get(t) is None:
+            continue
+        out.append(dict(T=t, x=x[t], exp=round(sum(val[r["code"]] * r["H"] for r in rs) / tot, 6),
+                        act=round(sum(val[r["code"]] * r["y"] for r in rs) / tot, 6), n=len(rs), n_in=sum(1 for r in rs if r["inb"]), value=tot))
+    return out
+
+
 def _hist(track: dict, T: str, codes: set[str]) -> dict:
     _, rows = _window(track, T, codes)
     out: dict[str, list] = {}
@@ -71,5 +93,6 @@ def build(day: dict, track: dict, graph: dict, catalog: dict[str, dict], account
                      no=account.get("no", ""), cash=account.get("cash", 0), holdings=held, excluded=out, sample=bool(account.get("sample"))),
         stocks={c: uni[c] for c in codes},
         segnews={c: v for c, v in (day.get("segnews") or {}).items() if c in codes},
-        hist=_hist(track, day["T"], codes), graph=_graph(graph, codes), track=_track_summary(track, day["T"], codes),
+        hist=_hist(track, day["T"], codes), graph=_graph(graph, codes),
+        track=dict(_track_summary(track, day["T"], codes), cases=_cases(track, day["T"], held, uni)),
         brief=dict({k: v for k, v in brief.items() if k != "stocks"}, stocks={c: v for c, v in bstocks.items() if c in all_codes}) if brief else None)

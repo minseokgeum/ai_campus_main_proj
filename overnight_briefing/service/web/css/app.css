@@ -1,5 +1,6 @@
 /* 당신이 잠든 사이에 · 고객 화면. 색은 수연 피그마(11/16) 토큰. 색·간격은 아래 토큰만 쓴다. 상승 빨강·하락 파랑은 국내 증권 화면 관례. */
 :root {
+  --dv-n3: #9DBDF2; --dv-n2: #C2D6F7; --dv-n1: #E1EBFB; --dv-0: #EEF1F2; --dv-p1: #FCE3E5; --dv-p2: #F8C3C7; --dv-p3: #F39AA1;
   --bg: #FFFFFF; --card: #FFFFFF; --ink: #192D31; --ink2: #34494D; --sub: #66777A; --mute: #93A3A5; --line: #E4EBEB; --line2: #EEF3F3;
   --up: #EE5964; --down: #4F82DA; --flat: #66777A;
   --band: #FFE191; --band-edge: #E5B83B; --band-soft: #FFF5D6; --band-ink: #7A5B00;
@@ -9,6 +10,7 @@
   --font: "Noto Sans KR", "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 [data-theme="dark"] {
+  --dv-n3: #2F5FA8; --dv-n2: #244A80; --dv-n1: #1C3555; --dv-0: #1F3033; --dv-p1: #55262B; --dv-p2: #7A2F37; --dv-p3: #A53A45;
   --bg: #0D1719; --card: #122023; --ink: #E7F0EF; --ink2: #C3D2D1; --sub: #8FA4A6; --mute: #647B7E; --line: #22383C; --line2: #1A2D30;
   --up: #FF7A83; --down: #6FA0F2; --flat: #9FB1B3;
   --band: #E9C766; --band-edge: #FFE191; --band-soft: #3A3315; --band-ink: #FFE7A6;
@@ -391,3 +393,25 @@ a.news { color: inherit; text-decoration: none; }
 .feed a { text-decoration: none; color: inherit; } .feed small { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
 .appbar h1 { flex-wrap: wrap; } .appbar .sub-btn { display: block; text-align: left; padding: 0; } .appbar .sub-btn small svg { width: 11px; height: 11px; vertical-align: -1px; opacity: .6; }
 .seg button.auto { opacity: .55; }
+
+/* 11/17 2차: 한눈에 지도, 오늘 볼 것, 지난 큰 밤, 설명판 접기 */
+.dvn3 { fill: var(--dv-n3); background: var(--dv-n3); } .dvn2 { fill: var(--dv-n2); background: var(--dv-n2); } .dvn1 { fill: var(--dv-n1); background: var(--dv-n1); } .dv0 { fill: var(--dv-0); background: var(--dv-0); }
+.dvp1 { fill: var(--dv-p1); background: var(--dv-p1); } .dvp2 { fill: var(--dv-p2); background: var(--dv-p2); } .dvp3 { fill: var(--dv-p3); background: var(--dv-p3); }
+.amap svg { display: block; width: 100%; } .amap text { font-family: var(--font); pointer-events: none; } .amap .mcell { cursor: pointer; } .amap .mcell:active rect { filter: brightness(.96); }
+.amap-key { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; font-size: 11px; color: var(--sub); }
+.amap-key .ramp { display: inline-flex; gap: 2px; } .amap-key .ramp i { width: 14px; height: 10px; border-radius: 2px; } .amap-key .sep { width: 1px; height: 10px; background: var(--line); margin: 0 2px; }
+.amap-key .nb { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--band); margin-right: 4px; vertical-align: -1px; }
+.look { display: grid; margin-top: 12px; } .look button, .look div.lk { display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: start; width: 100%; text-align: left; padding: 11px 0; border-top: 1px solid var(--line2); }
+.look > :first-child { border-top: 0; } .look .ic { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--chip); color: var(--ink2); font-size: 11px; font-weight: 700; }
+.look .ic.a { background: var(--accent-soft); color: var(--accent); } .look .ic.y { background: var(--band-soft); color: var(--band-ink); }
+.look b { display: block; font-size: 14px; font-weight: 650; line-height: 1.45; letter-spacing: -.02em; color: var(--ink); } .look small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.5; color: var(--sub); }
+.look svg { margin-top: 8px; color: var(--mute); }
+.case { padding: 13px 14px; border: 1px solid var(--line); border-radius: 14px; margin-top: 8px; } .case .ch { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.case .ch b { font-size: 14px; letter-spacing: -.02em; } .case .ch span { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.case .cmp { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--chip); }
+.case .cmp span { display: block; font-size: 11px; color: var(--sub); } .case .cmp b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; } .case .cmp div:last-child { text-align: right; } .case .cmp svg { color: var(--mute); }
+.case p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2); }
+.how { margin: 10px 0 0; padding-left: 16px; font-size: 12.5px; line-height: 1.65; color: var(--ink2); } .how li { margin-bottom: 4px; }
+details.more-d { margin-top: 12px; } details.more-d summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--teal); list-style: none; } details.more-d summary::-webkit-details-marker { display: none; }
+details.more-d summary::after { content: " 펼치기"; font-weight: 400; color: var(--mute); } details.more-d[open] summary::after { content: " 접기"; }
+.combined .cb-meta { flex-basis: 100%; margin-top: 5px; font-size: 11px; color: var(--sub); }

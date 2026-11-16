@@ -19,7 +19,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from combine import combine_stock, load_card, market_line  # noqa: E402
-from extract import EFFORT, LLM, MODEL, P_COMBINE, P_EXTRACT, P_MARKET, TYPE_KO, cluster_text, extract_cluster, prompt  # noqa: E402
+from extract import (EFFORT, LLM, MODEL, P_COMBINE, P_EXTRACT, P_MARKET, P_VERIFY, TYPE_KO, VERIFY_KEEP, VERIFY_MODEL,  # noqa: E402
+                     cluster_text, extract_cluster, prompt, verify_link)
 
 REPO = HERE.parents[1]
 NIGHTLY = REPO / 'news_search' / 'source' / 'nightly'
@@ -152,6 +153,20 @@ def main():
                 bucket[key] = n
     market_items.sort(key=lambda i: (-i['media_count'], -i['article_count']))
 
+    # 교차 확인: 다른 모델이 (종목, 기사) 쌍을 다시 보고 '스침'·'무관'이면 뺀다. 뺀 것은 dropped_links에 남긴다.
+    by_id = {f"{c['report']}_{c['label']}_{c['cluster']}": c for c in use}
+    pairs = [(name, key, n) for name, bucket in per_stock.items() for key, n in bucket.items()]
+    dropped = []
+    if pairs:
+        with ThreadPoolExecutor(args.workers) as ex:
+            vs = list(ex.map(lambda p: verify_link(llm, by_id[p[2]['id']], p[0], p[2]), pairs))
+        for (name, key, n), v in zip(pairs, vs):
+            n['verify'] = v
+            if v['verdict'] not in VERIFY_KEEP:
+                dropped.append(dict(stock=name, id=n['id'], title=n['title'], verdict=v['verdict'], why=v['why']))
+                del per_stock[name][key]
+    print(f'  교차 확인({VERIFY_MODEL}): {len(pairs)}쌍 중 {len(dropped)}쌍 뺌')
+
     bands, market = load_card(T)
     names = sorted(set(test_stock_names()) | {co['company'] for c in rows for co in c['companies']})
     stocks = {}
@@ -173,10 +188,11 @@ def main():
             stocks[key] = val
     mk = market_line(llm, market, market_items)
 
-    versions = {n: prompt(n)[2] for n in (P_EXTRACT, P_COMBINE, P_MARKET)}
+    versions = {n: prompt(n)[2] for n in (P_EXTRACT, P_COMBINE, P_MARKET, P_VERIFY)}
     brief = dict(
         T=T, generated_at=dt.datetime.now(KST).isoformat(timespec='seconds'), model=MODEL, effort=EFFORT,
-        prompt_version='+'.join((P_EXTRACT, P_COMBINE, P_MARKET)), prompt_hashes=versions,
+        prompt_version='+'.join((P_EXTRACT, P_COMBINE, P_MARKET, P_VERIFY)), prompt_hashes=versions,
+        verify=dict(model=VERIFY_MODEL, pairs=len(pairs), dropped=len(dropped)), dropped_links=dropped,
         note=('뉴스·LLM은 노란띠의 중심·폭을 바꾸지 않는다(띠는 07:30 카드 그대로). 장 전 자료만 입력. '
               '사건과 가격의 인과는 기사 표현만 옮기고 단정하지 않는다.'),
         inputs=dict(clusters=len(rows), used=len(use), skipped_no_body=len(skipped)),

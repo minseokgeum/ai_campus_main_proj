@@ -1,0 +1,3 @@
+{"type": "object", "additionalProperties": false,
+ "properties": {"verdict": {"type": "string", "enum": ["중심", "일부", "스침", "무관"]}, "why": {"type": "string"}},
+ "required": ["verdict", "why"]}

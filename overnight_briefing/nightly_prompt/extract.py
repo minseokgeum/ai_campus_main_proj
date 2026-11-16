@@ -25,7 +25,11 @@ CAUSAL = ['때문', '로 인해', '으로 인해', '덕분', '탓에', '탓으�
 # 11/17 v2: 과거 통계·역대 패턴 문장(앞날을 말하는 것처럼 읽힘)을 코드로도 거른다
 HISTORY = re.compile(r'\d{4}년 이후|역대|매번|해마다|때마다|이후 모두|이후 한 번도')
 # 지금 쓰는 지시문 판(바꾸면 brief.json의 prompt_version·해시가 따라 바뀐다)
-P_EXTRACT, P_COMBINE, P_MARKET = 'nightly_extract_v2', 'combine_v2', 'market_v2'
+P_EXTRACT, P_COMBINE, P_MARKET = 'nightly_extract_v2', 'combine_v3', 'market_v2'
+# 11/17 2차: 연결 다시 보기(교차 확인). 추출과 다른 모델이 '이 기사가 정말 이 종목의 연결 상대에 관한 것인가'를 따로 판정한다.
+P_VERIFY = 'verify_v1'
+VERIFY_MODEL = os.environ.get('NIGHTLY_VERIFY_MODEL', 'gpt-6.1-sol')
+VERIFY_KEEP = {'중심', '일부'}
 TYPE_KO = {'earnings_financials': '실적·재무', 'merger_acquisition': '인수합병·지분', 'investment_capacity': '투자·설비',
            'product_technology': '제품·기술', 'supply_customer_contract': '계약·공급망', 'management_strategy': '경영·인사',
            'regulation_trade': '규제·통상', 'litigation_safety': '소송·사고', 'analyst_rating': '증권사 의견',
@@ -78,10 +82,11 @@ class LLM:
         cached = usage.get('cached', 0)
         return ((usage['input'] - cached) * p_in + cached * p_cache + usage['output'] * p_out) / 1e6
 
-    def call(self, kind: str, name: str, text: str):
-        """name 지시문으로 text를 보낸다. (결과 dict, 캐시였는지, 이번 호출 비용)."""
+    def call(self, kind: str, name: str, text: str, model: str | None = None, effort: str | None = None):
+        """name 지시문으로 text를 보낸다. (결과 dict, 캐시였는지, 이번 호출 비용). model·effort를 주면 그 호출만 다른 모델로."""
         instructions, schema, phash = prompt(name)
-        key = hashlib.sha256(f'{name}|{phash}|{MODEL}|{EFFORT}|{text}'.encode()).hexdigest()[:16]
+        MODEL_, EFFORT_ = model or MODEL, effort or EFFORT
+        key = hashlib.sha256(f'{name}|{phash}|{MODEL_}|{EFFORT_}|{text}'.encode()).hexdigest()[:16]
         path = self.raw_dir / f'{kind}_{key}.json'
         if path.exists():
             rec = json.loads(path.read_text(encoding='utf-8'))
@@ -95,7 +100,7 @@ class LLM:
         for attempt in range(3):
             try:
                 resp = self.client().responses.create(
-                    model=MODEL, instructions=instructions, input=text, reasoning={'effort': EFFORT}, store=False,
+                    model=MODEL_, instructions=instructions, input=text, reasoning={'effort': EFFORT_}, store=False,
                     text={'format': {'type': 'json_schema', 'name': name.replace('.', '_'), 'schema': schema, 'strict': True}})
                 break
             except Exception as e:                       # 일시 오류만 다시 시도(메시지에 키가 섞이지 않게 종류만 남긴다)
@@ -106,9 +111,9 @@ class LLM:
         usage = dict(input=u.input_tokens, output=u.output_tokens,
                      cached=getattr(getattr(u, 'input_tokens_details', None), 'cached_tokens', 0) or 0,
                      reasoning=getattr(getattr(u, 'output_tokens_details', None), 'reasoning_tokens', 0) or 0)
-        c = self.cost(usage)
+        c = self.cost(usage, MODEL_)
         result = json.loads(resp.output_text)
-        rec = dict(kind=kind, prompt=name, prompt_hash=phash, model=resp.model, effort=EFFORT, input_hash=key,
+        rec = dict(kind=kind, prompt=name, prompt_hash=phash, model=resp.model, effort=EFFORT_, input_hash=key,
                    run_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), seconds=round(time.time() - t0, 1),
                    usage=usage, cost_usd=round(c, 5), input=text, result=result)
         path.write_text(json.dumps(rec, ensure_ascii=False, indent=1), encoding='utf-8')
@@ -171,3 +176,12 @@ def extract_cluster(llm: LLM, c: dict) -> dict:
     text = cluster_text(c)
     result, cached, cost = llm.call('extract', P_EXTRACT, text)
     return dict(result=result, issues=check(result, c), cached=cached, cost=cost)
+
+
+def verify_link(llm: LLM, c: dict, name: str, item: dict) -> dict:
+    """교차 확인: 추출 모델이 '관련 있음'이라 한 (종목, 기사) 쌍을 다른 모델이 본문으로 다시 본다. {verdict, why, model}."""
+    a = c['article']
+    text = '\n'.join([f'종목: {name}', f"연결 근거: {item['relation']['path']} — {item['relation']['evidence']}", f"앞 단계 이유: {item['reason']}",
+                      f"기사 제목: {a['title']}", f"매체: {a['outlet']}", '본문(앞부분):', (a.get('body') or '')[:2500]])
+    res, cached, cost = llm.call('verify', P_VERIFY, text, model=VERIFY_MODEL, effort='low')
+    return dict(verdict=res['verdict'], why=res['why'], model=VERIFY_MODEL)

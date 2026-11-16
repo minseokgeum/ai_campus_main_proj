@@ -2,11 +2,11 @@
 import { pct, won, man, num, tick } from "./fmt.js";
 
 export const SLOTS = [
-  { id: "1", tab: "brief", name: "밤사이 요약", where: "브리핑 › 밤사이 한눈에 아래 3~4줄",
+  { id: "1", tab: "brief", name: "밤사이 한 줄", where: "브리핑 › 맨 위 카드 아래 한 줄",
     input: "야간선물 등락률·고저 시각, 내 종목별 예상 시가·금액, 08:10 장전 거래, 이어진 기사 수와 미국 쪽 이름",
     output: "문장 3~4개, 문장마다 40자 안팎, 해요체. 숫자는 입력값 그대로",
     ban: "원인 단정(‘~때문에’), 매수·매도 권유, 오늘 장중 전망",
-    now: "밤사이 한 줄은 프롬프트 결과(brief.market.line_ko), 아래 줄들은 규칙 문장(코드)" },
+    now: "밤사이 프롬프트 결과(brief.market.line_ko). 그 아래 ‘오늘 아침 볼 것’은 코드가 고른 줄(AI 아님)" },
   { id: "2", tab: "news", name: "기사 한 줄 제목", where: "소식 목록·소식 창의 굵은 제목",
     input: "영어 기사 제목(+본문 앞부분)", output: "한국어 한 줄, 30자 안팎, 회사 이름은 한국어 표기",
     ban: "제목에 없는 숫자·평가 덧붙이기", now: "뉴스 탭 ‘내 종목’은 프롬프트 요약(short_summary_ko), ‘관계로 이은 기사’는 판정 경로의 첫 마디" },
@@ -21,7 +21,7 @@ export const SLOTS = [
     ban: "기사와 가격 움직임을 원인으로 잇기", now: "규칙 문장(코드)으로 채움" },
   { id: "6", tab: "brief", name: "띠·뉴스 종합 해석", where: "브리핑 › 종목 줄 아래, 뉴스 › 종목 묶음 머리",
     input: "그 종목의 예상 범위·예상 시가, 밤사이 이어진 기사(요약·관계 근거·매체 수)", output: "한두 문장, 해요체, stance·news_direction·checked",
-    ban: "원인 단정, 매매 권유, 관계 근거 없는 연결, 범위를 확률처럼 말하기", now: "밤사이 프롬프트 결과(brief.json). 없으면 ‘준비 중’" },
+    ban: "원인 단정, 매매 권유, 관계 근거 없는 연결, 범위를 확률처럼 말하기", now: "밤사이 프롬프트 결과(brief.json). 띠 숫자는 넣지 않고, 다른 모델이 연결을 한 번 더 확인한 기사만 씀" },
 ];
 export const FIXED = "주의 문구(월요일·실적 공시·장전 거래가 범위 밖), 믿을 정도 설명, 맨 아래 안내는 미리 정한 고정 문구라 LLM이 쓰지 않아요.";
 
@@ -60,6 +60,36 @@ export function summary(m, d, slot) {
     out.push(mine.length ? `밤사이 미국 기사${d.news_meta.articles ? " " + num(d.news_meta.articles) + "건" : ""} 가운데 내 종목과 이어진 기사는 ${mine.length}건이에요.` + (top ? ` ${top[0].replace(/\(.+\)/, "")} 쪽이 ${top[1]}건으로 가장 많아요.` : "")
       : `밤사이 미국 기사${d.news_meta.articles ? " " + num(d.news_meta.articles) + "건" : ""} 가운데 내 종목과 이어진 기사는 없었어요.`);
   }
+  return out;
+}
+
+/** 오늘 아침 볼 것: 화면에 있는 숫자·소식 가운데 먼저 볼 것을 코드가 고른다(문장 틀은 고정, 값만 채움). evs = 내 계좌와 이어진 일정 */
+export function glance(m, d, slot, evs) {
+  const out = [], held = m.rows.filter((r) => r.q > 0);
+  if (held.length) {
+    const top = [...held].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt))[0], dn = held.filter((r) => r.s.H < 0).length;
+    const dir = dn === held.length ? `${held.length}종목 모두 어제보다 낮게` : dn === 0 ? `${held.length}종목 모두 어제보다 높게` : `${held.length}종목 중 ${dn}종목은 어제보다 낮게, ${held.length - dn}종목은 높게`;
+    out.push({ ic: "내", cls: "a", act: `data-act="stock" data-code="${top.s.code}"`, t: `${josa(top.s.name, "이", "가")} 가장 크게 움직여요 · 예상 ${won(top.Hamt)}`,
+      s: `${dir} 시작할 것으로 보여요. ${top.s.name}의 범위는 ${man(top.lo)} ~ ${man(top.hi)}이에요.` });
+  }
+  if (slot === "0900" && m.showAct) {
+    const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb), miss = got.filter((r) => !r.s.inb);
+    if (got.length) out.push({ ic: "9시", cls: "", act: 'data-act="tab" data-tab="record"', t: `${got.length}종목 중 ${ok.length}종목이 예상 범위 안에서 열렸어요`, s: miss.length ? `범위 밖: ${miss.map((r) => r.s.name).join("·")}` : "지난 기록 탭에 쌓여요." });
+  } else if (slot !== "0730") {
+    const g = m.rows.filter((r) => r.s.grade && r.s.grade.g != null), outb = g.filter((r) => !(r.s.b80[0] <= r.s.grade.g && r.s.grade.g <= r.s.b80[1]));
+    if (g.length) out.push({ ic: "8시", cls: "", act: 'data-act="info" data-info="nxtout"', t: outb.length ? `장 열리기 전 거래가 범위를 벗어난 종목: ${outb.map((r) => r.s.name).join("·")}` : `장 열리기 전 거래는 ${g.length}종목 모두 예상 범위 안이에요`,
+      s: outb.length ? "08:10 가격이 이미 범위 밖이면, 과거에는 시가도 범위를 벗어난 날이 더 많았어요." : "08:00~08:10에 실제로 거래된 가격이 아침 예상과 크게 다르지 않아요." });
+  }
+  if (d.brief) {
+    const codes = [...m.codes, ...m.account.excluded.map((x) => x.code)], all = codes.flatMap((c) => (((d.brief.stocks || {})[c] || {}).news || []).map((n) => ({ n, c })));
+    const top = [...all].sort((a, b) => (b.n.media_count || 0) - (a.n.media_count || 0))[0];
+    if (top) { const nm = ((d.brief.stocks || {})[top.c] || {}).name || top.c, cnt = all.filter((x) => x.c === top.c).length;
+      out.push({ ic: "소식", cls: "y", act: `data-act="bnews" data-code="${top.c}" data-id="${top.n.id}"`, t: top.n.short_summary_ko || top.n.title,
+        s: `${nm}와 이어진 밤사이 소식 ${cnt}건 가운데 ${top.n.media_count > 1 ? `매체 ${top.n.media_count}곳이 다룬 ` : ""}대표 소식이에요.` }); }
+    else out.push({ ic: "소식", cls: "", act: 'data-act="tab" data-tab="news"', t: "밤사이 내 종목과 이어진 미국 소식은 없었어요", s: "시장 전체 소식은 뉴스 탭에서 볼 수 있어요." });
+  }
+  const e = (evs || []).find((x) => x.dday <= 2);
+  if (e) out.push({ ic: e.dday === 0 ? "오늘" : e.dday === 1 ? "내일" : "D-" + e.dday, cls: "", act: "", t: e.title, s: e.note });
   return out;
 }
 

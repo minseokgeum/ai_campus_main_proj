@@ -65,27 +65,21 @@ def stance_of(H, direction):
 
 
 def combine_stock(llm: LLM, name: str, band: dict | None, news: list[dict]) -> dict:
-    if not news:
-        line = (band_phrase(band) + '. 이어지는 미국 뉴스는 없었어요.') if band else '이어지는 미국 뉴스는 없었고, 이 종목은 시가 범위 계산 대상이 아니에요.'
-        return dict(line_ko=line, stance='no_news', news_direction=None, used_news=[], checked=True, issues=[], source='rule')
+    if not news:                                     # v3: 띠 숫자는 화면에 따로 있으므로 한 줄에 다시 쓰지 않는다
+        return dict(line_ko='밤사이 이 종목과 이어진 미국 기사는 없었어요.', stance='no_news', news_direction=None, used_news=[], checked=True, issues=[], source='rule')
     payload = dict(종목=name,
-                   노란띠=(dict(중심=pct(band['H']), 아래끝=pct(band['L80']), 위끝=pct(band['U80'])) if band else '없음(계산 대상 아님)'),
                    뉴스=[dict(id=n['id'], 요약=n['short_summary_ko'], 연결=n['relation']['path'], 연결_이유=n['reason'],
-                             종목쪽_방향=n['impact'], 방향_근거=n['impact_basis'], 주요_사실=n.get('facts', [])[:3])
+                             매체수=n['media_count'], 이야기=(n.get('story') or {}).get('status') or '', 종목쪽_방향=n['impact'],
+                             주요_사실=n.get('facts', [])[:3])
                          for n in news[:3]])
     text = json.dumps(payload, ensure_ascii=False, indent=1)
     res, cached, cost = llm.call('combine', P_COMBINE, text)
-    allowed = set()
-    if band:
-        for k in ('H', 'L80', 'U80'):
-            v = band[k] * 100
-            allowed |= {f'{v:.1f}'.lstrip('+-'), f'{abs(v):.1f}', f'{abs(v):.2f}', f'{abs(v):.0f}'}
-    allowed |= {'1', '2', '3'}                       # '뉴스 2건' 같은 개수 표현
+    allowed = {'1', '2', '3'}                        # '뉴스 2건' 같은 개수 표현
     allowed |= {n.lstrip('+-') for n in _numbers(text)}   # 입력(띠·뉴스 요약·사실)에 있는 숫자만 허용
     issues = check_line(res['line_ko'], allowed)
     line, src = res['line_ko'], 'llm'
     if issues:                                       # 검사 실패 → 규칙 문장(띠 + 가장 중요한 뉴스 요약)
-        line = (band_phrase(band) + '. ' if band else '') + f"이어지는 소식: {news[0]['short_summary_ko']}"
+        line = f"밤사이 이어진 소식이 있어요: {news[0]['short_summary_ko']}"
         src = 'rule_fallback'
     return dict(line_ko=line, stance=stance_of(band['H'] if band else None, res['news_direction']),
                 news_direction=res['news_direction'], used_news=res['used_news'], checked=not issues, issues=issues,

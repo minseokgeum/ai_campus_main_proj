@@ -102,36 +102,86 @@ export function histChart(hist, T) {
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="지난 거래일의 예상 범위와 실제 시가">${ticks.map(tick).join("")}${cols}${lab}</svg></div>`;
 }
 
-/** 관계 그림: 왼쪽 해외 쪽, 오른쪽 내 종목. hot = 오늘 밤 기사가 붙은 (src|dst) → 건수, hotN = 상자별 기사 수 */
+/** 관계 그림: 왼쪽 해외 쪽, 오른쪽 내 종목. hot = 오늘 밤 기사가 붙은 (src|dst) → 건수, hotN = 상자별 기사 수.
+ *  11/17: 왼쪽 상자는 호출하는 쪽이 '이어진 내 종목 순서'로 정렬해 넘기고, 오른쪽 상자는 이어진 왼쪽 상자들의 평균 높이에 둔다(선이 덜 엇갈린다).
+ *  왼쪽 상자 둘째 줄에 관계 이름을 적어, 누르지 않아도 어떤 관계인지 보인다. */
 const fit = (t, px, fs = 12.5) => {                 // 글자 폭을 어림해 넘치면 줄임표
   let w = 0, out = "";
   for (const ch of t) { w += /[ㄱ-힝]/.test(ch) ? fs : fs * 0.58; if (w > px) return out.trimEnd() + "…"; out += ch; }
   return out;
 };
 export function relGraph(nodes, edges, stocks, hot, hotN, sel) {
-  const W = 366, LW = 152, RW = 112, NH = 34, GAPY = 10, T = 30;
-  const left = nodes, right = stocks;
-  const hL = left.length * (NH + GAPY), hR = right.length * (NH + GAPY + 8), H = T + Math.max(hL, hR, 120) + 8;
-  const yL = (i) => T + (H - T - 8 - hL) / 2 + i * (NH + GAPY), yR = (i) => T + (H - T - 8 - hR) / 2 + i * (NH + GAPY + 8);
-  const li = Object.fromEntries(left.map((n, i) => [n.id, i])), ri = Object.fromEntries(right.map((s, i) => [s.code, i]));
+  const W = 366, LW = 168, RW = 110, NH = 42, GAPY = 8, T = 26, RH = 36;
+  const left = nodes, li = Object.fromEntries(left.map((n, i) => [n.id, i]));
+  const yL = (i) => T + i * (NH + GAPY), hL = left.length * (NH + GAPY);
+  // 오른쪽: 이어진 왼쪽 상자들의 평균 높이 → 위에서부터 겹치지 않게 내려 놓고, 넘치면 아래에서부터 다시 올린다
+  const want = stocks.map((s) => { const ys = edges.filter((e) => e.dst === s.code && li[e.src] != null).map((e) => yL(li[e.src]) + NH / 2); return { s, y: ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length - RH / 2 : null }; });
+  const linked = want.filter((w) => w.y != null).sort((a, b) => a.y - b.y), lone = want.filter((w) => w.y == null);
+  let prev = T - 6; linked.forEach((w) => { w.y = Math.max(w.y, prev + 6); prev = w.y + RH; });
+  const bodyH = Math.max(hL, linked.length * (RH + 6), 120);
+  let lim = T + bodyH - (lone.length ? lone.length * (RH + 6) : 0); [...linked].reverse().forEach((w) => { w.y = Math.min(w.y, lim - RH); lim = w.y - 6; });
+  lone.forEach((w, i) => (w.y = T + bodyH - (lone.length - i) * (RH + 6) + 6));
+  const yR = Object.fromEntries(want.map((w) => [w.s.code, w.y])), H = T + bodyH + 8;
   const on = (e) => !sel || sel === e.src || sel === e.dst;
   const seen = {};
   const draw = (e) => {
-    const k = e.src + "|" + e.dst; seen[k] = (seen[k] || 0) + 1; if (seen[k] > 1) return "";
-    const y1 = yL(li[e.src]) + NH / 2, y2 = yR(ri[e.dst]) + NH / 2, x1 = LW + 2, x2 = W - RW - 2, h = hot[k] || 0, neg = e.sign === "−";
+    const k = e.src + "|" + e.dst; seen[k] = (seen[k] || 0) + 1; if (seen[k] > 1 || li[e.src] == null || yR[e.dst] == null) return "";
+    const y1 = yL(li[e.src]) + NH / 2, y2 = yR[e.dst] + RH / 2, x1 = LW + 2, x2 = W - RW - 2, h = hot[k] || 0, neg = e.sign === "−";
     const col = h ? css("band-edge") : neg ? css("miss") : css("mute");
-    return `<path class="${on(e) ? "" : "dim"}" d="M${x1} ${y1}C${x1 + 44} ${y1},${x2 - 44} ${y2},${x2} ${y2}" stroke="${col}" stroke-width="${h ? 2.4 : 1.4}" ${e.strength === "추정" ? 'stroke-dasharray="4 3"' : ""} opacity="${h ? 1 : 0.65}"/>`;
+    return `<path class="${on(e) ? "" : "dim"}" d="M${x1} ${y1}C${x1 + 30} ${y1},${x2 - 30} ${y2},${x2} ${y2}" stroke="${col}" stroke-width="${h ? 2.4 : 1.3}" ${e.strength === "추정" ? 'stroke-dasharray="4 3"' : ""} opacity="${h ? 1 : 0.7}"><title>${esc(e.relation)}</title></path>`;
   };
   const paths = edges.filter((e) => !hot[e.src + "|" + e.dst]).map(draw).join("") + edges.filter((e) => hot[e.src + "|" + e.dst]).map(draw).join("");   // 노란 선이 위로
-  const box = (x, y, w, id, name, kind, deg) => {
-    const active = !sel || sel === id || edges.some((e) => (e.src === sel && e.dst === id) || (e.dst === sel && e.src === id));
-    const h = kind === "us" ? hotN[id] || 0 : 0, fill = kind === "us" ? css("navy") : css("band-soft"), ink = kind === "us" ? "#fff" : css("band-ink");
-    return `<g class="gn ${active ? "" : "dim"}" data-node="${id}"><rect x="${x}" y="${y}" width="${w}" height="${NH}" rx="10" fill="${deg === 0 ? css("chip") : fill}" ${sel === id ? `stroke="${css("accent")}" stroke-width="2"` : ""}/>
-      <text x="${x + 10}" y="${y + NH / 2 + 4.3}" font-size="12" font-weight="650" fill="${deg === 0 ? css("mute") : ink}">${esc(fit(name, w - 16 - (h ? 24 : 0), 12))}</text>
-      ${h ? `<g><rect x="${x + w - 27}" y="${y + 8}" width="21" height="18" rx="9" fill="${css("band")}"/><text x="${x + w - 16.5}" y="${y + 21}" font-size="10.5" font-weight="700" fill="#5C4500" text-anchor="middle">${h}</text></g>` : ""}</g>`;
+  const active = (id) => !sel || sel === id || edges.some((e) => (e.src === sel && e.dst === id) || (e.dst === sel && e.src === id));
+  const lbox = (n, i) => {
+    const y = yL(i), h = hotN[n.id] || 0, mine = edges.filter((e) => e.src === n.id), rel = mine.length ? mine[0].relation + (new Set(mine.map((e) => e.relation)).size > 1 ? " 외" : "") : "";
+    return `<g class="gn ${active(n.id) ? "" : "dim"}" data-node="${n.id}"><rect x="0.5" y="${y}" width="${LW}" height="${NH}" rx="10" fill="${h ? css("band-soft") : css("card")}" stroke="${sel === n.id ? css("accent") : h ? css("band-edge") : css("line")}" stroke-width="${sel === n.id ? 2 : 1}"/>
+      <text x="11" y="${y + 17}" font-size="12.5" font-weight="650" fill="${css("ink")}">${esc(fit(n.short, LW - 22 - (h ? 26 : 0), 12.5))}</text>
+      <text x="11" y="${y + 32}" font-size="10.5" font-weight="500" fill="${css("sub")}">${esc(fit(rel, LW - 22, 10.5))}</text>
+      ${h ? `<g><rect x="${LW - 29}" y="${y + 6}" width="22" height="17" rx="8.5" fill="${css("band")}"/><text x="${LW - 18}" y="${y + 18.5}" font-size="10.5" font-weight="700" fill="#5C4500" text-anchor="middle">${h}</text></g>` : ""}</g>`;
   };
-  const deg = (code) => edges.filter((e) => e.dst === code).length;
+  const rbox = (s) => {
+    const y = yR[s.code], deg = edges.some((e) => e.dst === s.code);
+    return `<g class="gn ${active(s.code) ? "" : "dim"}" data-node="${s.code}"><rect x="${W - RW}" y="${y}" width="${RW - 0.5}" height="${RH}" rx="10" fill="${deg ? css("band-soft") : css("chip")}" ${sel === s.code ? `stroke="${css("accent")}" stroke-width="2"` : ""}/>
+      <text x="${W - RW + 10}" y="${y + RH / 2 + 4.3}" font-size="12" font-weight="650" fill="${deg ? css("band-ink") : css("mute")}">${esc(fit(s.name, RW - 18, 12))}</text></g>`;
+  };
   return `<div class="graph"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="해외 쪽과 내 종목의 관계 그림">
-    <text x="0" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}">해외 쪽</text><text x="${W}" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}" text-anchor="end">내 종목</text>
-    ${paths}${left.map((n, i) => box(0, yL(i), LW, n.id, n.short, "us", 1)).join("")}${right.map((s, i) => box(W - RW, yR(i), RW, s.code, s.name, "kr", deg(s.code))).join("")}</svg></div>`;
+    <text x="0" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}">해외 쪽 · 관계</text><text x="${W}" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}" text-anchor="end">내 종목</text>
+    ${paths}${left.map(lbox).join("")}${stocks.map(rbox).join("")}</svg></div>`;
+}
+
+/** 한눈에 지도(11/17 팀 의견): 시장 → 업종 → 내 종목을 한 장에. 크기 = 보유 금액, 색 = 예상 시가 변화(어제 종가 기준, 파랑 아래·빨강 위·회색 0),
+ *  노란 동그라미 = 밤사이 이어진 소식 수, 점선 테두리 = 관심 종목(보유 없음). 칸을 누르면 종목 창. 글자는 늘 글자색(색만으로 뜻을 전하지 않는다). */
+const DV = [-0.03, -0.015, -0.003, 0.003, 0.015, 0.03];
+export const dvClass = (v) => (v == null ? "dv0" : "dv" + ["n3", "n2", "n1", "0", "p1", "p2", "p3"][DV.filter((t) => v >= t).length]);
+export function acctMap(rows, x, newsOf) {
+  if (!rows.length) return "";
+  const W = 366, G = 3, MH = 30, SH = 26, BODY = 168;
+  const total = rows.reduce((a, r) => a + r.value, 0), unit = total > 0 ? total * 0.07 : 1;     // 관심 종목(금액 0)은 작은 칸 하나
+  const wt = (r) => (r.value > 0 ? r.value : unit);
+  const groups = {}; rows.forEach((r) => (groups[r.s.group || "기타"] = groups[r.s.group || "기타"] || []).push(r));
+  let gs = Object.entries(groups).map(([name, rs]) => ({ name, rs: rs.sort((a, b) => wt(b) - wt(a)), w: rs.reduce((a, r) => a + wt(r), 0), val: rs.reduce((a, r) => a + r.value, 0) })).sort((a, b) => b.w - a.w);
+  if (gs.length > 4) { const rest = gs.slice(3); gs = [...gs.slice(0, 3), { name: "그 외", rs: rest.flatMap((g) => g.rs), w: rest.reduce((a, g) => a + g.w, 0), val: rest.reduce((a, g) => a + g.val, 0) }]; }
+  const sum = gs.reduce((a, g) => a + g.w, 0), inner = W - G * (gs.length - 1), MINW = 92;
+  let ws = gs.map((g) => Math.max(MINW, (g.w / sum) * inner)); const k = inner / ws.reduce((a, b) => a + b, 0); ws = ws.map((w) => w * k);
+  let h = `<rect class="${dvClass(x)}" x="0" y="0" width="${W}" height="${MH}" rx="8"/><text x="10" y="${MH / 2 + 4.3}" font-size="12" font-weight="650" fill="${css("ink")}">시장 · 코스피200 야간선물 ${x == null ? "–" : pct(x, 2)}</text>`;
+  let x0 = 0;
+  gs.forEach((g, gi) => {
+    const w = ws[gi], gH = g.val > 0 ? g.rs.reduce((a, r) => a + r.value * r.s.H, 0) / g.val : g.rs.reduce((a, r) => a + r.s.H, 0) / g.rs.length, y0 = MH + G;
+    h += `<rect class="${dvClass(gH)}" x="${x0}" y="${y0}" width="${w}" height="${SH}" rx="7"/><text x="${x0 + 8}" y="${y0 + SH / 2 + 4}" font-size="11.5" font-weight="650" fill="${css("ink")}">${esc(fit(g.name, w - 14 - (w > 130 ? 44 : 0), 11.5))}</text>${w > 130 ? `<text x="${x0 + w - 8}" y="${y0 + SH / 2 + 4}" font-size="11" fill="${css("ink2")}" text-anchor="end">${pct(gH)}</text>` : ""}`;
+    const body = BODY - G * (g.rs.length - 1), MINH = 30; let hs = g.rs.map((r) => Math.max(MINH, (wt(r) / g.w) * body)); const kk = body / hs.reduce((a, b) => a + b, 0); hs = hs.map((v) => v * kk);
+    let y = y0 + SH + G;
+    g.rs.forEach((r, i) => {
+      const ch = hs[i], n = newsOf(r.s.code), watch = r.value === 0;
+      h += `<g class="mcell" data-act="stock" data-code="${r.s.code}" role="button" tabindex="0" aria-label="${esc(r.s.name)} 예상 ${pct(r.s.H)}"><title>${esc(r.s.name)} · 예상 ${pct(r.s.H)}${watch ? " · 관심 종목" : ""}${n ? ` · 밤사이 소식 ${n}건` : ""}</title>
+        <rect class="${dvClass(r.s.H)}" x="${x0}" y="${y}" width="${w}" height="${ch}" rx="7" ${watch ? `stroke="${css("mute")}" stroke-dasharray="3 3" stroke-width="1.2"` : ""}/>
+        <text x="${x0 + 8}" y="${y + (ch >= 44 ? 18 : ch / 2 + 4)}" font-size="12" font-weight="650" fill="${css("ink")}">${esc(fit(r.s.name, w - 16 - (n ? 22 : 0) - (ch < 44 && w >= 150 ? 44 : 0), 12))}</text>
+        ${ch >= 44 || w >= 150 ? `<text x="${ch >= 44 ? x0 + 8 : x0 + w - 8 - (n ? 22 : 0)}" y="${y + (ch >= 44 ? 34 : ch / 2 + 4)}" font-size="11.5" fill="${css("ink2")}" ${ch >= 44 ? "" : 'text-anchor="end"'}>${pct(r.s.H)}</text>` : ""}
+        ${n ? `<circle cx="${x0 + w - 14}" cy="${y + (ch >= 44 ? 15 : ch / 2)}" r="8.5" fill="${css("band")}" stroke="${css("card")}" stroke-width="2"/><text x="${x0 + w - 14}" y="${y + (ch >= 44 ? 18.6 : ch / 2 + 3.6)}" font-size="9.5" font-weight="700" fill="#5C4500" text-anchor="middle">${n > 99 ? "99" : n}</text>` : ""}</g>`;
+      y += ch + G;
+    });
+    x0 += w + G;
+  });
+  const H = MH + G + SH + G + BODY;
+  return `<div class="amap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시장, 업종, 내 종목의 예상 시가 변화 지도">${h}</svg>
+    <div class="amap-key"><span class="ramp">${["n3", "n2", "n1", "0", "p1", "p2", "p3"].map((c) => `<i class="dv${c}"></i>`).join("")}</span><span>−3%</span><span>어제 종가</span><span>+3%</span><span class="sep"></span><span>크기 = 보유 금액</span><span><i class="nb"></i>밤사이 소식</span></div></div>`;
 }

@@ -9,3 +9,4 @@ data.part/
 .vercel/
 publish.sh
 data_cache/
+check.sh
