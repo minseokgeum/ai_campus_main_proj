@@ -8,3 +8,4 @@ data.part/
 .env*
 .vercel/
 publish.sh
+data_cache/

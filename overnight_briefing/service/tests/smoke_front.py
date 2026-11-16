@@ -31,7 +31,7 @@ def wait(pg, T, slot, acct, tab):
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless=True)
     ctx = b.new_context(viewport={"width": 1440, "height": 900})
-    ctx.add_init_script(f"try {{ localStorage.setItem('ob.draft', {json.dumps(json.dumps(DRAFT))}); }} catch (e) {{}}")
+    ctx.add_init_script(f"try {{ localStorage.setItem('ob.draft', {json.dumps(json.dumps(DRAFT))}); localStorage.setItem('ob.intro', '1'); }} catch (e) {{}}")
     pg = ctx.new_page()
     errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)))

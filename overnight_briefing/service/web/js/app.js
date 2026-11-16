@@ -6,7 +6,9 @@ import * as V from "./screens.js";
 import { SLOTS, FIXED } from "./llm.js";
 
 const $ = (s, r = document) => r.querySelector(s);
-const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "brief", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false };
+const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "brief", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false, liveFeed: null, notif: lsGet("ob.notif") || "06:30" };
+function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 const TABS = [["brief", "브리핑", "아침 브리핑"], ["news", "뉴스", "뉴스 브리핑"], ["night", "밤사이", "밤사이 흐름"], ["mine", "내 종목", "내 종목"], ["record", "기록", "지난 기록"]];
 const key = (code) => `${S.T}|${S.acct}|${code}`;
 let DOM = [-0.02, 0.02];
@@ -34,7 +36,7 @@ function renderShell() {
   const d = S.day, m = model(), a = m.account, t = TABS.find((x) => x[0] === S.tab);
   $("#clock").textContent = S.slot.slice(0, 2) + ":" + S.slot.slice(2);
   const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? "09:00 개장" : "개장 전";
-  $("#appbar").innerHTML = `<h1>${t[2]}<small>${d.label} · ${when}</small></h1><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
+  $("#appbar").innerHTML = `<h1>${t[2]}<small>${d.label} · ${when}</small></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0);
   $("#tabbar").innerHTML = TABS.map(([id, nm]) => `<button class="${S.tab === id ? "on" : ""}" data-act="tab" data-tab="${id}">${I.tabs[id]}${nm}${id === "news" && mine ? `<span class="dot">${mine}</span>` : ""}</button>`).join("");
   document.querySelectorAll("#ctl-slot button").forEach((b) => b.classList.toggle("on", b.dataset.slot === S.slot));
@@ -68,10 +70,11 @@ function patchRow(code) {                      // 수량·가정 시가가 바�
   const m = model(), r = m.rows.find((x) => x.s.code === code), el = $(`[data-row="${code}"]`);
   if (r && el) {
     const v = r.pin != null ? r.pin : r.s.H, amt = r.value * v, f = (k) => $(`[data-f="${k}"]`, el);
-    f("amt").textContent = won(amt); f("amt").className = "num " + tone(amt);
+    const watch = r.q === 0 && r.h.q === 0;
+    f("amt").textContent = watch ? "관심" : won(amt); f("amt").className = "num " + (watch ? "" : tone(amt));
     f("pct").textContent = (r.pin != null ? "가정 " : "") + pct2(v);
     f("sub").innerHTML = `어제 ${priceShort(r.s.pc)}원 ${I.sm} ${r.pin != null ? "가정" : "예상"} ${priceShort(tick(r.s.pc * (1 + v)))}원`;
-    f("q").textContent = num(r.q); f("range").textContent = `${man(r.lo)} ~ ${man(r.hi)}`;
+    f("q").textContent = num(r.q); f("range").textContent = r.q === 0 ? "수량을 넣으면 보여요" : `${man(r.lo)} ~ ${man(r.hi)}`;
     f("was").hidden = !r.changed; if (r.changed) f("was").textContent = `잔고 ${num(r.h.q)}주에서 바꿔 보는 중`;
     $("[data-stepper]", el).classList.toggle("changed", r.changed); $('[data-step="-1"]', el).disabled = r.q <= 0;
   }
@@ -131,6 +134,11 @@ async function act(el) {
   else if (a === "gsel") { S.sel = el.dataset.id || null; renderScreen(true); }
   else if (a === "gjump") { S.sel = el.dataset.id; S.tab = "news"; S.filter = "graph"; closeSheet(); render(); }
   else if (a === "qty") { if (!$("input", el)) editQty(el); }
+  else if (a === "intro") openSheet(V.introSheet(+el.dataset.step || 0));
+  else if (a === "introdone") { lsSet("ob.intro", "1"); closeSheet(); }
+  else if (a === "notif") openSheet(V.notifSheet(S.notif));
+  else if (a === "setnotif") { S.notif = el.dataset.v; lsSet("ob.notif", S.notif); closeSheet(); renderScreen(true); toast(`${S.notif}에 아침 브리핑 알림을 받아요(시연)`); }
+  else if (a === "golive") { S.tab = "news"; S.filter = "live"; render(); }
 }
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-node]"); if (g) { S.sel = S.sel === g.dataset.node ? null : g.dataset.node; renderScreen(true); return; }
@@ -178,7 +186,7 @@ function compose(base, pf) {
 }
 function fetchPf(T) {
   if (S.acct !== "U") return getJSON(`${API}/portfolio`, post({ T, account_id: S.acct }));
-  const hs = S.draft.filter((h) => h.q > 0).map((h) => ({ code: h.code, q: Math.round(h.q), avg: h.avg > 0 ? h.avg : null }));
+  const hs = S.draft.filter((h) => h.q >= 0).map((h) => ({ code: h.code, q: Math.round(h.q), avg: h.avg > 0 ? h.avg : null }));   // 수량 0 = 관심 종목
   return hs.length ? getJSON(`${API}/portfolio`, post({ T, name: "내 잔고", holdings: hs })) : Promise.resolve(EMPTY_PF);
 }
 async function load(T) {
@@ -228,7 +236,7 @@ document.addEventListener("change", (e) => {
   const inp = e.target.closest && e.target.closest("#draft input"); if (!inp) return;
   const h = S.draft.find((x) => x.code === inp.closest("[data-code]").dataset.code); if (!h) return;
   const v = inp.value === "" ? null : Number(inp.value);
-  if (inp.dataset.f === "q") { h.q = Math.max(1, Math.min(10000000, Math.round(v || 1))); inp.value = h.q; }
+  if (inp.dataset.f === "q") { h.q = Math.max(0, Math.min(10000000, Math.round(v ?? 0))); inp.value = h.q; refreshDraft(); }
   else { h.avg = v == null || !(v > 0) ? null : Math.min(100000000, Math.round(v)); inp.value = h.avg ?? ""; }
   saveDraft();
 });
@@ -250,5 +258,7 @@ async function applyDraft() {
   if (!S.meta.days.some((d) => d.T === S.T)) S.T = S.meta.default;
   if (!TABS.some((t) => t[0] === S.tab)) S.tab = "brief";
   if (S.acct !== "U" && !S.accts.some((a) => a.id === S.acct)) S.acct = S.accts[0].id;
+  getJSON(`${API}/live`).then((v) => { S.liveFeed = v; if (S.day && (S.tab === "brief" || S.tab === "news")) renderScreen(true); }).catch(() => { S.liveFeed = { items: [], collected: 0 }; });
   await load(S.T);
+  if (!lsGet("ob.intro") && !new URLSearchParams(location.hash.slice(1)).get("nointro")) openSheet(V.introSheet(0));
 })();

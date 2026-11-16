@@ -6,15 +6,15 @@ const G = 50;                                           // 양쪽에 숫자 자�
 const frac = (v, dom) => (Math.max(dom[0], Math.min(dom[1], v)) - dom[0]) / (dom[1] - dom[0]);
 export const posCss = (v, dom, dx = 0) => `calc(${G + dx}px + (100% - ${2 * G}px) * ${frac(v, dom).toFixed(5)})`;
 
-/** 화면에 나오는 값들을 다 담는 눈금. 0(어제 종가)은 늘 포함하고, 너무 좁아지지 않게 최소 폭을 둔다. */
+/** 화면에 나오는 값들을 다 담는 눈금. 11/17(팀 피드백): 0(어제 종가)을 늘 가운데에 둔다.
+ *  위·아래를 같은 폭으로 잡아 종목·계좌·화면이 바뀌어도 0 기준선 자리가 같고, 위로 열림·아래로 열림을 같은 눈으로 읽는다. */
 export function domain(vals, minWidth = 0.04) {
-  let a = Math.min(0, ...vals), b = Math.max(0, ...vals);
-  const pad = (b - a) * 0.04; a -= pad; b += pad;
-  if (b - a < minWidth) { const mid = (a + b) / 2; a = mid - minWidth / 2; b = mid + minWidth / 2; }
-  return [a, b];
+  const m = Math.max(minWidth / 2, ...vals.map((v) => Math.abs(v))) * 1.04;
+  return [-m, m];
 }
 
-/** s: 종목(b80, b90, H, grade, y, inb), o: {dom, slot, showActual, pin, wide} */
+/** s: 종목(b80, b90, H, grade, y, inb), o: {dom, slot, showActual, pin, wide, avg}
+ *  avg: 평균단가를 어제 종가 대비 등락률로 바꾼 값(내가 넣은 평단). 눈금 안이면 세로선, 밖이면 끝에 화살표로 적는다. 눈금은 평단 때문에 넓히지 않는다. */
 export function bandHtml(s, o) {
   const { dom, slot } = o, width = dom[1] - dom[0], zone = 0.2 * width;
   const x = (v, dx) => posCss(v, dom, dx);
@@ -30,6 +30,10 @@ export function bandHtml(s, o) {
   let h = `<div class="band${o.pin != null ? " pinned" + near(o.pin) : ""}" data-band="${s.code}" data-h="${s.H}" data-lo="${lo}" data-hi="${hi}" style="--g:${G}px" role="img" aria-label="${esc(s.name)} 예상 범위 ${pct(lo)}에서 ${pct(hi)}, 예상 시가 ${pct(s.H)}">`;
   h += `<i class="track"></i>${o.wide ? `<i class="f90" style="left:${x(lo9)};width:${w(lo9, hi9)}"></i>` : ""}<i class="f80" style="left:${x(lo)};width:${w(lo, hi)}"></i>`;
   h += `<i class="zero" style="left:${x(0)}"></i>`;
+  if (o.avg != null && isFinite(o.avg)) {
+    h += o.avg >= dom[0] && o.avg <= dom[1] ? `<i class="avg" style="left:${x(o.avg)}"></i><span class="avg-l" style="left:${x(o.avg)}">평단</span>`
+      : `<span class="avg-edge ${o.avg > 0 ? "r" : "l"}">${o.avg > 0 ? "" : "← "}평단 ${pct(o.avg)}${o.avg > 0 ? " →" : ""}</span>`;
+  }
   h += `<span class="end lo ${tone(lo)}" style="left:${x(loAt[0], loAt[1])}">${pct(lo)}</span><span class="end hi ${tone(hi)}" style="left:${x(hiAt[0], hiAt[1])}">${pct(hi)}</span>`;
   h += `<i class="dot" style="left:${x(s.H)}"></i><span class="dot-l" style="left:${x(s.H)}">${pct(s.H)}</span>`;
   if (g != null && act == null) h += `<span class="mk" style="left:${x(g)}"><i></i>장전 ${pct(g)}</span>`;      // 개장 뒤에는 실제 시가 표식만 두고, 장전 거래는 아래 흐름 줄에 적는다

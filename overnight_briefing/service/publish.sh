@@ -4,7 +4,7 @@
 export PATH=/opt/homebrew/bin:/usr/bin:/bin:$PATH
 cd "$(dirname "$0")"
 echo "--- 데모 배포 $(date +%H:%M:%S)"
-~/4Digit/.venv/bin/python build_snapshot.py --days 6 2>&1 | grep -v WARNING | tail -1
+~/4Digit/.venv/bin/python build_snapshot.py --days 10 2>&1 | grep -v WARNING | tail -1
 if OUT=$(vercel deploy --prod --yes </dev/null 2>&1); then
   echo "배포 완료 $(date +%H:%M:%S) https://4digit-demo.vercel.app"
 else

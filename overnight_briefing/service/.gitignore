@@ -8,3 +8,4 @@ __pycache__/
 !core/accounts.json
 .vercel
 .env*
+data_cache/

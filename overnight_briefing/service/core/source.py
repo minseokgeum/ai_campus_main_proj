@@ -78,5 +78,16 @@ def stocks() -> list[dict]:
     return _cached("stocks", B.catalog) if MODE == "live" else _read("stocks.json")
 
 
+def live() -> dict:
+    """지금 모으는 밤의 최신 기사(11/17). 스냅샷에서는 배포할 때 굳힌 것."""
+    if MODE == "live":
+        from . import extras as X
+        return _cached("live", X.live_feed)
+    try:
+        return _read("live.json")
+    except FileNotFoundError:
+        return dict(report=None, items=[], last_fetch=None, collected=0)
+
+
 def accounts() -> list[dict]:
     return _cached("accounts", B.sample_accounts) if MODE == "live" else _read("accounts.json")

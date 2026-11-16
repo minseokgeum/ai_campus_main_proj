@@ -87,6 +87,12 @@ def accounts():
     return JSONResponse(S.accounts(), headers=NO_STORE)
 
 
+@app.get("/api/live")
+def live():
+    """지금 모으는 밤의 최신 기사(검색어로 걸린 그대로, 거르기 전)와 마지막 수집 시각."""
+    return JSONResponse(S.live(), headers=NO_STORE)
+
+
 @app.get("/api/stocks")
 def stocks(q: str = Query("", max_length=30), limit: int = Query(30, ge=1, le=2000)):
     rows = S.stocks()

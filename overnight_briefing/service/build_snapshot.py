@@ -30,7 +30,7 @@ def dump(rel: str, obj, root: Path) -> int:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=6, help="최근 몇 거래일을 넣을지")
+    ap.add_argument("--days", type=int, default=8, help="최근 몇 거래일을 넣을지")
     a = ap.parse_args()
     tmp = OUT.with_name("data.part")
     if tmp.exists():
@@ -42,6 +42,8 @@ def main() -> None:
     total += dump("accounts.json", B.sample_accounts(), tmp)
     total += dump("track.json", B.track(), tmp)
     total += dump("graph.json", B.graph_all(), tmp)
+    from core import extras as X
+    total += dump("live.json", X.live_feed(), tmp)
     for d in m["days"]:
         total += dump(f"day/{d['T']}.json", B.day(d["T"]), tmp)
     if OUT.exists():

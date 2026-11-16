@@ -205,9 +205,12 @@ def day(T: str) -> dict:
     rec = D.news_record(T)
     fw = D.forward_record()
     seal = src.get("sealed") or {}
-    ev = [dict(dday=int(e["dday"]), label=e["label"], title=e["title"], note=e["note"]) for e in D.upcoming_events(T)]
+    ev = [dict(dday=int(e["dday"]), label=e["label"], title=e["title"], note=e["note"], kind="macro", codes=[]) for e in D.upcoming_events(T)]
     ao = c8.get("after_open") or {}
     names = {r["code"]: r["name"] for r in catalog()}
+    from . import extras as X                               # 11/17: 장 시간이 바뀌는 날, 이어진 미국 기업 실적 발표일, 자료 상태
+    ev = sorted(ev + X.special_events(T) + X.earnings_events(T, _graph_table(), names), key=lambda e: e["dday"])
+    brief = N.load_brief(T, names)
     macro = D.us_macro()
     return dict(
         T=T, D=c8.get("D"), label=label(T), kind=_kind(src, c8),
@@ -221,7 +224,7 @@ def day(T: str) -> dict:
         news_meta=dict(line=D.news_record_line(T), articles=(rec or {}).get("counts", {}).get("articles"),
                        before_open=(rec or {}).get("before_open"), issued=((rec or {}).get("issued_at") or "")[11:16]),
         macro=[] if macro is None else [dict(time=r.time, headline=r.headline) for r in macro[macro["T"] == T].itertuples()][:40],
-        night=_night(T), events=ev, brief=N.load_brief(T, names),
+        night=_night(T), events=ev, brief=brief, pipeline=X.pipeline_status(T, brief), special=X.SPECIAL.get(T),
         forward=None if not fw else dict(after=fw[0].get("after_freeze"), prov=fw[0].get("prov_days", []),
                                          per_day=[p for p in fw[0]["per_day"] if p["T"] <= T][-8:]))
 
