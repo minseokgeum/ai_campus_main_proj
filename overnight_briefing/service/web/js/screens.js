@@ -1,5 +1,5 @@
 // 화면 다섯 개와 아래에서 올라오는 창의 HTML. 상태는 app.js가 넘겨 준다(m = 지금 계좌·수량으로 만든 값 묶음).
-import { esc, tone, pct, pct2, won, num, man, tick, dlabel, avatar, priceShort, I } from "./fmt.js";
+import { esc, tone, pct, pct2, won, num, man, tick, dlabel, avatar, priceShort, I, kst, AI } from "./fmt.js";
 import { bandHtml, domain } from "./band.js";
 import { spark, nightChart, recordBars, histChart, relGraph } from "./charts.js";
 import { summary, stockNote, nightCaption } from "./llm.js";
@@ -24,14 +24,14 @@ export function newsItem(n, m, T) {
   </button>`;
 }
 
-function stockRow(r, m, st) {
+function stockRow(r, m, st, d) {
   const s = r.s, live = r.pin != null, v = live ? r.pin : s.H, amt = r.value * v;
-  const news = m.newsBy[s.code] || 0, g = st.slot !== "0730" ? s.grade : null;
+  const news = (m.newsBy[s.code] || 0) + (m.briefBy[s.code] || 0), g = st.slot !== "0730" ? s.grade : null;
   const nxtOut = g && g.g != null && !(s.b80[0] <= g.g && g.g <= s.b80[1]);
   const chips = [S_PIN(r, s), gradeChip(g)];
   s.cautions.forEach((c) => chips.push(`<button class="chip btn lo" data-act="stock" data-code="${s.code}">${I.warn.replace('width="16" height="16"', 'width="12" height="12"')} ${esc(c.title)}</button>`));
   if (nxtOut) chips.push(`<button class="chip btn lo" data-act="info" data-info="nxtout">장전 거래가 범위 ${g.g > s.b80[1] ? "위" : "아래"}</button>`);
-  if (news) chips.push(`<button class="chip btn" data-act="stock" data-code="${s.code}">${I.news} 이어진 소식 ${news}</button>`);
+  if (news) chips.push(`<button class="chip btn" data-act="stock" data-code="${s.code}">${I.news} 밤사이 소식 ${news}</button>`);
   let flow = "";
   if (m.showAct && s.y != null) {
     flow = `<div class="stock-flow"><span>예상 <b class="${tone(s.H)}">${pct(s.H)}</b></span>${I.sm}${g && g.g != null ? `<span>장전 <b class="${tone(g.g)}">${pct(g.g)}</b></span>${I.sm}` : ""}<span>실제 <b class="${tone(s.y)}">${pct(s.y)}</b></span>
@@ -46,7 +46,7 @@ function stockRow(r, m, st) {
       <div><span class="stepper${r.changed ? " changed" : ""}" data-stepper="${s.code}"><button data-step="-1" aria-label="수량 줄이기" ${r.q <= 0 ? "disabled" : ""}>${I.minus}</button><span class="q" data-act="qty" data-code="${s.code}"><span data-f="q">${num(r.q)}</span><small>주</small></span><button data-step="1" aria-label="수량 늘리기">${I.plus}</button></span></div>
       <div class="range"><span data-f="was" class="was" ${r.changed ? "" : "hidden"}>잔고 ${num(r.h.q)}주에서 바꿔 보는 중</span>범위 금액 <b data-f="range">${man(r.lo)} ~ ${man(r.hi)}</b></div>
     </div>
-    ${chips.filter(Boolean).length ? `<div class="stock-chips">${chips.join("")}</div>` : ""}${flow}
+    ${chips.filter(Boolean).length ? `<div class="stock-chips">${chips.join("")}</div>` : ""}${flow}${combinedHtml(d, s.code)}
   </article>`;
 }
 
@@ -83,7 +83,7 @@ export function heroHtml(m, d, st) {
 export function brief(m, d, st) {
   const mine = d.news.filter((n) => n.stocks.some((s) => m.codes.has(s.code)));
   const x = d.market.x, sum = summary(m, d, st.slot);
-  let h = `<section class="sec hero" id="hero">${heroHtml(m, d, st)}</section>`;
+  let h = `<section class="sec"><div class="hero hero-card" id="hero">${heroHtml(m, d, st)}</div></section>` + marketHtml(d);
   if (d.market.cautions.length) h += `<section class="sec" style="padding-top:14px;padding-bottom:14px">${d.market.cautions.map((c) => `<div class="notice">${I.warn}<div><b>${esc(c.title)}</b>${esc(c.body)}</div></div>`).join("")}</section>`;
   h += `<section class="sec"><div class="sec-h"><h2>밤사이 한눈에</h2><button class="more" data-act="tab" data-tab="night">흐름 보기 ${I.chev}</button></div>
     <button class="night-card" data-act="tab" data-tab="night"><div><div class="sub">코스피200 야간선물 · 06:00 마감</div><div class="v num ${tone(x)}">${pct2(x)}</div>
@@ -91,12 +91,10 @@ export function brief(m, d, st) {
     <ul class="summary" data-llm="1">${sum.map((s) => `<li>${esc(s)}</li>`).join("")}</ul></section>`;
   h += `<section class="sec"><div class="sec-h"><h2>보유 종목 ${m.rows.length}</h2><button class="more" data-act="info" data-info="band">읽는 법 ${I.chev}</button></div>
     <div class="legend-row"><span><i class="lg-band"></i>예상 범위</span><span><i class="lg-dot"></i>예상 시가</span><span><i class="lg-zero"></i>어제 종가</span>${st.slot !== "0730" && !m.showAct ? '<span><i class="lg-nxt"></i>장전 거래</span>' : ""}${m.showAct ? '<span><i class="lg-act"></i>실제 시가</span>' : ""}</div>
-    ${m.rows.map((r) => stockRow(r, m, st)).join("")}
-    ${m.account.excluded.length ? `<div class="tiny" style="margin-top:8px">이 날 범위를 내지 못한 종목 ${m.account.excluded.length}개는 빼고 보여 드려요.</div>` : ""}
+    ${m.rows.map((r) => stockRow(r, m, st, d)).join("")}${m.rows.length ? "" : `<div class="empty">노란띠를 볼 수 있는 종목이 없어요.</div>`}
+    ${excludedHtml(m, d)}
     <div class="tiny" style="margin-top:10px">띠를 누르거나 끌면 그 값에 열렸을 때의 내 금액을 볼 수 있어요. 수량을 바꿔도 실제 주문은 나가지 않아요.</div></section>`;
-  h += `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식</h2>${mine.length ? `<button class="more" data-act="tab" data-tab="news">전체 ${mine.length}건 ${I.chev}</button>` : ""}</div>
-    ${mine.length ? mine.slice(-3).reverse().map((n) => newsItem(n, m, d.T)).join("") : `<div class="empty">밤사이 내 종목과 이어진 미국 기사가 없어요.</div>`}
-    <div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계가 있다는 뜻이에요. 이 기사가 시가를 움직였다는 뜻은 아니에요.</div></section>`;
+  h += briefTop(m, d, mine);
   if (d.events.length) h += `<section class="sec"><div class="sec-h"><h2>다가오는 일정</h2><span class="more">7일 안</span></div><div class="rows">${d.events.slice(0, 4).map((e) => `<div class="rowline"><div><b style="text-align:left;display:block">${esc(e.title)}</b><small>${esc(e.note)}</small></div><span class="chip ${e.dday <= 1 ? "accent" : ""}">${e.label} · D-${e.dday}</span></div>`).join("")}</div></section>`;
   return h + foot(d);
 }
@@ -112,7 +110,7 @@ export function recordLine(d) {
 
 export function night(m, d, st) {
   const n = d.night;
-  if (!n) return `<section class="sec"><div class="empty">이 날은 야간선물 1분 자료가 없어요.</div></section>`;
+  if (!n) return `<section class="sec"><div class="empty">이 날은 야간선물 1분 자료가 없어요.<br>브리핑의 예상 범위와 뉴스는 그대로 볼 수 있어요.</div></section>${foot(d)}`;
   const inWin = d.news.filter((x) => x.ts >= n.t0);
   const ch = nightChart(n, d.news);
   const h = `<section class="sec" style="padding-top:12px"><div class="sub">코스피200 야간선물 · 18:00 ~ 06:00</div>
@@ -127,21 +125,146 @@ export function night(m, d, st) {
   return { html: h, bind: ch.bind };
 }
 
+/* ───── 뉴스 브리핑(밤사이 처리·프롬프트 결과) ───── */
+const STANCE = { aligned: "띠와 같은 쪽", opposite: "띠와 반대쪽", mixed: "방향이 엇갈림", unclear: "방향을 가리기 어려움" };
+const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
+
+export function combinedHtml(d, code) {
+  const b = d.brief; if (!b) return "";
+  const st = (b.stocks || {})[code], c = st && st.combined;
+  if (c && c.line_ko) return `<div class="combined" data-llm="6">${AI}<p>${esc(c.line_ko)}</p><div class="cb-tags">${STANCE[c.stance] ? `<span class="chip">${STANCE[c.stance]}</span>` : ""}${c.checked ? "" : `<span class="chip">교차 확인 전</span>`}</div></div>`;
+  const n = st ? st.news.length : 0;
+  return `<div class="combined pending" data-llm="6"><span class="ai off">AI</span><p>띠와 밤사이 뉴스를 함께 읽은 해석은 준비 중이에요.${n ? ` 이어진 기사 ${n}건은 먼저 볼 수 있어요.` : ""}</p></div>`;
+}
+
+export function marketHtml(d) {
+  const b = d.brief;
+  if (!b) return "";
+  const line = b.market && b.market.line_ko;
+  return `<section class="sec" style="padding-top:4px"><div class="mkt${line ? "" : " pending"}" data-llm="1">${line ? AI : `<span class="ai off">AI</span>`}<div><b>밤사이 한 줄</b><p>${line ? esc(line) : "미국 장 마감까지 모은 기사로 쓰는 밤사이 요약은 준비 중이에요."}</p></div></div></section>`;
+}
+
+const pathChips = (path) => { const p = String(path || "").split(" → "); return p.map((x, i) => `<span class="node ${i === 0 ? "mine" : i === p.length - 1 ? "us" : "rel"}">${i > 0 && i < p.length - 1 ? `${I.sm} ${esc(x)} ${I.sm}` : esc(x)}</span>`).join(""); };
+const storyChip = (n) => (n.story === "새 소식" ? `<span class="chip accent">새 소식</span>` : n.story === "이어짐" ? `<span class="chip">이어지는 소식</span>` : "");
+
+export function briefList(m, d) {
+  const bs = (d.brief && d.brief.stocks) || {}, out = [];
+  m.rows.forEach((r) => { const v = bs[r.s.code]; if (v && v.news.length) out.push({ code: r.s.code, name: r.s.name, out: false, items: v.news }); });
+  m.account.excluded.forEach((x) => { const v = bs[x.code]; if (v && v.news.length) out.push({ code: x.code, name: x.name, out: true, items: v.news }); });
+  return out;
+}
+
+export function briefItem(n, code) {
+  const sum = n.short_summary_ko, rel = n.relation || {};
+  return `<button class="news bnews" data-act="bnews" data-code="${code}" data-id="${esc(n.id)}">
+    <div class="meta">${storyChip(n)}${n.media_count > 1 ? `<span class="chip">매체 ${n.media_count}곳</span>` : ""}<span class="t">${esc(n.source || "")}</span><span>${kst(n.published_at)}</span></div>
+    ${sum ? `<h3 data-llm="2">${AI}${esc(sum)}</h3><div class="en">${esc(n.title)}</div>` : `<h3 class="orig" data-llm="2" lang="en">${esc(n.title)}</h3><div class="tiny">한 줄 요약 준비 중 · 원문 제목</div>`}
+    ${rel.path ? `<div class="path">${pathChips(rel.path)}</div>` : ""}
+  </button>`;
+}
+
+export function briefSection(d, code) {
+  const v = d.brief && (d.brief.stocks || {})[code];
+  if (!v || !v.news.length) return "";
+  return `<h4>밤사이 이어진 기사 ${v.news.length}</h4>${v.news.slice(0, 5).map((n) => briefItem(n, code)).join("")}`;
+}
+
+function briefTop(m, d, mine) {
+  const bl = briefList(m, d), all = bl.flatMap((g) => g.items.map((n) => ({ n, code: g.code })));
+  const top = [...all].sort((a, b) => (b.n.media_count || 0) - (a.n.media_count || 0) || (a.n.story === "새 소식" ? -1 : 1)).slice(0, 3);
+  if (d.brief) {
+    return `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식</h2>${all.length ? `<button class="more" data-act="tab" data-tab="news">전체 ${all.length}건 ${I.chev}</button>` : ""}</div>
+      ${top.length ? top.map((x) => briefItem(x.n, x.code)).join("") : `<div class="empty">밤사이 내 종목과 이어진 미국 기사가 없어요.</div>`}
+      <div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계로 검색어가 걸렸다는 뜻이에요. 이 기사가 시가를 움직였다는 뜻은 아니에요.</div></section>`;
+  }
+  return `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식</h2>${mine.length ? `<button class="more" data-act="tab" data-tab="news">전체 ${mine.length}건 ${I.chev}</button>` : ""}</div>
+    ${mine.length ? mine.slice(-3).reverse().map((n) => newsItem(n, m, d.T)).join("") : `<div class="empty">밤사이 내 종목과 이어진 미국 기사가 없어요.</div>`}
+    <div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계가 있다는 뜻이에요. 이 기사가 시가를 움직였다는 뜻은 아니에요.</div></section>`;
+}
+
+function excludedHtml(m, d) {
+  const ex = m.account.excluded;
+  if (!ex.length) return "";
+  const bs = (d.brief && d.brief.stocks) || {};
+  return `<div class="out-list"><div class="sub" style="margin:14px 0 6px">노란띠는 모델이 다루는 ${d.universe_n || 200}종목에만 나와요. 아래 종목은 밤사이 뉴스만 보여 드려요.</div>
+    ${ex.map((x) => { const n = (bs[x.code] || { news: [] }).news.length; return `<div class="out-row">${avatar(x.code, x.name)}<span class="nm"><b>${esc(x.name)}</b><small>${num(x.q)}주 · ${x.code}</small></span><span class="chip">모델 범위 밖</span>${n ? `<button class="chip btn" data-act="bstock" data-code="${x.code}">${I.news} ${n}</button>` : ""}</div>`; }).join("")}</div>`;
+}
+
 export function news(m, d, st) {
   const mine = d.news.filter((n) => n.stocks.some((s) => m.codes.has(s.code)));
-  const f = st.filter, list = f === "mine" ? mine : f === "all" ? d.news : [];
+  const f = st.filter, bl = briefList(m, d), nb = bl.reduce((a, g) => a + g.items.length, 0);
   const seg = m.rows.map((r) => [r.s, d.segnews[r.s.code]]).filter(([, v]) => v);
-  let body = "";
-  if (f === "macro") body = d.macro.length ? `<div class="rows">${d.macro.map((x) => `<div class="rowline"><span class="tnum" style="flex:none;font-size:12px">${x.time.split(" ")[1]}</span><b style="text-align:left;flex:1;font-weight:500;font-size:13px;line-height:1.45">${esc(x.headline)}</b></div>`).join("")}</div>` : `<div class="empty">시장 전체 기사가 없어요.</div>`;
-  else body = list.length ? [...list].reverse().map((n) => newsItem(n, m, d.T)).join("") : `<div class="empty">${f === "mine" ? "밤사이 내 종목과 이어진 미국 기사가 없어요." : "이 밤에는 이어진 기사가 없어요."}</div>`;
-  return `<section class="sec" style="padding-top:12px"><div class="filters">
-      <button class="${f === "mine" ? "on" : ""}" data-act="filter" data-f="mine">내 종목<small>${mine.length}</small></button>
-      <button class="${f === "all" ? "on" : ""}" data-act="filter" data-f="all">이어진 기사 전체<small>${d.news.length}</small></button>
-      <button class="${f === "macro" ? "on" : ""}" data-act="filter" data-f="macro">시장 전체<small>${d.macro.length}</small></button></div>${body}</section>
-    ${f === "mine" && seg.length ? `<section class="sec"><div class="sec-h"><h2>업종 낱말이 겹친 기사</h2><span class="more">관련성 확인 전</span></div>
-      <div class="rows">${seg.map(([s, v]) => `<div class="rowline"><div style="min-width:0"><b style="text-align:left;display:block">${esc(s.name)} <span class="tiny">· ${esc(v.group)}</span></b><small style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${esc(v.items[v.items.length - 1].headline)}</small></div><span class="chip">${v.n}건</span></div>`).join("")}</div>
-      <div class="tiny" style="margin-top:8px">업종마다 정해 둔 낱말이 제목에 나온 기사예요. 내 종목과 관련 있는지는 아직 확인하지 않았어요.</div></section>` : ""}
-    <div class="foot">${esc(d.news_meta.line)}<br>이어졌다는 건 사업 관계가 있다는 뜻이에요. 기사의 방향은 주가 방향이 아니에요.</div>`;
+  const tabs = [["brief", "내 종목", nb], ["linked", "관계로 이은 기사", mine.length], ["graph", "관계 그림", null], ["macro", "시장 전체", ((d.brief && d.brief.market && d.brief.market.items) || []).length || d.macro.length]];
+  const bar = `<div class="filters">${tabs.map(([id, t, n]) => `<button class="${f === id ? "on" : ""}" data-act="filter" data-f="${id}">${t}${n != null ? `<small>${n}</small>` : ""}</button>`).join("")}</div>`;
+  if (f === "graph") return `<section class="sec" style="padding-top:12px;padding-bottom:0">${bar}</section>` + graph(m, d, st);
+  let body;
+  const mk = (d.brief && d.brief.market && d.brief.market.items) || [];
+  if (f === "macro" && mk.length) body = `${d.brief.market.line_ko ? `<div class="mkt" style="margin-bottom:8px">${AI}<div><b>밤사이 한 줄</b><p>${esc(d.brief.market.line_ko)}</p></div></div>` : ""}${mk.map((n) => `<a class="news bnews" ${n.url ? `href="${esc(n.url)}" target="_blank" rel="noopener noreferrer"` : ""}><div class="meta">${(n.topics || []).slice(0, 2).map((t) => `<span class="chip">${esc(t)}</span>`).join("")}${n.media_count > 1 ? `<span class="chip">매체 ${n.media_count}곳</span>` : ""}<span class="t">${esc(n.source || "")}</span></div>${n.short_summary_ko ? `<h3>${AI}${esc(n.short_summary_ko)}</h3><div class="en" lang="en">${esc(n.title)}</div>` : `<h3 lang="en">${esc(n.title)}</h3>`}</a>`).join("")}`;
+  else if (f === "macro") body = d.macro.length ? `<div class="rows">${d.macro.map((x) => `<div class="rowline"><span class="tnum" style="flex:none;font-size:12px">${x.time.split(" ")[1]}</span><b style="text-align:left;flex:1;font-weight:500;font-size:13px;line-height:1.45" lang="en">${esc(x.headline)}</b></div>`).join("")}</div>` : `<div class="empty">시장 전체 기사가 없어요.</div>`;
+  else if (f === "linked") body = (mine.length ? [...mine].reverse().map((n) => newsItem(n, m, d.T)).join("") : `<div class="empty">관계표로 이은 미국 기사가 없어요.</div>`)
+    + (seg.length ? `<h4 class="h4">업종 낱말이 겹친 기사 <span class="tiny">관련성 확인 전</span></h4><div class="rows">${seg.map(([s, v]) => `<div class="rowline"><div style="min-width:0"><b style="text-align:left;display:block">${esc(s.name)} <span class="tiny">· ${esc(v.group)}</span></b><small style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${esc(v.items[v.items.length - 1].headline)}</small></div><span class="chip">${v.n}건</span></div>`).join("")}</div>` : "");
+  else if (!d.brief) body = `<div class="empty">이 날은 밤사이 뉴스 브리핑을 만들지 않았어요.<br>‘관계로 이은 기사’에서 그날 기사를 볼 수 있어요.</div>`;
+  else body = (d.brief.stub ? `<div class="notice info" style="margin-bottom:12px">${I.info}<div><b>요약·해석은 준비 중이에요</b>밤사이 모으고 같은 소식끼리 묶은 기사를 원문 제목 그대로 먼저 보여 드려요.</div></div>` : "")
+    + (bl.length ? bl.map((g) => `<div class="bgroup"><div class="bg-h">${avatar(g.code, g.name)}<b>${esc(g.name)}</b>${g.out ? `<span class="chip">모델 범위 밖</span>` : ""}<span class="tiny">${g.items.length}건</span></div>${combinedHtml(d, g.code)}${g.items.map((n) => briefItem(n, g.code)).join("")}</div>`).join("") : `<div class="empty">밤사이 내 종목과 이어진 미국 기사가 없어요.</div>`);
+  const line = f === "brief" && d.brief ? `밤사이 수집 ${d.brief.generated_at ? kst(d.brief.generated_at) + " 마감분" : ""}${d.brief.model ? ` · 요약 ${esc(d.brief.model)}` : ""}` : esc(d.news_meta.line);
+  return `<section class="sec" style="padding-top:12px">${bar}${body}</section>
+    <div class="foot">${line}<br>이어졌다는 건 사업 관계가 있다는 뜻이에요. 기사의 방향은 주가 방향이 아니고, 원인을 단정하거나 매매를 권하지 않아요.</div>`;
+}
+
+export function briefSheet(n, code, d) {
+  const rel = n.relation || {}, name = ((d.brief.stocks || {})[code] || {}).name || code;
+  return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>밤사이 이어진 기사<small>${esc(name)} · ${kst(n.published_at)} · ${esc(n.source || "")}</small></h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div>
+  <div class="sheet-b"><div class="meta" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">${storyChip(n)}${n.media_count ? `<span class="chip">매체 ${n.media_count}곳</span>` : ""}${(n.article_types || []).map((t) => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+    ${n.short_summary_ko ? `<div class="bs-title">${AI}${esc(n.short_summary_ko)}</div><div class="sub" style="margin-top:6px" lang="en">${esc(n.title)}</div>` : `<div class="bs-title" lang="en">${esc(n.title)}</div><div class="tiny" style="margin-top:4px">한국어 한 줄 요약은 준비 중이에요.</div>`}
+    <h4>어떻게 이어지나요</h4>
+    <div class="edge-card" style="margin-top:0">${rel.path ? `<div class="hd">${pathChips(rel.path)}</div>` : ""}${rel.evidence ? esc(rel.evidence) : "그래프에 적힌 연결 근거가 없어요."}
+      ${rel.source_ref ? `<div class="src">근거 출처: ${esc(rel.source_ref)}</div>` : ""}${rel.terms ? `<div class="src">걸린 검색어: ${esc(rel.terms)}</div>` : ""}</div>
+    ${n.reason ? `<h4>AI가 본 연결 이유</h4><p class="sub ai-p" style="margin:0">${AI}${esc(n.reason)}</p>` : ""}
+    ${(n.other_titles || []).length ? `<h4>같은 소식의 다른 제목</h4>${n.other_titles.map((t) => `<div class="sub" style="margin-bottom:6px" lang="en">${esc(t)}</div>`).join("")}` : ""}
+    ${n.url ? `<a class="btn-line" style="margin-top:16px" href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">원문 기사 열기 ${I.ext}</a>` : ""}
+    <div class="tiny" style="margin-top:18px">이어졌다는 건 그래프의 사업 관계로 검색어가 걸렸다는 뜻이에요. 기사의 방향은 주가 방향이 아니에요.</div></div>`;
+}
+
+export function bstockSheet(code, d, name) {
+  const v = d.brief && (d.brief.stocks || {})[code];
+  return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h">${avatar(code, name)}<h3>${esc(name)}<small>${code} · 모델 범위 밖</small></h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div>
+  <div class="sheet-b"><p class="sub" style="margin:0 0 4px">이 종목은 노란띠를 내지 않아요. 밤사이 이어진 기사만 보여 드려요.</p>${combinedHtml(d, code)}${v ? v.news.map((n) => briefItem(n, code)).join("") : `<div class="empty">밤사이 이어진 기사가 없어요.</div>`}</div>`;
+}
+
+/* ───── 내 종목: 예시 계좌 보기 · 내 잔고 넣기 ───── */
+export function draftRows(draft) {
+  if (!draft.length) return `<div class="empty" style="padding:18px 0">아직 넣은 종목이 없어요. 위에서 종목을 찾아 넣거나, <button class="link" data-act="copyacct" data-id="A">예시 계좌 A를 가져와</button> 고쳐 보세요.</div>`;
+  return draft.map((h) => `<div class="drow" data-code="${h.code}"><div class="dn"><b>${esc(h.name)}</b><small>${h.code}${h.in_model ? "" : " · 모델 범위 밖"}</small></div>
+    <label><span>수량</span><input type="number" inputmode="numeric" min="1" max="10000000" step="1" data-f="q" value="${h.q}" aria-label="${esc(h.name)} 수량"></label>
+    <label><span>평균단가</span><input type="number" inputmode="numeric" min="0" max="100000000" step="1" data-f="avg" value="${h.avg ?? ""}" placeholder="몰라도 돼요" aria-label="${esc(h.name)} 평균단가"></label>
+    <button class="rm" data-act="rmdraft" data-code="${h.code}" aria-label="${esc(h.name)} 빼기">${I.x}</button></div>`).join("");
+}
+
+function holdingsCard(m, d) {
+  const total = m.baseValue;
+  const rows = m.rows.map((r) => { const v = r.h.q * r.s.pc, pl = r.h.avg ? (r.s.pc - r.h.avg) * r.h.q : null;
+    return `<button class="hrow" data-act="stock" data-code="${r.s.code}"><span class="nm"><b>${esc(r.s.name)}</b><small>${num(r.h.q)}주${r.h.avg ? ` · 평단 ${num(r.h.avg)}원` : ""}</small><small>오늘 예상 <span class="${tone(r.s.H)}">${pct(r.s.H)}</span></small></span>
+      <span class="amt"><b>${won(v, false)}</b>${pl != null ? `<small class="${tone(pl)}">${won(pl)} (${pct(r.s.pc / r.h.avg - 1)})</small>` : ""}<small>비중 ${total ? Math.round((v / total) * 100) : 0}%</small></span></button>`; }).join("");
+  const outs = m.account.excluded.map((x) => `<div class="hrow"><span class="nm"><b>${esc(x.name)}</b><small>${num(x.q)}주${x.avg ? ` · 평단 ${num(x.avg)}원` : ""}</small></span><span class="amt"><span class="chip">모델 범위 밖</span></span></div>`).join("");
+  return `<section class="sec"><div class="hold-card"><div class="sub">어제 종가 기준 주식</div><div class="big num">${won(total, false)}</div>
+    <div class="tiny">노란띠가 있는 ${m.rows.length}종목 기준${m.account.excluded.length ? ` · 모델 범위 밖 ${m.account.excluded.length}종목은 금액에서 빠져요` : ""}</div></div>${rows}${outs}</section>`;
+}
+
+export function mine(m, d, st) {
+  const cur = st.acct, accts = st.accts || [];
+  const pills = [...accts.map((a) => [a.id, `예시 ${a.id}`, a.name]), ["U", "내 잔고", st.draft.length ? `${st.draft.length}종목` : "직접 넣기"]];
+  let h = `<section class="sec" style="padding-top:12px"><div class="acct-pills" role="tablist">${pills.map(([id, t, s]) => `<button role="tab" aria-selected="${id === cur}" class="${id === cur ? "on" : ""}" data-act="acct" data-id="${id}"><b>${t}</b><small>${esc(s)}</small></button>`).join("")}</div></section>`;
+  if (cur !== "U") {
+    return h + holdingsCard(m, d) + `<section class="sec"><button class="btn-line" data-act="copyacct" data-id="${cur}">이 계좌를 내 잔고로 가져와 고치기</button>
+      <div class="tiny" style="margin-top:10px">예시 계좌의 계좌번호·평균단가는 시연용 가정이에요. 평균단가는 그 종목의 실제 과거 종가 하나를 썼어요.</div></section>`;
+  }
+  h += `<section class="sec" style="padding-top:4px"><div class="sec-h"><h2>내 잔고 넣기</h2><span class="more">최대 30종목</span></div>
+    <p class="sub" style="margin:-4px 0 12px">종목을 찾아 수량을 넣어요. 평균단가는 몰라도 괜찮아요. 넣은 잔고는 이 브라우저에만 저장되고, 브리핑을 만들 때만 서버로 보내요. 서버에는 남기지 않아요.</p>
+    <div class="search">${I.search}<input id="stock-q" type="search" placeholder="종목명 또는 코드" autocomplete="off" maxlength="30" aria-label="종목 검색" aria-controls="stock-res"><div id="stock-res" class="search-res" role="listbox" hidden></div></div>
+    <div id="draft">${draftRows(st.draft)}</div>
+    <button class="btn-primary" data-act="applydraft" ${st.draft.length ? "" : "disabled"}>이 잔고로 브리핑 보기</button><div class="tiny" id="draft-msg" role="status" style="margin-top:8px"></div></section>`;
+  if (st.pfUser && m.rows.length + m.account.excluded.length) h += holdingsCard(m, d);
+  return h;
 }
 
 export const short = (nm) => String(nm || "").replace(/\(.+\)/, "").replace(/^미국 /, "").trim();
@@ -177,11 +300,13 @@ export function graph(m, d, st) {
 }
 
 export function record(m, d, st) {
-  const w = d.track[m.account.id] || {}, f = d.forward, a = f && f.after, v = (x, dg = 1) => (x == null ? "–" : x.toFixed(dg));
+  const w = d.track[m.account.id] || {}, f = d.forward;
+  if (!w.days) return `<section class="sec" style="padding-top:12px"><div class="empty">이 날 앞의 20거래일 기록은 이 시연판에 넣지 않았어요.<br>최근 날짜를 고르면 내 종목의 지난 기록을 볼 수 있어요.</div></section>${foot(d)}`;
+  const a = f && f.after, v = (x, dg = 1) => (x == null ? "–" : x.toFixed(dg));
   const hi = a && a["dir_높음"];
   return `<section class="sec" style="padding-top:12px"><div class="sec-h"><h2>내 종목, 최근 ${w.days || 0}거래일</h2></div>
     <div class="kpis"><div class="kpi"><span>범위 안에서 열림</span><b>${v(w.cov_mine)}%</b><small>기준 80%</small></div><div class="kpi"><span>예상 시가 오차</span><b>${v(w.err_H, 2)}%p</b><small>야간선물만 쓰면 ${v(w.err_x, 2)}</small></div><div class="kpi"><span>‘높음’ 방향 일치</span><b>${v(w.hi_match)}%</b><small>${w.hi_n || 0}건</small></div></div>
-    ${w.daily ? recordBars(w.daily, d.T) : ""}
+    ${w.daily && w.daily.length ? recordBars(w.daily, d.T) : ""}
     <div class="tiny">막대는 날마다 내 종목 가운데 예상 범위 안에서 열린 비율이에요. 진한 막대가 이 날, 회색은 규칙을 고정한 11/2 뒤의 날이에요.${w.n_fwd ? ` ${w.days}일 중 ${w.n_after}일이 규칙을 고정한 뒤에 처음 본 날이에요.` : ""}</div></section>
     ${a ? `<section class="sec"><div class="sec-h"><h2>규칙을 고정한 뒤, 200종목</h2><span class="more">${a.days}거래일${f.prov.length ? " · 오늘은 개장 직후 값" : ""}</span></div>
     <div class="kpis"><div class="kpi"><span>범위 안에서 열림</span><b>${v(a.in80)}%</b><small>기준 80%</small></div><div class="kpi"><span>예상 시가 오차</span><b>${v(a.mae_H, 2)}%p</b><small>야간선물만 쓰면 ${v(a.mae_x, 2)}</small></div><div class="kpi"><span>‘높음’ 방향 일치</span><b>${hi ? v(hi.rate) : "–"}%</b><small>${hi ? num(hi.n) : 0}건</small></div></div>
@@ -192,19 +317,19 @@ export function record(m, d, st) {
       <div class="rowline"><span>범위 안에서 열림</span><b style="font-weight:500;font-size:13px;max-width:210px">실제 시가가 노란띠 안에 든 비율. 10번 중 8번이 기준이에요.</b></div>
       <div class="rowline"><span>예상 시가 오차</span><b style="font-weight:500;font-size:13px;max-width:210px">예상 시가와 실제 시가의 차이 평균. 작을수록 가까웠어요.</b></div>
       <div class="rowline"><span>‘높음’ 방향 일치</span><b style="font-weight:500;font-size:13px;max-width:210px">믿을 정도 ‘높음’ 종목에서 장전 거래 방향과 시가 방향이 같았던 비율이에요.</b></div></div>
-      <a class="chip btn accent" style="margin-top:12px;height:34px;padding:0 12px;text-decoration:none" href="http://127.0.0.1:8510/track" target="_blank" rel="noopener">검증 기록 전체 보기 ${I.chev}</a></section>${foot(d)}`;
+      ${LOCAL ? `<a class="chip btn accent" style="margin-top:12px;height:34px;padding:0 12px;text-decoration:none" href="http://127.0.0.1:8510/track" target="_blank" rel="noopener">검증 기록 전체 보기 ${I.chev}</a>` : ""}</section>${foot(d)}`;
 }
 
 /* ───── 아래에서 올라오는 창 ───── */
 export function stockSheet(r, m, d, st) {
   const s = r.s, g = st.slot !== "0730" ? s.grade : null, P = (v) => num(tick(s.pc * (1 + v)));
   const myNews = d.news.filter((n) => n.stocks.some((x) => x.code === s.code));
-  const pl = (s.pc - r.h.avg) * r.h.q, plr = s.pc / r.h.avg - 1, wt = m.baseValue ? (r.h.q * s.pc) / m.baseValue : 0;
+  const hasAvg = r.h.avg > 0, pl = hasAvg ? (s.pc - r.h.avg) * r.h.q : null, plr = hasAvg ? s.pc / r.h.avg - 1 : null, wt = m.baseValue ? (r.h.q * s.pc) / m.baseValue : 0;
   const line = (dot, name, v, bold) => `<tr><td><i style="background:${dot}"></i>${name}</td><td class="${tone(v)}">${pct2(v)}</td><td>${P(v)}원</td><td class="${tone(v)}" ${bold ? 'style="font-weight:750"' : ""}>${won(r.value * v)}</td></tr>`;
   const edges = d.graph.edges.filter((e) => e.dst === s.code), seenE = new Set();
   const hist = d.hist[s.code] || [], hin = hist.filter((x) => x.inb).length;
   return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h">${avatar(s.code, s.name)}<h3>${esc(s.name)}<small>${s.code}${s.seg ? " · " + esc(s.seg) : ""}</small></h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div>
-  <div class="sheet-b"><p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0 0 4px" data-llm="4">${esc(stockNote(r, st.slot, myNews.length))}</p>
+  <div class="sheet-b"><p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0 0 4px" data-llm="4">${esc(stockNote(r, st.slot, myNews.length))}</p>${combinedHtml(d, s.code)}
     ${bandHtml(s, { dom: domain([s.b90[0], s.b90[1], s.H, g ? g.g : null, m.showAct ? s.y : null].filter((v) => v != null)), slot: st.slot, showActual: m.showAct, pin: null, wide: true }).replace('data-band="', 'data-band-static="')}
     <table class="tbl"><thead><tr><th>${num(r.q)}주 기준</th><th>어제 종가 대비</th><th>가격</th><th>내 금액</th></tr></thead><tbody>
       ${line("var(--band)", "범위 위쪽 끝", s.b80[1])}${line("var(--ink)", "예상 시가", s.H, true)}${line("var(--band)", "범위 아래쪽 끝", s.b80[0])}
@@ -215,10 +340,10 @@ export function stockSheet(r, m, d, st) {
       <div class="tiny" style="margin-top:6px">08:10 장전 거래(넥스트레이드)의 방향이 09:00 시가까지 이어질지를 본 값이에요. 예상 시가 숫자가 얼마나 정확한지와는 다른 얘기예요.</div>` : ""}
     <h4>내 잔고</h4><div class="rows">
       <div class="rowline"><span>보유 수량</span><b>${num(r.h.q)}주${r.changed ? ` <small style="color:var(--accent)">지금은 ${num(r.q)}주로 바꿔 보는 중</small>` : ""}</b></div>
-      <div class="rowline"><span>평균 단가</span><b>${num(r.h.avg)}원</b></div>
+      <div class="rowline"><span>평균 단가${m.account.sample ? ` <span class="tiny">예시 가정</span>` : ""}</span><b>${hasAvg ? num(r.h.avg) + "원" : "넣지 않음"}</b></div>
       <div class="rowline"><span>평가금액 <span class="tiny">어제 종가</span></span><b>${won(r.h.q * s.pc, false)}<small>계좌 주식의 ${Math.round(wt * 100)}%</small></b></div>
-      <div class="rowline"><span>평가손익</span><b class="${tone(pl)}">${won(pl)}<small class="${tone(pl)}">${pct2(plr)}</small></b></div></div>
-    <h4>밤사이 이어진 소식 ${myNews.length}</h4>${myNews.length ? [...myNews].reverse().slice(0, 4).map((n) => newsItem(n, m, d.T)).join("") : `<div class="sub">밤사이 이 종목과 이어진 미국 기사가 없어요.</div>`}
+      ${hasAvg ? `<div class="rowline"><span>평가손익</span><b class="${tone(pl)}">${won(pl)}<small class="${tone(pl)}">${pct2(plr)}</small></b></div>` : ""}</div>
+    ${briefSection(d, s.code)}<h4>관계로 이은 기사 ${myNews.length}</h4>${myNews.length ? [...myNews].reverse().slice(0, 4).map((n) => newsItem(n, m, d.T)).join("") : `<div class="sub">밤사이 이 종목과 이어진 미국 기사가 없어요.</div>`}
     ${edges.length ? `<h4>미국 쪽과 이어진 관계</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${edges.filter((e) => { const k = e.src + e.relation; if (seenE.has(k)) return false; seenE.add(k); return true; }).map((e) => `<button class="chip btn" data-act="gjump" data-id="${e.src}"><b>${esc(short((d.graph.nodes.find((n) => n.id === e.src) || {}).name))}</b> ${esc(e.relation)}</button>`).join("")}</div>` : ""}
     ${hist.length ? `<h4>지난 ${hist.length}거래일, 이 종목</h4><div class="sub">범위 안에서 열린 날 <b style="color:var(--ink)">${hin}/${hist.length}일</b> · 노란 막대가 그날 범위, 가로줄이 예상, 동그라미가 실제 시가예요.</div>${histChart(hist, d.T)}` : ""}
   </div>`;
@@ -243,9 +368,11 @@ export function newsSheet(n, m, d) {
     <div class="tiny" style="margin-top:18px">이어졌다는 건 사업 관계가 있다는 뜻이에요. ‘수요 증가 쪽·감소 쪽’은 기사 내용의 방향이고, 주가 방향이나 시가를 움직인 원인을 뜻하지 않아요.</div></div>`;
 }
 
-export function acctSheet(d, cur) {
-  return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>계좌 선택</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b">
-    ${d.accounts.map((a) => { const v = a.holdings.reduce((x, h) => x + h.q * ((d.stocks[h.code] || {}).pc || 0), 0); return `<button class="acct-opt" data-act="acct" data-id="${a.id}"><span class="avatar" style="background:var(--navy);border-radius:12px">${a.id}</span><span><b>${esc(a.name)}</b><span>위탁종합 ${a.no} · 주식 ${man(v, false)} · ${a.holdings.length}종목</span></span>${a.id === cur ? `<span class="ck">${I.check}</span>` : ""}</button>`; }).join("")}</div>`;
+export function acctSheet(list, cur, my) {
+  const opt = (id, name, sub, badge) => `<button class="acct-opt" data-act="acct" data-id="${id}"><span class="avatar acct-av">${badge}</span><span><b>${esc(name)}</b><span>${sub}</span></span>${id === cur ? `<span class="ck">${I.check}</span>` : ""}</button>`;
+  return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>계좌 고르기</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b">
+    <div class="tiny" style="margin:-2px 0 4px">예시 계좌</div>${list.map((a) => opt(a.id, a.name, `${a.holdings.length}종목${a.holdings.some((h) => !h.in_model) ? ` · 모델 범위 밖 ${a.holdings.filter((h) => !h.in_model).length}` : ""}`, a.id)).join("")}
+    <div class="tiny" style="margin:14px 0 4px">내가 넣은 잔고</div>${opt("U", "내 잔고", my ? `${my}종목 · 이 브라우저에만 저장` : "아직 넣은 종목이 없어요", "나")}</div>`;
 }
 
 const INFO = {

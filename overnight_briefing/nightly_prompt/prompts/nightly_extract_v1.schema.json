@@ -1,0 +1,431 @@
+{
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "scope": {
+   "type": "string",
+   "enum": [
+    "시장 전체",
+    "산업·기업",
+    "무관"
+   ]
+  },
+  "market_topics": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "통화정책·금리",
+     "물가·고용",
+     "재정·정치",
+     "지정학·전쟁",
+     "무역·관세",
+     "증시 전반",
+     "원자재·환율"
+    ]
+   },
+   "maxItems": 2
+  },
+  "article_profile": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "article_type": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "enum": [
+       "earnings_financials",
+       "merger_acquisition",
+       "investment_capacity",
+       "product_technology",
+       "supply_customer_contract",
+       "management_strategy",
+       "regulation_trade",
+       "litigation_safety",
+       "analyst_rating",
+       "monetary_policy",
+       "economic_data",
+       "fx",
+       "commodities",
+       "fiscal_policy",
+       "geopolitics",
+       "market_movement",
+       "other"
+      ]
+     },
+     "maxItems": 3
+    },
+    "short_summary": {
+     "type": "string"
+    },
+    "article_summary": {
+     "type": "string"
+    },
+    "article_tone": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "긍정",
+      "부정",
+      "중립",
+      "혼합",
+      null
+     ]
+    }
+   },
+   "required": [
+    "article_type",
+    "short_summary",
+    "article_summary",
+    "article_tone"
+   ]
+  },
+  "primary_companies": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "ticker": {
+      "type": [
+       "string",
+       "null"
+      ]
+     }
+    },
+    "required": [
+     "name",
+     "ticker"
+    ]
+   }
+  },
+  "event_date": {
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "comparison_summary": {
+   "type": "string"
+  },
+  "related_companies": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "ticker": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "related_to": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "acquirer",
+       "target",
+       "partner",
+       "customer",
+       "supplier",
+       "competitor",
+       "investor",
+       "potential_beneficiary",
+       "other"
+      ]
+     },
+     "impact": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "enum": [
+       "유리",
+       "불리",
+       "무관",
+       "혼재",
+       null
+      ]
+     },
+     "detail": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "ticker",
+     "related_to",
+     "role",
+     "impact",
+     "detail"
+    ]
+   }
+  },
+  "others": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "category": {
+      "type": "string",
+      "enum": [
+       "person",
+       "government_regulator",
+       "other"
+      ]
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "primary_subject",
+       "counterparty",
+       "regulator",
+       "investor",
+       "other"
+      ]
+     },
+     "detail": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "category",
+     "role",
+     "detail"
+    ]
+   }
+  },
+  "market_reaction": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "ticker": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "company",
+       "sector",
+       "index"
+      ]
+     },
+     "direction": {
+      "type": "string",
+      "enum": [
+       "up",
+       "down",
+       "mixed"
+      ]
+     }
+    },
+    "required": [
+     "name",
+     "ticker",
+     "type",
+     "direction"
+    ]
+   }
+  },
+  "statements": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "type": {
+      "type": "string",
+      "enum": [
+       "fact",
+       "forward_claim",
+       "risk",
+       "analyst_action",
+       "side_event",
+       "other"
+      ]
+     },
+     "speaker": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "subjects": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "text": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "type",
+     "speaker",
+     "subjects",
+     "text"
+    ]
+   }
+  },
+  "evidence": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "quote": {
+      "type": "string"
+     },
+     "supports": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "field": {
+         "type": "string",
+         "enum": [
+          "primary_companies",
+          "event_date",
+          "comparison_summary",
+          "related_companies",
+          "others",
+          "market_reaction",
+          "statements"
+         ]
+        },
+        "item_index": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "field",
+        "item_index"
+       ]
+      }
+     }
+    },
+    "required": [
+     "quote",
+     "supports"
+    ]
+   }
+  },
+  "stocks": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "company": {
+      "type": "string"
+     },
+     "relevant": {
+      "type": "boolean"
+     },
+     "evidence_index": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "link_kind": {
+      "type": "string",
+      "enum": [
+       "종목 고유",
+       "업종·테마",
+       "없음"
+      ]
+     },
+     "reason": {
+      "type": "string"
+     },
+     "different_story": {
+      "type": "boolean"
+     },
+     "impact_for_stock": {
+      "type": "string",
+      "enum": [
+       "유리",
+       "불리",
+       "혼재",
+       "불명"
+      ]
+     },
+     "impact_basis": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "company",
+     "relevant",
+     "evidence_index",
+     "link_kind",
+     "reason",
+     "different_story",
+     "impact_for_stock",
+     "impact_basis"
+    ]
+   }
+  },
+  "novelty": {
+   "type": "string",
+   "enum": [
+    "새 소식",
+    "새 진전",
+    "반복"
+   ]
+  },
+  "novelty_note": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "scope",
+  "market_topics",
+  "article_profile",
+  "primary_companies",
+  "event_date",
+  "comparison_summary",
+  "related_companies",
+  "others",
+  "market_reaction",
+  "statements",
+  "evidence",
+  "stocks",
+  "novelty",
+  "novelty_note"
+ ]
+}

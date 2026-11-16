@@ -40,6 +40,18 @@ export const I = {
     news: '<svg viewBox="0 0 24 24"><rect x="4" y="4.5" width="16" height="15" rx="2.2"/><path d="M8 9h8M8 12.5h8M8 16h4.5"/></svg>',
     graph: '<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.4"/><circle cx="17.5" cy="6" r="2.4"/><circle cx="17.5" cy="18" r="2.4"/><path d="M8.2 10.9l7.1-3.8M8.2 13.1l7.1 3.8"/></svg>',
     record: '<svg viewBox="0 0 24 24"><path d="M5 19.5V11M10 19.5V5.5M15 19.5v-6M20 19.5V8.5"/></svg>',
+    mine: '<svg viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="12.5" rx="2.2"/><path d="M9 7V5.6c0-.6.5-1.1 1.1-1.1h3.8c.6 0 1.1.5 1.1 1.1V7M3.5 12.5h17"/></svg>',
   },
+  search: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5L14 14"/></svg>',
+  ext: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.5H2.5v7h7V7M7 2.5h2.5V5M9.5 2.5L5.5 6.5"/></svg>',
 };
 export const priceShort = (p) => (p >= 1e6 ? (p / 1e4).toLocaleString("ko-KR", { maximumFractionDigits: 1 }) + "만" : Math.round(p).toLocaleString("ko-KR"));   // 좁은 줄에서 100만원 넘는 가격은 만원 단위로
+
+/** ISO(UTC) → 한국 시각 '11/16 05:12' */
+export const kst = (iso) => {
+  const d = new Date(iso || ""); if (Number.isNaN(d.getTime())) return "";
+  const k = new Date(d.getTime() + 9 * 3600e3), p = (n) => String(n).padStart(2, "0");
+  return `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
+};
+/** AI가 쓴 문장 앞에 붙이는 표시 */
+export const AI = '<span class="ai" title="AI가 기사와 숫자를 읽고 쓴 문장이에요">AI</span>';

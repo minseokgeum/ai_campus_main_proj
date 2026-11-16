@@ -1,0 +1,59 @@
+# 당신이 잠든 사이에: 고객 화면 (service)
+
+증권사 앱 안에 들어가는 아침 브리핑을 실제 서비스처럼 만든 시연판입니다. 백엔드(FastAPI)와 프론트(빌드 없는 ES 모듈)가 이 폴더 하나에 있습니다.
+모델 값은 새로 계산하지 않고, 이미 만든 결과(노란띠·기록·관계·밤사이 뉴스 브리핑)를 읽어 계좌에 맞게 골라 보여 줍니다. LLM도 부르지 않습니다.
+
+## 실행(로컬)
+
+```bash
+cd overnight_briefing/service
+~/4Digit/.venv/bin/uvicorn api.index:app --port 8520      # http://127.0.0.1:8520  (열기.command를 두 번 눌러도 됨)
+```
+
+- 주소 뒤 `#T=20261116&slot=0811&acct=A&tab=brief`로 날짜·시각·계좌·화면을 고를 수 있습니다. `acct`는 예시 계좌 `A`·`B`·`C` 또는 내 잔고 `U`, `tab`은 `brief`·`news`·`night`·`mine`·`record`입니다. `&f=graph`(뉴스 안 관계 그림), `&dark=1`도 쓸 수 있습니다.
+- 로컬은 **라이브 모드**로 돕니다. 매일 봉인·마감 작업이 갱신하는 `DATA_ROOT`(기본 `~/4Digit/src/app/data`)와 `OVERNIGHT_RESEARCH`를 바로 읽고, 묶음은 60초만 기억합니다.
+- `SERVICE_MODE=snapshot`을 주면 배포판과 같은 스냅샷(`data/`)을 읽습니다.
+
+## 배포(Vercel)
+
+```bash
+cd overnight_briefing/service
+~/4Digit/.venv/bin/python build_snapshot.py --days 6     # data/*.json (약 2MB) 만들기: 최근 거래일 6개 + 종목 목록 + 지난 40거래일 기록 + 미국 관계 줄
+vercel deploy                                            # 이 폴더가 Vercel 프로젝트 루트
+```
+
+- `vercel.json`: `web/`은 정적 파일, `api/index.py`는 파이썬 함수(`core/`·`data/` 포함), `/api/*`는 함수로 보냅니다.
+- `data/`는 git에 올리지 않습니다(`.gitignore`). CLI 배포는 `.vercelignore`를 따르므로 `data/`가 함께 올라갑니다. Git 연동 배포에서는 `data/`가 빠지니 CLI로 배포합니다.
+- 배포판에는 pandas가 없습니다. 스냅샷만 읽고, 계좌별 고르기(`core/portfolio.py`)·뉴스 읽기(`core/news.py`)는 표준 라이브러리만 씁니다.
+- 밤사이 뉴스 브리핑이 갱신되면 `build_snapshot.py`를 다시 돌린 뒤 다시 배포합니다(파일은 스냅샷을 만들 때마다 새로 읽습니다).
+
+## 구조
+
+| 경로 | 하는 일 |
+|---|---|
+| `api/index.py` | FastAPI. `GET /api/meta`, `GET /api/day/{T}?slot=`, `GET /api/accounts`, `GET /api/stocks?q=`, `POST /api/portfolio`. 입력 검증(pydantic: 종목코드 6자리, 최대 30종목, 수량 0~1천만, 평균단가 0~1억). 로컬에서는 `web/`도 내줍니다. 문서는 `/api/docs` |
+| `core/bundle.py` | 라이브 묶음. Streamlit 앱(`../app/core/data.py`)의 읽기 함수를 그대로 빌려 하루치 공통 묶음·유니버스 띠·기록·관계를 만듭니다(pandas) |
+| `core/portfolio.py` | 계좌 하나(예시 또는 사용자 입력)에 맞춰 띠·기록 요약·관계·뉴스를 고릅니다. 유니버스(200종목) 밖 종목은 ‘모델 범위 밖’으로 따로 둡니다 |
+| `core/news.py` | 밤사이 뉴스 브리핑 읽기. `../nightly_prompt/out/<T>/brief.json`을 먼저 읽고, 없으면 `news_search/source/nightly/<T>` 처리 결과로 같은 모양의 스텁을 만듭니다(AI 문장 칸은 비워 ‘준비 중’) |
+| `core/source.py` | 라이브/스냅샷 고르기 |
+| `core/accounts.json` | 예시 계좌 3개(밤사이 뉴스가 있는 시험 종목 10개가 모두 들어가게). 계좌번호·평균단가는 가정 |
+| `build_snapshot.py` | 배포용 `data/` 만들기 |
+| `web/` | 화면. `js/app.js`(상태·불러오기·내 잔고 넣기), `js/screens.js`(화면·아래 창), `js/band.js`(노란띠), `js/charts.js`, `js/llm.js`(LLM 자리 목록·규칙 문장), `css/app.css`(수연 피그마 토큰) |
+| `tests/smoke_front.py` | 모든 날짜 × 계좌(A~C·내 잔고) × 화면·시각을 열어 오류·빈 화면을 찾고, 내 잔고 검색→넣기→브리핑까지 해 봅니다 |
+
+## 화면
+
+- 브리핑: 오늘 시가에 예상되는 내 주식 변화, 07:30·08:11·09:00 단계, 밤사이 한 줄(AI), 종목마다 노란띠·수량 −/+·띠 누르기(그 값에 열리면)·띠와 뉴스 종합 해석(AI). 모델 범위 밖 종목은 뉴스만 보여 줍니다.
+- 뉴스: 내 종목(밤사이 브리핑 기사: 짧은 제목·관계 경로·근거·매체 수·새 소식/이어짐), 관계로 이은 기사, 관계 그림, 시장 전체.
+- 밤사이: 코스피200 야간선물 흐름과 그 시간의 기사.
+- 내 종목: 예시 계좌 보기, 내 잔고 넣기(종목 검색·수량·평균단가). 입력한 잔고는 브라우저에만 저장하고, 브리핑을 만들 때만 서버로 보냅니다(서버에 남기지 않음).
+- 기록: 내 종목의 최근 20거래일과 규칙 고정 뒤 기록.
+
+브라우저가 하는 계산은 `수량 × 어제 종가 × 등락률` 하나뿐입니다. 화면 맨 아래와 조작판에 그날 기록이 장 전에 고정한 것인지, 개장 뒤 발행인지, 사후 계산인지를 적습니다.
+AI가 쓴 문장에는 `AI` 표시를 붙이고, 원인 단정·매매 권유는 쓰지 않습니다.
+
+## 점검
+
+```bash
+~/4Digit/.venv/bin/python tests/smoke_front.py          # 서버(8520)가 떠 있어야 함
+```

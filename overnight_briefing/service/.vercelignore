@@ -1,0 +1,9 @@
+# 배포에 올리지 않을 것. data/는 올려야 하므로 여기 넣지 않는다(.gitignore와 다름).
+tests/
+build_snapshot.py
+열기.command
+README.md
+__pycache__/
+data.part/
+.env*
+.vercel/

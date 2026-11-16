@@ -6,10 +6,10 @@ export const SLOTS = [
     input: "야간선물 등락률·고저 시각, 내 종목별 예상 시가·금액, 08:10 장전 거래, 이어진 기사 수와 미국 쪽 이름",
     output: "문장 3~4개, 문장마다 40자 안팎, 해요체. 숫자는 입력값 그대로",
     ban: "원인 단정(‘~때문에’), 매수·매도 권유, 오늘 장중 전망",
-    now: "규칙 문장(코드)으로 채움" },
+    now: "밤사이 한 줄은 프롬프트 결과(brief.market.line_ko), 아래 줄들은 규칙 문장(코드)" },
   { id: "2", tab: "news", name: "기사 한 줄 제목", where: "소식 목록·소식 창의 굵은 제목",
     input: "영어 기사 제목(+본문 앞부분)", output: "한국어 한 줄, 30자 안팎, 회사 이름은 한국어 표기",
-    ban: "제목에 없는 숫자·평가 덧붙이기", now: "AI 판정 경로의 첫 마디를 빌려 씀. 직접 언급 기사는 영어 제목 그대로" },
+    ban: "제목에 없는 숫자·평가 덧붙이기", now: "뉴스 탭 ‘내 종목’은 프롬프트 요약(short_summary_ko), ‘관계로 이은 기사’는 판정 경로의 첫 마디" },
   { id: "3", tab: "news", name: "이어지는 이유", where: "소식 창 › 어떻게 이어지나요",
     input: "기사 제목·근거 구절, 관계표 줄(미국 쪽 → 관계 → 종목, 근거 문장)", output: "한 문장, ‘A의 ○○ → △△ 흐름 → 종목(관계)’ 순서",
     ban: "주가 방향 예측, 관계표에 없는 연결 만들기", now: "판정 단계가 만든 경로 문장" },
@@ -19,6 +19,9 @@ export const SLOTS = [
   { id: "5", tab: "night", name: "밤 흐름 한 줄", where: "밤사이 › 차트 아래 설명",
     input: "야간선물 1분 가격(시작·가장 높은/낮은 때·마감), 15분 기사 수", output: "문장 1~2개, 시각과 등락률만",
     ban: "기사와 가격 움직임을 원인으로 잇기", now: "규칙 문장(코드)으로 채움" },
+  { id: "6", tab: "brief", name: "띠·뉴스 종합 해석", where: "브리핑 › 종목 줄 아래, 뉴스 › 종목 묶음 머리",
+    input: "그 종목의 예상 범위·예상 시가, 밤사이 이어진 기사(요약·관계 근거·매체 수)", output: "한두 문장, 해요체, stance·news_direction·checked",
+    ban: "원인 단정, 매매 권유, 관계 근거 없는 연결, 범위를 확률처럼 말하기", now: "밤사이 프롬프트 결과(brief.json). 없으면 ‘준비 중’" },
 ];
 export const FIXED = "주의 문구(월요일·실적 공시·장전 거래가 범위 밖), 믿을 정도 설명, 맨 아래 안내는 미리 정한 고정 문구라 LLM이 쓰지 않아요.";
 
@@ -43,6 +46,12 @@ export function summary(m, d, slot) {
   if (slot === "0900" && m.showAct) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb);
     if (got.length) out.push(`개장 시가는 ${got.length}종목 중 ${ok.length}종목이 예상 범위 안에서 열렸어요.`);
+  }
+  if (d.brief) {                                     // 밤사이 뉴스 브리핑이 있으면 그 기사 수로 말한다(모델 범위 밖 종목 포함)
+    const codes = [...m.codes, ...m.account.excluded.map((x) => x.code)], by = codes.map((c) => [c, m.briefBy[c] || 0]).filter(([, k]) => k > 0).sort((a, b) => b[1] - a[1]);
+    const total = by.reduce((a, [, k]) => a + k, 0), nm = (c) => ((d.brief.stocks || {})[c] || {}).name || c;
+    out.push(total ? `밤사이 모은 미국 기사 가운데 내 종목과 이어진 기사는 ${total}건이에요. ${josa(nm(by[0][0]), "이", "가")} ${by[0][1]}건으로 가장 많아요.` : "밤사이 모은 미국 기사 가운데 내 종목과 이어진 기사는 없었어요.");
+    return out;
   }
   const mine = d.news.filter((nw) => nw.stocks.some((s) => m.codes.has(s.code)));
   if (d.news_meta.articles || d.news.length) {

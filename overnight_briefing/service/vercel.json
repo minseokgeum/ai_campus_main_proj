@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "web",
+  "functions": {
+    "api/index.py": { "includeFiles": "{core/**,data/**}", "maxDuration": 10 }
+  },
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index?__p=$1" }],
+  "headers": [{ "source": "/js/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=300" }] }]
+}
