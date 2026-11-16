@@ -1,6 +1,6 @@
 # 뉴스 수집·그래프 DB
 
-최종 수정: 2026-11-16 17:03 (KST)
+최종 수정: 2026-11-17 00:20 (KST)
 
 뉴스 수집과 그래프 DB를 **어떤 순서로, 어떤 규칙으로 만드는지** 정리한 문서다. 본문에는 확정된 내용만 적고, 아직 정하지 않은 것은 맨 끝 [결정할 것](#결정할-것)에 모은다. 처음 보는 사람은 루트의 [`graph_news_overview.md`](../graph_news_overview.md)(짧은 안내)부터 읽는다.
 
@@ -65,7 +65,7 @@ DART 공시  dart_targets → dart_collector → dart_parser ──────�
 | LLM 사전 적용 | `product_apply` | 규칙 사전의 언급·브랜드, `product_llm`이 내보낸 표(`products/llm/llm_*.csv`, 3단계 `stage3_brands_*.csv`) | `graph/products_final.csv`(제품군·제품·후보·임시 노드), `product_mentions_final.csv`(언급 → 제품), `product_hierarchy.csv`(계층), `brands_final.csv`(브랜드 + 종류), `brand_products.csv`(브랜드 → 제품). LLM 결과가 없는 새 언급은 규칙 노드로 이어 둔다 |
 | 그래프 | `graph_db` | 이름 통일 표, `product_apply`의 제품·브랜드 표, DART·뉴스 최종본, `targets.csv`, `sector.json`, `toss_theme.json` | `graph/neo4j/`(노드·관계 CSV), `graph/sources/`(기사·공시 출처 목록), Neo4j |
 | 검색어 | `search_terms`(6.5) | `graph_db`가 만든 노드·관계 표(`graph/neo4j/`), `targets.csv` | 서비스 대상 후보 1,067개 **모두**의 검색어를 미리 만든 표(종목코드 기준). 구글 뉴스 RSS 검색은 이 표에서 보유 종목의 검색어만 골라 쓴다 |
-| 뉴스 검색 | `news_search/news_collect.ipynb`(24시간 수집), `news_search/news_process.ipynb`(1·2차 처리), `news_search_tests/search_tests.ipynb`(검색 방식 시험) | `search_terms`의 검색어 표, `news_source_tests`의 구글 뉴스 언론사 판정 | 매체 제한(`site:`, OR 묶음) 구글 뉴스 RSS 응답 원본과 기사 목록, 묶음·본문·프롬프트 입력(`news_search/source/`). 결정은 `news_search/news_search.md` |
+| 뉴스 검색 | `news_search/news_collect.ipynb`(24시간 수집), `news_search/news_process.ipynb`(수집 마감 뒤 처리), `news_search_tests/search_tests.ipynb`(검색 방식 시험) | `search_terms`의 검색어 표, `news_source_tests`의 구글 뉴스 언론사 판정 | 매체 제한(`site:`, OR 묶음) 구글 뉴스 RSS 응답 원본과 기사 목록, 묶음·본문·프롬프트 입력(`news_search/source/`). 결정은 `news_search/news_search.md` |
 
 ### 1.2 갱신: 그래프에 새 정보를 넣는 흐름
 
@@ -326,7 +326,7 @@ DART 공시  dart_targets → dart_collector → dart_parser ──────�
 | 매일 밤 새 뉴스 | OpenAI API 일반 요청(결과를 바로 받아야 해 배치를 쓰지 않음) | `gpt-6.1-terra` |
 
 - 실제 비용: DART 1,063개 중 배치 966개 $12.60(긴 회사 97개는 Codex), 뉴스 2,471건 $14.37(기사당 약 $0.0058).
-- 매일 밤 처리는 일반 요청이라 요청당 약 $0.012다(`news_v5` 추출 기준, 요약·종목 판단을 더하면 는다). 요청은 기사가 아니라 묶음마다라, 2026-11-16 첫 실전(시험 종목 18개)은 1·2차 묶음 86개(하룻밤 약 $1)였다. 보유 종목이 늘면 묶음 수가 는다.
+- 매일 밤 처리는 일반 요청이라 요청당 약 $0.012다(`news_v5` 추출 기준, 요약·종목 판단을 더하면 는다). 요청은 기사가 아니라 묶음마다라, 2026-11-16 첫 실전(시험 종목 18개, 옛 1차·2차 방식)은 묶음 86개(하룻밤 약 $1)였고, 수집 마감 한 번 방식 시험(11-16 밤)은 63개였다. 보유 종목이 늘면 묶음 수가 는다.
 
 ### 5.2 공통 원칙
 

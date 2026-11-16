@@ -8,7 +8,7 @@
 | 폴더 | 내용 |
 |---|---|
 | `graph_db/` | 그래프 DB 만들기: DART·뉴스 수집과 LLM 추출, 이름 통일, 제품 사전, Neo4j 적재, 검색어 만들기. 노트북과 `graphDB.md`, 지시문(`prompts/`) |
-| `news_search/` | 밤사이 기사 모으기: 검색어로 구글 뉴스 RSS 검색, 거르기, 같은 소식 묶기, 대표 기사 본문 받기, 프롬프트 입력. 24시간 수집 `news_collect.ipynb`, 1·2차 처리 `news_process.ipynb`. 결정은 [`news_search.md`](news_search/news_search.md) |
+| `news_search/` | 밤사이 기사 모으기: 검색어로 구글 뉴스 RSS 검색, 거르기, 같은 소식 묶기, 대표 기사 본문 받기, 프롬프트 입력. 24시간 수집 `news_collect.ipynb`, 수집 마감 뒤 처리 `news_process.ipynb`(사용자가 고른 표시 시각 30분 전에 한 번). 결정은 [`news_search.md`](news_search/news_search.md) |
 | `news_search_tests/` | 구글 뉴스 검색 방식 시험(`search_tests.ipynb`: 매체, OR 묶음, 기간 조건, 거르기, 검색어 모양). 서비스 실행에는 필요 없음 |
 | `news_source_tests/` | 뉴스 매체·수집 방식을 정할 때 한 시험(근거 보관). [README](news_source_tests/README.md) |
 | `graph_news_overview.md` | **처음 보는 팀원용 안내**: 그래프 DB, 검색어, 구글 뉴스 수집·처리가 무엇을 만들고 어떻게 도는지, 결과 위치와 첫 실전 결과 |
@@ -42,7 +42,7 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
 |---|---|---|---|---|
 | `graph_data` | 2026-11-16 | 154MB | `graph_db/source`에서 DART 원문만 뺀 것(파일 5,610개, 546MB): DART 파싱 표·사업의 내용, 뉴스(거르기·LLM 응답·최종본·DB 스냅샷), 이름 통일·제품 사전·LLM 제품 사전·검색어 결과, Neo4j 표, 대상 기업 | 대부분. 앞 단계를 다시 돌리지 않고 원하는 단계부터 이어서 돌릴 때 |
 | `dart_raw` | 2026-11-15 | 510MB | DART 원문 다운로드(`graph_db/source/dart/raw`, 파일 18,178개) | DART 파싱부터 다시 돌릴 때만(없으면 `dart_collector`로 다시 받는다) |
-| `news_search_data` | 2026-11-16 | 80MB | 밤사이 뉴스(`news_search/source`, 파일 6,086개): 보고 날짜별 수집 기사·응답 원본·1·2차 처리 결과(`prompt_inputs.jsonl`), 임시 검색어 표(`terms/`), 임베딩·원문 페이지·이야기 캐시 | 수집·처리를 이어서 돌리거나 지난밤 결과·프롬프트 입력을 볼 때 |
+| `news_search_data` | 2026-11-16 | 80MB | 밤사이 뉴스(`news_search/source`, 파일 6,086개): 보고 날짜별 수집 기사·응답 원본·처리 결과(`prompt_inputs.jsonl`), 임시 검색어 표(`terms/`), 임베딩·원문 페이지 캐시, 지난 묶음 기록(이전 소식 확인용) | 수집·처리를 이어서 돌리거나 지난밤 결과·프롬프트 입력을 볼 때 |
 | `news_tests` | 2026-11-16 | 286MB | 뉴스 매체 시험(`news_source_tests`)과 구글 뉴스 검색 방식 시험(`news_search_tests/source`)의 결과와 캐시(파일 4,456개) | 시험 노트북을 요청 없이 다시 볼 때만. **11-15 묶음은 옛 폴더 구조(`news_search/source`)라 쓰지 않는다** |
 | `backtest_data` | 2026-11-16 | 69MB | 백테스트 캐시와 결과(`backtest/data`: KRX API 캐시·분봉 캐시·야후 분봉, `backtest/outputs`, 파일 1,210개) | 백테스트 노트북을 API 요청 없이 다시 돌릴 때 |
 | `creon_1min` | 2026-11-16 | 6.5GB | 크레온 KRX 1분봉(`stockdata_collection/creon_1min`: 전체 종목 스냅샷·반도체 15종목·조회 범위 점검, 파일 6,328개) | 분봉 백테스트. 크레온으로 다시 받으려면 하루 넘게 걸린다 |
@@ -70,8 +70,8 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
 | 15 | `graph_db` | 그래프 표 만들기와 Neo4j 적재 | Neo4j, `NEO4J_*` | `LOAD` | 없음(로컬) |
 | 16 | `search_terms` | 종목 유형, 검색어 후보, 업종·테마·회사 기본 검색어 | Codex | `RUN` | Codex 구독(요청 4건) |
 | 17 | `../news_search_tests/search_tests` | 구글 뉴스 검색 방식 시험(매체, OR 묶음, 거르기, 검색어 시험. 서비스 실행에는 필요 없음) | | `RUN` | 구글 뉴스 RSS(무료, 한 IP에서 시간당 수백 건이면 막힘) |
-| 18 | `../news_search/news_collect` | 24시간 수집(11절): 마감에 맞춘 일정(1차 5:20, 2차 6:30, 밤과 8:30까지 1시간·8:30부터 낮 2시간 간격), 마감 표시 파일 | 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시험 종목 18개·검색어 183개 기준 하루 약 10,400건) |
-| 19 | `../news_search/news_process` | 1·2차 처리(10절 대기하며 돌리기): 묶기 → 이야기 잇기 → 종목별 10개 묶음 → 본문 받기 → 프롬프트 입력. 수집과 함께 켜 둔다 | `OPENAI_API_KEY`(임베딩), 알림 키 | `WATCH_RUN`(골라 돌리기는 `PROCESS_RUN`) | OpenAI 임베딩(하룻밤 $0.01~0.03), 원문 주소 복원·원문 페이지(무료) |
+| 18 | `../news_search/news_collect` | 24시간 수집(11절): 수집 마감(표시 시각 `SUMMARY_TIME` 30분 전, 기본 07:30)에 맞춘 일정(밤 16시~마감 1시간, 마감~16시 낮 2시간 간격), 수집 마감 표시 파일 | 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시험 종목 18개·검색어 183개 기준 하루 약 10,400건) |
+| 19 | `../news_search/news_process` | 수집 마감 뒤 처리(10절 대기하며 돌리기): 취침 시각(`BEDTIME`) 전 기사는 비교용으로 등록, 뒤 기사는 묶기 → 이전 소식 확인 → 종목별 10개 묶음 → 본문 받기 → 프롬프트 입력. 수집과 함께 켜 둔다 | `OPENAI_API_KEY`(임베딩), 알림 키 | `WATCH_RUN`(골라 돌리기는 `PROCESS_RUN`) | OpenAI 임베딩(하룻밤 $0.01~0.03), 원문 주소 복원·원문 페이지(무료) |
 
 - `db_test`는 처리 단계가 아니라 수집 DB를 조회하는 노트북이다.
 - 비용과 시간은 2026년 11월 한 번 전체를 만들 때 기준이다.
