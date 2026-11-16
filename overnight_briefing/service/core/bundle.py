@@ -244,7 +244,19 @@ def track() -> dict:
 
 
 def graph_all() -> dict:
-    """관계표에서 미국 쪽 → 국내 종목 줄(유니버스 전체). 계좌별로 고르는 일은 core/portfolio.py가 한다."""
+    """관계 그림 자료(유니버스 전체): 손으로 정리한 관계표 + 민석 그래프 DB(graph_db/source/graph/neo4j)에서 뽑은 해외 연결.
+    계좌별로 고르는 일은 core/portfolio.py가 한다. 그래프 DB 폴더가 없으면 관계표만 쓴다."""
+    base = _graph_table()
+    neo = REPO / "graph_db/source/graph/neo4j"
+    if not neo.exists():
+        return base
+    from . import graph_db as G
+    codes = {s["code"] for s in catalog()}
+    return G.merge(base, G.build(neo, codes))
+
+
+def _graph_table() -> dict:
+    """11/11 관계표(미국 쪽 → 국내 종목, 촉발 사건 설명 포함)."""
     g = D.graph()
     if not g:
         return dict(nodes=[], edges=[])

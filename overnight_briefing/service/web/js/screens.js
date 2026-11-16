@@ -289,8 +289,8 @@ export function graph(m, d, st) {
       ${tn.length ? `<div style="margin-top:8px;display:grid;gap:4px">${tn.slice(-3).map((n) => `<button class="chip btn yel" style="height:auto;padding:5px 8px;white-space:normal;text-align:left;line-height:1.4" data-act="news" data-id="${n.id}">${I.news} ${esc(gist(n) || n.headline)}</button>`).join("")}</div>` : ""}</div>`;
   }).join("");
   const bySeg = {}; stocks.forEach((s) => (bySeg[s.group || "기타"] = bySeg[s.group || "기타"] || []).push(s));
-  return `<section class="sec" style="padding-top:12px"><div class="sub">미국 기업·정책과 내 종목이 사업으로 어떻게 이어져 있는지예요. 상자를 누르면 근거가 나와요.</div>
-    ${nodes.length ? relGraph(nodes, edges, stocks, hot, hotN, sel) : `<div class="empty">이 계좌 종목은 관계표에 미국 쪽 연결이 아직 없어요.</div>`}
+  return `<section class="sec" style="padding-top:12px"><div class="sub">해외 기업·정책과 내 종목이 사업으로 어떻게 이어져 있는지예요. 점선은 공시·기사에 직접 적힌 관계가 아니라 추정한 연결이에요(예: 같은 제품을 만들거나 사는 회사). 상자를 누르면 근거가 나와요.</div>
+    ${nodes.length ? relGraph(nodes, edges, stocks, hot, hotN, sel) : `<div class="empty">이 계좌 종목은 아직 해외 쪽 연결이 없어요.</div>`}
     <div class="legend-row" style="margin:8px 0 0"><span><svg width="22" height="6"><path d="M0 3h22" stroke="var(--band-edge)" stroke-width="2.6"/></svg>오늘 밤 기사가 나온 관계</span><span><svg width="22" height="6"><path d="M0 3h22" stroke="var(--mute)" stroke-width="1.5"/></svg>확인</span><span><svg width="22" height="6"><path d="M0 3h22" stroke="var(--mute)" stroke-width="1.5" stroke-dasharray="4 3"/></svg>추정</span><span><svg width="22" height="6"><path d="M0 3h22" stroke="var(--miss)" stroke-width="1.5"/></svg>규제·정책 노출</span></div></section>
     <section class="sec"><div class="sec-h"><h2>${sel ? esc(nm(sel)) + " 관계" : "오늘 밤 기사가 나온 관계"}</h2>${sel ? `<button class="more" data-act="gsel" data-id="">선택 풀기 ${I.x.replace('width="14" height="14"', 'width="11" height="11"')}</button>` : ""}</div>
     ${cards || `<div class="empty">${sel ? "이 상자에는 이어진 관계가 없어요." : "오늘 밤에는 내 종목 관계에 붙은 기사가 없어요. 상자를 눌러 관계를 살펴보세요."}</div>`}</section>
@@ -344,7 +344,7 @@ export function stockSheet(r, m, d, st) {
       <div class="rowline"><span>평가금액 <span class="tiny">어제 종가</span></span><b>${won(r.h.q * s.pc, false)}<small>계좌 주식의 ${Math.round(wt * 100)}%</small></b></div>
       ${hasAvg ? `<div class="rowline"><span>평가손익</span><b class="${tone(pl)}">${won(pl)}<small class="${tone(pl)}">${pct2(plr)}</small></b></div>` : ""}</div>
     ${briefSection(d, s.code)}<h4>관계로 이은 기사 ${myNews.length}</h4>${myNews.length ? [...myNews].reverse().slice(0, 4).map((n) => newsItem(n, m, d.T)).join("") : `<div class="sub">밤사이 이 종목과 이어진 미국 기사가 없어요.</div>`}
-    ${edges.length ? `<h4>미국 쪽과 이어진 관계</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${edges.filter((e) => { const k = e.src + e.relation; if (seenE.has(k)) return false; seenE.add(k); return true; }).map((e) => `<button class="chip btn" data-act="gjump" data-id="${e.src}"><b>${esc(short((d.graph.nodes.find((n) => n.id === e.src) || {}).name))}</b> ${esc(e.relation)}</button>`).join("")}</div>` : ""}
+    ${edges.length ? `<h4>해외 쪽과 이어진 관계</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${edges.filter((e) => { const k = e.src + e.relation; if (seenE.has(k)) return false; seenE.add(k); return true; }).map((e) => `<button class="chip btn" data-act="gjump" data-id="${e.src}"><b>${esc(short((d.graph.nodes.find((n) => n.id === e.src) || {}).name))}</b> ${esc(e.relation)}</button>`).join("")}</div>` : ""}
     ${hist.length ? `<h4>지난 ${hist.length}거래일, 이 종목</h4><div class="sub">범위 안에서 열린 날 <b style="color:var(--ink)">${hin}/${hist.length}일</b> · 노란 막대가 그날 범위, 가로줄이 예상, 동그라미가 실제 시가예요.</div>${histChart(hist, d.T)}` : ""}
   </div>`;
 }

@@ -102,7 +102,7 @@ export function histChart(hist, T) {
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="지난 거래일의 예상 범위와 실제 시가">${ticks.map(tick).join("")}${cols}${lab}</svg></div>`;
 }
 
-/** 관계 그림: 왼쪽 미국 쪽, 오른쪽 내 종목. hot = 오늘 밤 기사가 붙은 (src|dst) → 건수, hotN = 상자별 기사 수 */
+/** 관계 그림: 왼쪽 해외 쪽, 오른쪽 내 종목. hot = 오늘 밤 기사가 붙은 (src|dst) → 건수, hotN = 상자별 기사 수 */
 const fit = (t, px, fs = 12.5) => {                 // 글자 폭을 어림해 넘치면 줄임표
   let w = 0, out = "";
   for (const ch of t) { w += /[ㄱ-힝]/.test(ch) ? fs : fs * 0.58; if (w > px) return out.trimEnd() + "…"; out += ch; }
@@ -131,7 +131,7 @@ export function relGraph(nodes, edges, stocks, hot, hotN, sel) {
       ${h ? `<g><rect x="${x + w - 27}" y="${y + 8}" width="21" height="18" rx="9" fill="${css("band")}"/><text x="${x + w - 16.5}" y="${y + 21}" font-size="10.5" font-weight="700" fill="#5C4500" text-anchor="middle">${h}</text></g>` : ""}</g>`;
   };
   const deg = (code) => edges.filter((e) => e.dst === code).length;
-  return `<div class="graph"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="미국 쪽과 내 종목의 관계 그림">
-    <text x="0" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}">미국 쪽</text><text x="${W}" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}" text-anchor="end">내 종목</text>
+  return `<div class="graph"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="해외 쪽과 내 종목의 관계 그림">
+    <text x="0" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}">해외 쪽</text><text x="${W}" y="14" font-size="11.5" font-weight="600" fill="${css("sub")}" text-anchor="end">내 종목</text>
     ${paths}${left.map((n, i) => box(0, yL(i), LW, n.id, n.short, "us", 1)).join("")}${right.map((s, i) => box(W - RW, yR(i), RW, s.code, s.name, "kr", deg(s.code))).join("")}</svg></div>`;
 }
