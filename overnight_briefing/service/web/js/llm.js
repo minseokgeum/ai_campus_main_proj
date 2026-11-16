@@ -82,11 +82,12 @@ export function glance(m, d, slot, evs) {
   }
   if (d.brief) {
     const codes = [...m.codes, ...m.account.excluded.map((x) => x.code)], all = codes.flatMap((c) => (((d.brief.stocks || {})[c] || {}).news || []).map((n) => ({ n, c })));
-    const top = [...all].sort((a, b) => (b.n.media_count || 0) - (a.n.media_count || 0))[0];
+    const direct = all.filter((x) => x.n.tier !== "업종·테마");
+    const top = [...direct].sort((a, b) => (b.n.media_count || 0) - (a.n.media_count || 0))[0];
     if (top) { const nm = ((d.brief.stocks || {})[top.c] || {}).name || top.c, cnt = all.filter((x) => x.c === top.c).length;
       out.push({ ic: "소식", cls: "y", act: `data-act="bnews" data-code="${top.c}" data-id="${top.n.id}"`, t: top.n.short_summary_ko || top.n.title,
-        s: `${nm}와 이어진 밤사이 소식 ${cnt}건 가운데 ${top.n.media_count > 1 ? `매체 ${top.n.media_count}곳이 다룬 ` : ""}대표 소식이에요.` }); }
-    else out.push({ ic: "소식", cls: "", act: 'data-act="tab" data-tab="news"', t: "밤사이 내 종목과 이어진 미국 소식은 없었어요", s: "시장 전체 소식은 뉴스 탭에서 볼 수 있어요." });
+        s: `${nm}와 직접 이어진 밤사이 소식 ${direct.filter((x) => x.c === top.c).length}건 가운데 ${top.n.media_count > 1 ? `매체 ${top.n.media_count}곳이 다룬 ` : ""}대표 소식이에요.` }); }
+    else out.push({ ic: "소식", cls: "", act: 'data-act="tab" data-tab="news"', t: "밤사이 내 종목과 직접 이어진 미국 소식은 없었어요", s: all.length ? `같은 업종·테마 소식 ${all.length}건은 뉴스 탭에서 볼 수 있어요.` : "시장 전체 소식은 뉴스 탭에서 볼 수 있어요." });
   }
   const e = (evs || []).find((x) => x.dday <= 2);
   if (e) out.push({ ic: e.dday === 0 ? "오늘" : e.dday === 1 ? "내일" : "D-" + e.dday, cls: "", act: "", t: e.title, s: e.note });

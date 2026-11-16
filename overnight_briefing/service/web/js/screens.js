@@ -150,7 +150,9 @@ export function combinedHtml(d, code) {
   const b = d.brief; if (!b) return "";
   const st = (b.stocks || {})[code], c = st && st.combined;
   if (!st || !st.news.length) return "";            // 이어진 소식이 없으면 자리를 차지하지 않는다
-  const top = st.news[0], meta = `이어진 소식 ${st.news.length}건${top.media_count > 1 ? ` · 대표 소식은 매체 ${top.media_count}곳` : ""}${top.story ? ` · ${esc(top.story)}` : ""}`;
+  const direct = st.news.filter((n) => n.tier !== "업종·테마");
+  if (c && c.source === "rule" || (!direct.length && b.prompt_version !== "stub")) return "";      // 직접 이어진 소식이 없으면 브리핑 화면에서는 비운다(뉴스 탭에 있음)
+  const top = direct[0] || st.news[0], meta = `직접 이어진 소식 ${direct.length || st.news.length}건${top.media_count > 1 ? ` · 대표 소식은 매체 ${top.media_count}곳` : ""}${top.story ? ` · ${esc(top.story)}` : ""}`;
   if (c && c.line_ko) return `<div class="combined" data-llm="6">${c.source === "llm" ? AI : ""}<p>${esc(c.line_ko)}</p><div class="cb-meta">${meta} · 예상 범위는 이 소식을 반영하지 않은 값이에요</div></div>`;
   return `<div class="combined pending" data-llm="6"><span class="ai off">AI</span><p>밤사이 소식을 풀어 쓴 한 줄은 준비 중이에요. 이어진 기사 ${st.news.length}건은 먼저 볼 수 있어요.</p></div>`;
 }
@@ -175,7 +177,7 @@ export function briefList(m, d) {
 export function briefItem(n, code) {
   const sum = n.short_summary_ko, rel = n.relation || {};
   return `<button class="news bnews" data-act="bnews" data-code="${code}" data-id="${esc(n.id)}">
-    <div class="meta">${storyChip(n)}${n.media_count > 1 ? `<span class="chip">매체 ${n.media_count}곳</span>` : ""}<span class="t">${esc(n.source || "")}</span><span>${kst(n.published_at)}</span></div>
+    <div class="meta">${n.tier === "업종·테마" ? `<span class="chip">같은 업종·테마</span>` : storyChip(n)}${n.media_count > 1 ? `<span class="chip">매체 ${n.media_count}곳</span>` : ""}<span class="t">${esc(n.source || "")}</span><span>${kst(n.published_at)}</span></div>
     ${sum ? `<h3 data-llm="2">${AI}${esc(sum)}</h3><div class="en">${esc(n.title)}</div>` : `<h3 class="orig" data-llm="2" lang="en">${esc(n.title)}</h3><div class="tiny">한 줄 요약 준비 중 · 원문 제목</div>`}
     ${rel.path ? `<div class="path">${pathChips(rel.path)}</div>` : ""}
   </button>`;

@@ -95,8 +95,20 @@ def news_items(c, ext):
     return out
 
 
+DIRECT_KINDS = ('자기 회사', '해외 상대')
+
+
+def tier_of(n):
+    """연결의 세기(11/17 2차): 회사 이름으로 이어진 것(자기 회사·해외 상대)만 '직접', 제품·원자재·테마로만 이어진 것은 '업종·테마'.
+    기사와 상대 회사의 관련성은 교차 확인(verify)이 보고, 상대 회사와 내 종목의 관계 세기는 검색어 종류로 정한다(모델을 부르지 않는다)."""
+    kinds = str((n.get('relation') or {}).get('term_kinds') or '')
+    return '직접' if n['link_kind'] == '종목 고유' and any(k in kinds for k in DIRECT_KINDS) else '업종·테마'
+
+
 def rank_key(n):
-    return (0 if n['link_kind'] == '종목 고유' else 1, -n['media_count'], -n['article_count'])
+    """직접 연결 먼저 → 사건 기사 먼저('주가가 n% 내렸다' 같은 시황 기사는 뒤로) → 매체 수 → 기사 수."""
+    price_only = (n.get('article_types') or ['other'])[0] in ('market_movement', 'analyst_rating', 'other')
+    return (0 if n.get('tier', tier_of(n)) == '직접' else 1, 1 if price_only else 0, -n['media_count'], -n['article_count'])
 
 
 def main():
@@ -173,9 +185,15 @@ def main():
 
     def one(name):
         code = codes.get(name)
-        news = sorted(per_stock.get(name, {}).values(), key=rank_key)
+        news = list(per_stock.get(name, {}).values())
+        for n in news:
+            n['tier'] = tier_of(n)
+        news.sort(key=rank_key)
         band = bands.get(code) if code else None
-        comb = combine_stock(llm, name, band, news)
+        direct = [n for n in news if n['tier'] == '직접']
+        comb = combine_stock(llm, name, band, direct)      # 종목 한 줄은 직접 연결로만 쓴다(업종·테마 소식은 뉴스 탭에 표시)
+        if not direct and news:
+            comb['line_ko'] = f'밤사이 이 종목과 직접 이어진 미국 기사는 없었어요. 같은 업종·테마 소식은 {len(news)}건 있어요.'
         ok = comb['checked'] and all(n['checked'] for n in news[:3])
         return code or name, dict(
             name=name, code=code, band=(dict(H=band['H'], L80=band['L80'], U80=band['U80'], grade_0811=band['grade_0811'])
