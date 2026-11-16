@@ -6,7 +6,8 @@ import * as V from "./screens.js";
 import { SLOTS, FIXED } from "./llm.js";
 
 const $ = (s, r = document) => r.querySelector(s);
-const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "brief", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false, liveFeed: null, notif: lsGet("ob.notif") || "06:30" };
+const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "brief", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false, liveFeed: null, notif: lsGet("ob.notif") || "06:30",
+  liveMode: true, pending: null };      // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 const TABS = [["brief", "브리핑", "아침 브리핑"], ["news", "뉴스", "뉴스 브리핑"], ["night", "밤사이", "밤사이 흐름"], ["mine", "내 종목", "내 종목"], ["record", "기록", "지난 기록"]];
@@ -31,16 +32,48 @@ function model() {
     changed: rows.some((r) => r.changed), pinned: rows.some((r) => r.pin != null), dom: domain(vals) };
 }
 
+/* ───── 실시간: 지금 한국 시각에 맞춰 날짜·슬롯을 고른다 ───── */
+const kst = () => { const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, weekday: "short" }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return { T: p.year + p.month + p.day, hm: (+p.hour % 24) * 100 + +p.minute, hhmm: `${String(+p.hour % 24).padStart(2, "0")}:${p.minute}`, wd: p.weekday }; };
+function nextMorning(k) {                       // 밤에 모으는 기사가 들어갈 아침(주말은 월요일로, 휴장일은 따지지 않음)
+  const d = new Date(Date.UTC(+k.T.slice(0, 4), +k.T.slice(4, 6) - 1, +k.T.slice(6)));
+  if (k.hm >= 1800) d.setUTCDate(d.getUTCDate() + 1);
+  while ([0, 6].includes(d.getUTCDay())) d.setUTCDate(d.getUTCDate() + 1);
+  const T = d.toISOString().slice(0, 10).replace(/-/g, "");
+  return { T, label: `${+T.slice(4, 6)}월 ${+T.slice(6)}일 (${"일월화수목금토"[d.getUTCDay()]})` };
+}
+function liveTarget() {
+  const k = kst(), today = S.meta.days.find((d) => d.T === k.T);
+  if (today && k.hm < 1800) {                   // 오늘 카드가 나왔으면 오늘(시각에 맞는 슬롯), 18:00부터는 다음 밤으로
+    const slot = k.hm >= 900 && today.has_open ? "0900" : k.hm >= 811 && (today.slots || []).includes("0811") ? "0811" : "0730";
+    return { T: k.T, slot, pending: null };
+  }
+  return { T: S.meta.default, slot: "0811", pending: { ...nextMorning(k), since: k.hhmm } };
+}
+async function goLive() {
+  const t = liveTarget(); S.liveMode = true; S.pending = t.pending; S.slot = t.slot;
+  await load(t.T);
+}
+async function refreshLive() {                  // 5분마다: 새 날짜·새 기사가 올라왔는지
+  try {
+    const [m, lf] = await Promise.all([getJSON(`${API}/meta`), getJSON(`${API}/live`)]); S.meta = m; S.liveFeed = lf; fillDays();
+    if (!S.liveMode) return;
+    const t = liveTarget();
+    if (t.T !== S.T || t.slot !== S.slot || !!t.pending !== !!S.pending) { S.pending = t.pending; S.slot = t.slot; await load(t.T); } else renderScreen(true);
+  } catch { /* 다음에 다시 */ }
+}
+
 /* ───── 그리기 ───── */
 function renderShell() {
   const d = S.day, m = model(), a = m.account, t = TABS.find((x) => x[0] === S.tab);
-  $("#clock").textContent = S.slot.slice(0, 2) + ":" + S.slot.slice(2);
+  $("#clock").textContent = S.liveMode ? kst().hhmm : S.slot.slice(0, 2) + ":" + S.slot.slice(2);
   const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? "09:00 개장" : "개장 전";
-  $("#appbar").innerHTML = `<h1>${t[2]}<small>${d.label} · ${when}</small></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
+  const sub = S.liveMode && S.pending ? `실시간 · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
+  $("#appbar").innerHTML = `<h1>${t[2]}<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0);
   $("#tabbar").innerHTML = TABS.map(([id, nm]) => `<button class="${S.tab === id ? "on" : ""}" data-act="tab" data-tab="${id}">${I.tabs[id]}${nm}${id === "news" && mine ? `<span class="dot">${mine}</span>` : ""}</button>`).join("");
-  document.querySelectorAll("#ctl-slot button").forEach((b) => b.classList.toggle("on", b.dataset.slot === S.slot));
-  $("#ctl-day").value = S.T; $("#ctl-acct").value = S.acct;
+  document.querySelectorAll("#ctl-slot button").forEach((b) => { b.classList.toggle("on", b.dataset.slot === S.slot); b.classList.toggle("auto", S.liveMode); });
+  $("#ctl-day").value = S.liveMode ? "live" : S.T; $("#ctl-acct").value = S.acct;
   $("#src").textContent = S.meta.mode === "live" ? "실제 자료(매일 갱신)를 바로 읽는 중" : "배포용 스냅샷을 읽는 중";
   const r = d.record, s8 = r.sealed["0811"], s7 = r.sealed["0730"];
   $("#record").innerHTML = r.kind === "live"
@@ -55,7 +88,7 @@ function renderShell() {
 function renderScreen(keep = false) {
   const scr = $("#screen"), top = scr.scrollTop, m = model(), d = S.day;
   DOM = m.dom;                                // 끄는 동안에는 눈금을 바꾸지 않는다(손가락 밑에서 띠가 움직이지 않게)
-  let out = V[S.tab](m, d, S);
+  let out = S.liveMode && S.pending && S.tab === "brief" ? V.pendingBrief(m, d, S) : V[S.tab](m, d, S);
   scr.innerHTML = typeof out === "string" ? out : out.html;
   if (typeof out !== "string" && out.bind) out.bind(scr, (id) => openNews(id));
   scr.scrollTop = keep ? top : 0;
@@ -115,7 +148,7 @@ function editQty(el) {
 async function act(el) {
   const a = el.dataset.act;
   if (a === "tab") { S.tab = el.dataset.tab; closeSheet(); render(); }
-  else if (a === "slot") { S.slot = el.dataset.slot; render(true); }
+  else if (a === "slot") { if (S.liveMode && S.pending) return; S.liveMode = false; S.slot = el.dataset.slot; render(true); }
   else if (a === "filter") { S.filter = el.dataset.f; renderScreen(true); saveHash(); }
   else if (a === "stock") { const m = model(), r = m.rows.find((x) => x.s.code === el.dataset.code); if (r) openSheet(V.stockSheet(r, m, S.day, S)); }
   else if (a === "news") openNews(el.dataset.id);
@@ -139,6 +172,8 @@ async function act(el) {
   else if (a === "notif") openSheet(V.notifSheet(S.notif));
   else if (a === "setnotif") { S.notif = el.dataset.v; lsSet("ob.notif", S.notif); closeSheet(); renderScreen(true); toast(`${S.notif}에 아침 브리핑 알림을 받아요(시연)`); }
   else if (a === "golive") { S.tab = "news"; S.filter = "live"; render(); }
+  else if (a === "daysheet") openSheet(V.daySheet(S.meta.days, S.liveMode ? "live" : S.T));
+  else if (a === "pickday") { closeSheet(); if (el.dataset.t === "live") await goLive(); else { S.liveMode = false; S.pending = null; await load(el.dataset.t); } }
 }
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-node]"); if (g) { S.sel = S.sel === g.dataset.node ? null : g.dataset.node; renderScreen(true); return; }
@@ -151,18 +186,20 @@ $("#backdrop").addEventListener("click", closeSheet);
 $("#screen").addEventListener("scroll", () => $("#appbar").classList.toggle("scrolled", $("#screen").scrollTop > 4), { passive: true });
 
 /* ───── 조작판 ───── */
-$("#ctl-day").addEventListener("change", (e) => load(e.target.value));
+$("#ctl-day").addEventListener("change", (e) => { if (e.target.value === "live") goLive(); else { S.liveMode = false; S.pending = null; load(e.target.value); } });
 $("#ctl-acct").addEventListener("change", (e) => switchAcct(e.target.value));
-$("#ctl-slot").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { S.slot = b.dataset.slot; render(true); } });
+$("#ctl-slot").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { if (S.liveMode && S.pending) { toast("실시간 보기는 지금 시각을 따라가요. 지난 날짜를 고르면 시각을 바꿀 수 있어요"); return; } S.liveMode = false; S.slot = b.dataset.slot; render(true); } });
 $("#ctl-llm").addEventListener("change", (e) => document.body.classList.toggle("llm-on", e.target.checked));
 $("#ctl-dark").addEventListener("change", (e) => { if (e.target.checked) $("#device").dataset.theme = "dark"; else delete $("#device").dataset.theme; });
 
 /* ───── 주소(#)에 지금 보고 있는 것 남기기 ───── */
-function saveHash() { history.replaceState(null, "", `#T=${S.T}&slot=${S.slot}&acct=${S.acct}&tab=${S.tab}${S.tab === "news" ? "&f=" + S.filter : ""}`); }
-function readHash() { const p = new URLSearchParams(location.hash.slice(1)); ["T", "slot", "acct", "tab"].forEach((k) => { if (p.get(k)) S[k] = p.get(k); }); if (p.get("f")) S.filter = p.get("f"); if (p.get("llm")) { $("#ctl-llm").checked = true; document.body.classList.add("llm-on"); } const dark = p.get("dark") ? p.get("dark") === "1" : matchMedia("(prefers-color-scheme: dark)").matches; $("#ctl-dark").checked = dark; if (dark) $("#device").dataset.theme = "dark"; else delete $("#device").dataset.theme; }
+function saveHash() { history.replaceState(null, "", `#T=${S.liveMode ? "live" : S.T}${S.liveMode ? "" : "&slot=" + S.slot}&acct=${S.acct}&tab=${S.tab}${S.tab === "news" ? "&f=" + S.filter : ""}`); }
+function readHash() { const p = new URLSearchParams(location.hash.slice(1)); ["T", "slot", "acct", "tab"].forEach((k) => { if (p.get(k)) S[k] = p.get(k); }); S.liveMode = !p.get("T") || p.get("T") === "live"; if (S.liveMode) S.T = null; if (p.get("f")) S.filter = p.get("f"); if (p.get("llm")) { $("#ctl-llm").checked = true; document.body.classList.add("llm-on"); } const dark = p.get("dark") ? p.get("dark") === "1" : matchMedia("(prefers-color-scheme: dark)").matches; $("#ctl-dark").checked = dark; if (dark) $("#device").dataset.theme = "dark"; else delete $("#device").dataset.theme; }
 
 window.addEventListener("hashchange", async () => {      // 주소를 바꾸면 그 화면으로(뒤로 가기·바로 가기 주소)
-  const T0 = S.T, A0 = S.acct; readHash();
+  const T0 = S.T, A0 = S.acct, L0 = S.liveMode; readHash();
+  if (S.liveMode) { if (!L0 || S.acct !== A0) await goLive(); else render(); closeSheet(); return; }
+  S.pending = null;
   if (!S.meta.days.some((d) => d.T === S.T)) S.T = T0;
   if (!TABS.some((t) => t[0] === S.tab)) S.tab = "brief";
   closeSheet();
@@ -200,6 +237,8 @@ async function load(T) {
     render();
   } catch (err) { scr.innerHTML = `<section class="sec"><div class="empty">이 날 자료를 불러오지 못했어요.<br><span class="tiny">${esc(err.message)}</span></div></section>`; }
 }
+const KIND = { live: "오늘 기록", forward: "사후 계산", replay: "과거 재생" };
+function fillDays() { $("#ctl-day").innerHTML = `<option value="live">● 실시간 · 지금 시각</option>` + S.meta.days.map((d) => `<option value="${d.T}">${d.label} · ${KIND[d.kind] || ""}${d.brief ? " · 뉴스" : ""}</option>`).join(""); $("#ctl-day").value = S.liveMode ? "live" : S.T || ""; }
 async function switchAcct(id, keepTab) {
   S.acct = id; S.sel = null;
   if (id === "U" && !keepTab && !S.draft.length) S.tab = "mine";
@@ -252,13 +291,14 @@ async function applyDraft() {
   try {
     [S.meta, S.accts] = await Promise.all([getJSON(`${API}/meta`), getJSON(`${API}/accounts`)]);
   } catch (err) { $("#screen").innerHTML = `<section class="sec"><div class="empty">서버에 연결하지 못했어요.<br><span class="tiny">${esc(err.message)}</span></div></section>`; return; }
-  const kind = { live: "오늘 기록", forward: "사후 계산", replay: "과거 재생" };
-  $("#ctl-day").innerHTML = S.meta.days.map((d) => `<option value="${d.T}">${d.label} · ${kind[d.kind] || ""}${d.brief ? " · 뉴스" : ""}</option>`).join("");
+  fillDays();
   $("#ctl-acct").innerHTML = S.accts.map((a) => `<option value="${a.id}">예시 ${a.id} · ${esc(a.name)}</option>`).join("") + `<option value="U">내 잔고(직접 넣기)</option>`;
-  if (!S.meta.days.some((d) => d.T === S.T)) S.T = S.meta.default;
+  if (!S.liveMode && !S.meta.days.some((d) => d.T === S.T)) S.T = S.meta.default;
   if (!TABS.some((t) => t[0] === S.tab)) S.tab = "brief";
   if (S.acct !== "U" && !S.accts.some((a) => a.id === S.acct)) S.acct = S.accts[0].id;
   getJSON(`${API}/live`).then((v) => { S.liveFeed = v; if (S.day && (S.tab === "brief" || S.tab === "news")) renderScreen(true); }).catch(() => { S.liveFeed = { items: [], collected: 0 }; });
-  await load(S.T);
+  if (S.liveMode) await goLive(); else await load(S.T);
+  setInterval(() => { if (S.liveMode) { $("#clock").textContent = kst().hhmm; } }, 30000);
+  setInterval(refreshLive, 5 * 60000);
   if (!lsGet("ob.intro") && !new URLSearchParams(location.hash.slice(1)).get("nointro")) openSheet(V.introSheet(0));
 })();

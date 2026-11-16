@@ -416,7 +416,7 @@ const kstNow = () => { const p = Object.fromEntries(new Intl.DateTimeFormat("en-
 
 /** 지금 시각에 따른 상태 띠(가장 최근 날짜를 볼 때만). 밤 18:00~06:00 수집 중 · 06:00~09:00 오늘 브리핑 · 09:00~18:00 밤사이 시간이 아님 */
 export function statusHtml(d, st) {
-  if (!st.meta || d.T !== st.meta.default) return d.special ? specialHtml(d) : "";
+  if (!st.meta || !st.liveMode) return d.special ? specialHtml(d) : "";      // 상태 띠는 '실시간' 보기에서만
   const { hm } = kstNow(), lf = st.liveFeed || {};
   let h;
   if (hm >= 1800 || hm < 600) h = `<div class="status"><i class="dotlive"></i><div><b>밤사이 소식을 모으는 중이에요</b>미국 장이 열린 동안 한 시간마다 기사를 모아요${lf.last_fetch ? ` · 마지막 수집 ${lf.last_fetch}` : ""}. 다음 아침 브리핑은 06:00까지 모은 기사로 06:30에 나와요. <button class="link" data-act="golive">방금 들어온 소식 보기</button></div></div>`;
@@ -464,4 +464,33 @@ export function introSheet(step) {
   return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>처음이세요?</h3><button class="x" data-act="introdone" aria-label="닫기">${I.x}</button></div>
   <div class="sheet-b intro"><div class="step-dots">${pages.map((_, i) => `<i class="${i === step ? "on" : ""}"></i>`).join("")}</div><h4>${t}</h4>${body}
   <div class="nav">${step ? `<button class="btn-line" data-act="intro" data-step="${step - 1}">이전</button>` : ""}${step < pages.length - 1 ? `<button class="btn-primary" data-act="intro" data-step="${step + 1}">다음</button>` : `<button class="btn-primary" data-act="introdone">시작하기</button>`}</div></div>`;
+}
+
+/** 실시간 · 밤(다음 아침 브리핑 준비 중): 지금 모으는 기사 중 내 종목 것, 06:30까지 남은 시간, 지난 아침 기록으로 가기 */
+export function pendingBrief(m, d, st) {
+  const p = st.pending, lf = st.liveFeed || { items: [] };
+  const names = new Set([...m.rows.map((r) => r.s.name), ...m.account.excluded.map((x) => x.name)]);
+  const mine = lf.items.filter((x) => (x.stocks || []).some((s) => names.has(s)));
+  const now = kstNow(), mins = (() => { const [h, mi] = [Math.floor(now.hm / 100), now.hm % 100]; let t = 6 * 60 + 30 - (h * 60 + mi); if (t < 0) t += 24 * 60; return t; })();
+  const left = mins >= 60 ? `${Math.floor(mins / 60)}시간 ${mins % 60}분` : `${mins}분`;
+  let h = `<section class="sec" style="padding-top:10px;padding-bottom:0"><div class="status"><i class="dotlive"></i><div><b>${esc(p.label)} 아침 브리핑을 준비하고 있어요</b>미국 장이 열린 동안 한 시간마다 기사를 모아요${lf.last_fetch ? ` · 마지막 수집 ${esc(lf.last_fetch)}` : ""}. 06:00(미국 장·야간선물 마감)까지 모은 자료로 06:30에 브리핑이 나와요.</div></div></section>`;
+  h += `<section class="sec"><div class="hero hero-card"><div class="label">다음 아침 브리핑까지</div><div class="big num">${left}<small>${esc(p.label)} 06:30</small></div>
+    <div class="flow"><div><span>지금까지 모은 미국 기사</span><b class="num">${num(lf.collected || 0)}건</b></div>${I.arrow}<div><span>제목에 종목 검색어</span><b class="num">${num(lf.direct || 0)}건</b></div></div>
+    <div class="tiny" style="margin-top:8px">야간선물 실시간 시세는 실서비스에서 증권사 연결로 받아요. 시연에서는 06:00 마감 뒤에 반영돼요.</div></div></section>`;
+  h += `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 방금 들어온 소식</h2>${lf.items.length ? `<button class="more" data-act="golive">전체 ${lf.items.length}건 ${I.chev}</button>` : ""}</div>
+    ${mine.length ? `<div class="feed">${mine.slice(0, 8).map((x) => `<a ${x.link ? `href="${esc(x.link)}" target="_blank" rel="noopener noreferrer"` : ""}><b lang="en">${esc(x.title)}</b><small>${(x.stocks || []).map((s) => `<span class="chip" style="height:18px;font-size:10.5px;margin-right:4px">${esc(s)}</span>`).join("")}${esc(x.outlet)} · 보도 ${esc(x.published)}</small></a>`).join("")}</div>`
+      : `<div class="empty">아직 내 종목 검색어가 제목에 들어간 기사가 없어요.${m.rows.length ? "" : " 내 종목을 넣으면 여기에 모여요."}</div>`}
+    <div class="tiny" style="margin-top:6px">아직 거르기 전이에요. 06:30 브리핑에서 같은 소식끼리 묶고 관련 없는 건 빼요.</div></section>`;
+  h += `<section class="sec"><div class="sec-h"><h2>내 종목 ${m.rows.length + m.account.excluded.length}</h2><span class="more">06:30에 예상 범위가 나와요</span></div><div class="rows">${m.rows.map((r) => `<div class="rowline"><div><b style="text-align:left;display:block">${esc(r.s.name)}</b><small>어제 종가 ${priceShort(r.s.pc)}원${r.h.q ? ` · ${num(r.h.q)}주` : " · 관심"}</small></div><span class="chip">준비 중</span></div>`).join("")}</div></section>`;
+  h += `<section class="sec"><button class="btn-line" data-act="pickday" data-t="${d.T}">지난 아침 기록 보기 · ${esc(d.label)}</button></section>`;
+  return h + `<div class="foot">실시간 보기는 지금 시각을 따라가요. 지난 날짜는 위 날짜를 눌러 고를 수 있어요.</div>`;
+}
+
+/** 날짜 고르기(휴대폰에서도): 실시간 + 지난 날짜 */
+export function daySheet(days, cur) {
+  const KIND = { live: "오늘 기록", forward: "사후 계산", replay: "과거 재생" };
+  return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>날짜</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div>
+  <div class="sheet-b"><button class="opt-row${cur === "live" ? " on" : ""}" data-act="pickday" data-t="live"><span><b>● 실시간</b> · 지금 시각을 따라가요</span>${cur === "live" ? I.check : ""}</button>
+  <div class="tiny" style="margin:10px 0 2px">지난 아침(시험 결과 확인용)</div>
+  ${days.map((x) => `<button class="opt-row${cur === x.T ? " on" : ""}" data-act="pickday" data-t="${x.T}"><span>${x.label} <small class="tiny">${KIND[x.kind] || ""}${x.brief ? " · 뉴스 브리핑" : ""}</small></span>${cur === x.T ? I.check : ""}</button>`).join("")}</div>`;
 }

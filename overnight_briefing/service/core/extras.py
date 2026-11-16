@@ -146,7 +146,7 @@ def pipeline_status(T: str, brief: dict | None) -> dict:
     return out
 
 
-def live_feed(n: int = 12) -> dict:
+def live_feed(n: int = 40) -> dict:
     """가장 최근 보고 날짜 폴더(지금 모으는 밤)의 최신 기사 n개. 검색어로 걸린 그대로이고 아직 거르기 전이다."""
     if not NIGHTLY.exists():
         return dict(report=None, items=[], last_fetch=None, collected=0)

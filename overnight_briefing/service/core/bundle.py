@@ -127,7 +127,8 @@ def meta() -> dict:
         c = d.get("card_0811") or d["card_0730"]
         src = d.get("source") or {}
         days.append(dict(T=T, label=label(T), kind=_kind(src, c), x=_f(c["market"]["x"]), has_open=bool(c.get("after_open")),
-                         news=bool(D.news_us(T)) or bool(D.news(T)), brief=N.has_brief(T)))
+                         news=bool(D.news_us(T)) or bool(D.news(T)), brief=N.has_brief(T),
+                         slots=[s for s in ("0730", "0811") if d.get(f"card_{s}")]))
     return dict(days=days, default=days[0]["T"] if days else None)
 
 
