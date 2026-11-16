@@ -30,9 +30,11 @@ KST = dt.timezone(dt.timedelta(hours=9))
 
 
 def load_inputs(T):
+    """11/17 민석 갱신 뒤: 표시 시각 한 번(summary_<표시 시각>/). 그 전 날짜: 1차·2차(morning_<차수>/)."""
+    d = NIGHTLY / T
+    paths = sorted(d.glob('summary_*/prompt_inputs.jsonl')) or [d / f'morning_{x}' / 'prompt_inputs.jsonl' for x in ('1차', '2차')]
     rows = []
-    for label in ('1차', '2차'):
-        p = NIGHTLY / T / f'morning_{label}' / 'prompt_inputs.jsonl'
+    for p in paths:
         if p.exists():
             rows += [json.loads(line) for line in p.open(encoding='utf-8') if line.strip()]
     return rows

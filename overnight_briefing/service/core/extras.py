@@ -131,9 +131,10 @@ def pipeline_status(T: str, brief: dict | None) -> dict:
         out["collected"] = sum(1 for r in items if not (r.get("drop") or "").strip())
     for f in sorted(d.glob("cutoff_*.json")):
         c = json.loads(f.read_text(encoding="utf-8"))
-        out["cutoffs"].append(dict(label=c.get("label"), deadline=_kst(c.get("deadline_kst", "")), articles=c.get("articles")))
+        lab = c.get("label") or (f"표시 {c['summary_time']}" if c.get("summary_time") else f.stem.replace("cutoff_", ""))
+        out["cutoffs"].append(dict(label=lab, deadline=_kst(c.get("deadline_kst", "")), articles=c.get("articles")))
         out["requests"] = c.get("requests")
-    for f in sorted(d.glob("morning_*/timing.json")):
+    for f in sorted(d.glob("morning_*/timing.json")) + sorted(d.glob("summary_*/timing.json")):
         t = json.loads(f.read_text(encoding="utf-8"))
         out["processed"].append(dict(tag=f.parent.name.split("_")[-1], end=_kst(t.get("end_kst", "")),
                                      seconds=round((dt.datetime.fromisoformat(t["end_kst"]) - dt.datetime.fromisoformat(t["start_kst"])).total_seconds())
