@@ -1,0 +1,6 @@
+# 사람이 받아 오거나 만든 기준 자료(루트 .gitignore가 *.json·*.csv·*.html을 막으므로 다시 포함)
+!sector.json
+!toss_theme.json
+!kospi200.csv
+!kosdaq150.csv
+!WI26_all_stocks_review_20261103.html

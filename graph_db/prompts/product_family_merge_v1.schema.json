@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["families", "notes"],
+  "properties": {
+    "families": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "name_en", "name_ko", "kind", "scope", "members"],
+        "properties": {
+          "key": {"type": "string"},
+          "name_en": {"type": "string"},
+          "name_ko": {"type": "string"},
+          "kind": {"type": "string", "enum": ["제품·원자재", "서비스", "시설·공장", "가격·지표", "기타"]},
+          "scope": {"type": "string"},
+          "members": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "notes": {"type": "string"}
+  }
+}

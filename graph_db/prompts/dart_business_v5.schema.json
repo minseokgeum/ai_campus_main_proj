@@ -1,0 +1,409 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "stock_code",
+    "evidence",
+    "products",
+    "brands",
+    "materials",
+    "customers",
+    "competitors",
+    "market_shares",
+    "contracts",
+    "price_items",
+    "other_relations",
+    "notes"
+  ],
+  "properties": {
+    "stock_code": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "name_en",
+          "category",
+          "segment",
+          "search_terms",
+          "end_markets",
+          "stage",
+          "found_in",
+          "evidence_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "search_terms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5
+          },
+          "end_markets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "found_in": {
+            "type": "string",
+            "enum": [
+              "표",
+              "본문"
+            ]
+          },
+          "evidence_id": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "판매 중",
+              "개발 중",
+              "불명"
+            ]
+          }
+        }
+      }
+    },
+    "brands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "name_en",
+          "owner_type",
+          "product",
+          "evidence_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "product": {
+            "type": "string"
+          },
+          "evidence_id": {
+            "type": "string"
+          },
+          "owner_type": {
+            "type": "string",
+            "enum": [
+              "자사",
+              "고객사(ODM·OEM)",
+              "불명"
+            ]
+          }
+        }
+      }
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item",
+          "name_en",
+          "use",
+          "suppliers",
+          "evidence_id"
+        ],
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "use": {
+            "type": "string"
+          },
+          "suppliers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "name_en",
+                "name_sure",
+                "note"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "name_en": {
+                  "type": "string"
+                },
+                "name_sure": {
+                  "type": "boolean"
+                },
+                "note": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "evidence_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "customers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "name_en",
+          "name_sure",
+          "kind",
+          "product",
+          "share_text",
+          "evidence_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "name_sure": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "주요 고객",
+              "판매 채널",
+              "수주 상대"
+            ]
+          },
+          "product": {
+            "type": "string"
+          },
+          "share_text": {
+            "type": "string"
+          },
+          "evidence_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "competitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "name_en",
+          "name_sure",
+          "product",
+          "evidence_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "name_sure": {
+            "type": "boolean"
+          },
+          "product": {
+            "type": "string"
+          },
+          "evidence_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "market_shares": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product",
+          "market",
+          "share_text",
+          "evidence_id"
+        ],
+        "properties": {
+          "product": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "share_text": {
+            "type": "string"
+          },
+          "evidence_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "counterparty",
+          "name_en",
+          "name_sure",
+          "kind",
+          "subject",
+          "amount_text",
+          "period_text",
+          "evidence_id"
+        ],
+        "properties": {
+          "counterparty": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "name_sure": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "기술이전",
+              "라이선스",
+              "공급",
+              "합작·제휴",
+              "기타"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "amount_text": {
+            "type": "string"
+          },
+          "period_text": {
+            "type": "string"
+          },
+          "evidence_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "price_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item",
+          "kind",
+          "change_text",
+          "evidence_id"
+        ],
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "판매가",
+              "매입가"
+            ]
+          },
+          "change_text": {
+            "type": "string"
+          },
+          "evidence_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "other_relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "counterparty",
+          "name_en",
+          "role_note",
+          "evidence_id"
+        ],
+        "properties": {
+          "counterparty": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "role_note": {
+            "type": "string"
+          },
+          "evidence_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}
