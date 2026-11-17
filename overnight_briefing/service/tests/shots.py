@@ -18,7 +18,9 @@ VIEWS = [("brief_A", f"#T={T}&slot=0811&acct=A&tab=brief", 0), ("brief_A_rows", 
          ("news_A", f"#T={T}&slot=0811&acct=A&tab=news&f=brief", 0), ("graph_A", f"#T={T}&slot=0811&acct=A&tab=news&f=graph", 0),
          ("graph_B", f"#T={T}&slot=0811&acct=B&tab=news&f=graph", 0), ("night", f"#T={T}&slot=0811&acct=A&tab=night", 0),
          ("mine_A", f"#T={T}&slot=0811&acct=A&tab=mine", 0), ("record_A", f"#T={T}&slot=0900&acct=A&tab=record", 0),
-         ("brief_0900", f"#T={T}&slot=0900&acct=A&tab=brief", 0), ("live", "#T=live&acct=A&tab=brief", 0), ("brief_U", f"#T={T}&slot=0811&acct=U&tab=brief", 700)]
+         ("brief_0900", f"#T={T}&slot=0900&acct=A&tab=brief", 0), ("live", "#T=live&acct=A&tab=brief", 0), ("brief_U", f"#T={T}&slot=0811&acct=U&tab=brief", 700),
+         ("night_preview", "#T=live&preview=night&acct=A&tab=brief", 0), ("night_map", f"#T={T}&slot=0811&acct=A&tab=night", 560),
+         ("brief_U_hold", f"#T={T}&slot=0811&acct=U&tab=brief", 430)]
 ONLY = set(sys.argv[4].split(",")) if len(sys.argv) > 4 else None
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
@@ -37,6 +39,13 @@ with sync_playwright() as p:
             pg.wait_for_timeout(300)
         pg.screenshot(path=str(OUT / f"{name}.png"))
         pg.close()
+    if not ONLY or "settings" in ONLY:                      # 브리핑 설정 창 + 글자 크게
+        pg = c.new_page(); pg.on("pageerror", lambda e: errs.append(f"settings: {e}"))
+        pg.goto(f"{BASE}/#T={T}&slot=0811&acct=A&tab=brief", wait_until="networkidle"); pg.wait_for_timeout(1000)
+        pg.click('#screen [data-act="notif"]'); pg.wait_for_timeout(400); pg.screenshot(path=str(OUT / "settings.png"))
+        pg.click('#sheet [data-act="setbig"][data-v="1"]'); pg.wait_for_timeout(300); pg.click('#sheet .x'); pg.wait_for_timeout(300)
+        pg.screenshot(path=str(OUT / "brief_big.png"))
+        pg.evaluate("localStorage.removeItem('ob.big')"); pg.close()
     d = b.new_page(viewport={"width": 1440, "height": 900})
     d.add_init_script("try { localStorage.setItem('ob.intro', '1'); } catch (e) {}")
     if not ONLY or "desktop" in ONLY:

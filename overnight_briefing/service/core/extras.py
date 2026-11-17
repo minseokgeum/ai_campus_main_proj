@@ -125,7 +125,7 @@ def _kst(iso: str) -> str:
 def pipeline_status(T: str, brief: dict | None) -> dict:
     """그 아침 브리핑이 어떤 자료로 언제 만들어졌는지(화면의 '자료 상태' 배지)."""
     d = NIGHTLY / T
-    out: dict = dict(report=T, collected=None, requests=None, cutoffs=[], processed=[], brief_at=None, model=None)
+    out: dict = dict(report=T, collected=None, requests=None, cutoffs=[], processed=[], brief_at=None, model=None, window=None)
     items = _read_csv(d / "items.csv")
     if items:
         out["collected"] = sum(1 for r in items if not (r.get("drop") or "").strip())
@@ -140,6 +140,8 @@ def pipeline_status(T: str, brief: dict | None) -> dict:
                                      seconds=round((dt.datetime.fromisoformat(t["end_kst"]) - dt.datetime.fromisoformat(t["start_kst"])).total_seconds())
                                      if t.get("end_kst") and t.get("start_kst") else None,
                                      clusters=t.get("clusters"), bodies=t.get("body_ok")))
+        if t.get("bedtime_kst") and t.get("cutoff_kst"):      # 11/17: 이 브리핑이 '몇 시부터 몇 시까지 나온 기사'로 만들어졌는지(취침 시각 ~ 수집 마감)
+            out["window"] = dict(start=t["bedtime_kst"][11:16], end=t["cutoff_kst"][11:16])
     if brief and not brief.get("stub"):
         out["brief_at"] = _kst(brief.get("generated_at", ""))
         out["model"] = brief.get("model")

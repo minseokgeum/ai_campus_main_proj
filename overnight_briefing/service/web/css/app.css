@@ -415,3 +415,14 @@ a.news { color: inherit; text-decoration: none; }
 details.more-d { margin-top: 12px; } details.more-d summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--teal); list-style: none; } details.more-d summary::-webkit-details-marker { display: none; }
 details.more-d summary::after { content: " 펼치기"; font-weight: 400; color: var(--mute); } details.more-d[open] summary::after { content: " 접기"; }
 .combined .cb-meta { flex-basis: 100%; margin-top: 5px; font-size: 11px; color: var(--sub); }
+
+/* ───── 11/17 낮: 밤사이 한 줄의 기준 시각, 브리핑 설정, 보유|관심 나눠 보기, 기록 한 줄, 글자 크게 ───── */
+.mkt b .win { margin-left: 6px; font-weight: 500; color: var(--mute); }
+.optchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+.optchips button { height: 34px; padding: 0 13px; border-radius: 17px; background: var(--chip); font-size: 13px; font-weight: 600; color: var(--sub); font-variant-numeric: tabular-nums; }
+.optchips button.on { background: var(--teal); color: #fff; }
+.optchips button small { margin-left: 5px; font-size: 10.5px; font-weight: 600; opacity: .75; }
+.filters.holdf { margin-bottom: 10px; }
+.trustline { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin: 0 0 12px; padding: 9px 11px; border-radius: 10px; background: var(--chip); text-align: left; font-size: 12px; line-height: 1.5; color: var(--sub); }
+.trustline b { color: var(--ink); font-weight: 700; } .trustline svg { flex: none; }
+#device[data-zoom="lg"] #screen > *, #device[data-zoom="lg"] #sheet > * { zoom: 1.12; }

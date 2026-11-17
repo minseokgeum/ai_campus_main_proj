@@ -7,7 +7,8 @@ import { SLOTS, FIXED } from "./llm.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "brief", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false, liveFeed: null, notif: lsGet("ob.notif") || "06:30",
-  liveMode: true, pending: null };      // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
+  liveMode: true, pending: null,        // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
+  preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1" };   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 const TABS = [["brief", "브리핑", "아침 브리핑"], ["news", "뉴스", "뉴스 브리핑"], ["night", "밤사이", "밤사이 흐름"], ["mine", "내 종목", "내 종목"], ["record", "기록", "지난 기록"]];
@@ -29,6 +30,8 @@ function model() {
   const briefBy = {}; Object.entries((d.brief && d.brief.stocks) || {}).forEach(([c, v]) => (briefBy[c] = (v.news || []).length));
   return { account, rows, codes, newsBy, briefBy, showAct, stockValue: sum((r) => r.value), baseValue: sum((r) => r.h.q * r.s.pc), Hsum: sum((r) => r.Hamt),
     hypoSum: sum((r) => (r.pin != null ? r.value * r.pin : r.Hamt)), actSum: showAct && rows.every((r) => r.yAmt != null) ? sum((r) => r.yAmt) : showAct ? sum((r) => r.yAmt || 0) : null,
+    actMissing: showAct ? rows.filter((r) => r.q > 0 && r.yAmt == null).length : 0,                       // 개장 직후 시가가 아직 안 온 종목 수
+    HsumAct: showAct && rows.some((r) => r.yAmt == null) ? sum((r) => (r.yAmt != null ? r.Hamt : 0)) : null,   // 그럴 땐 예상도 같은 종목끼리만 더해 견준다
     changed: rows.some((r) => r.changed), pinned: rows.some((r) => r.pin != null), dom: domain(vals) };
 }
 
@@ -44,6 +47,7 @@ function nextMorning(k) {                       // 밤에 모으는 기사가 �
 }
 function liveTarget() {
   const k = kst(), today = S.meta.days.find((d) => d.T === k.T);
+  if (S.preview) return { T: S.meta.default, slot: "0811", pending: { ...nextMorning({ ...k, hm: Math.max(k.hm, 1800) }), since: k.hhmm, preview: true } };   // 밤 화면 미리 보기(낮에도)
   if (today && k.hm < 1800) {                   // 오늘 카드가 나왔으면 오늘(시각에 맞는 슬롯), 18:00부터는 다음 밤으로
     const slot = k.hm >= 900 && today.has_open ? "0900" : k.hm >= 811 && (today.slots || []).includes("0811") ? "0811" : "0730";
     return { T: k.T, slot, pending: null };
@@ -68,12 +72,12 @@ function renderShell() {
   const d = S.day, m = model(), a = m.account, t = TABS.find((x) => x[0] === S.tab);
   $("#clock").textContent = S.liveMode ? kst().hhmm : S.slot.slice(0, 2) + ":" + S.slot.slice(2);
   const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? "09:00 개장" : "개장 전";
-  const sub = S.liveMode && S.pending ? `실시간 · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
+  const sub = S.liveMode && S.pending ? `${S.pending.preview ? "미리 보기" : "실시간"} · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
   $("#appbar").innerHTML = `<h1>${t[2]}<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0);
   $("#tabbar").innerHTML = TABS.map(([id, nm]) => `<button class="${S.tab === id ? "on" : ""}" data-act="tab" data-tab="${id}">${I.tabs[id]}${nm}${id === "news" && mine ? `<span class="dot">${mine}</span>` : ""}</button>`).join("");
   document.querySelectorAll("#ctl-slot button").forEach((b) => { b.classList.toggle("on", b.dataset.slot === S.slot); b.classList.toggle("auto", S.liveMode); });
-  $("#ctl-day").value = S.liveMode ? "live" : S.T; $("#ctl-acct").value = S.acct;
+  $("#ctl-day").value = S.preview ? "night" : S.liveMode ? "live" : S.T; $("#ctl-acct").value = S.acct;
   $("#src").textContent = S.meta.mode === "live" ? "실제 자료(매일 갱신)를 바로 읽는 중" : "배포용 스냅샷을 읽는 중";
   const r = d.record, s8 = r.sealed["0811"], s7 = r.sealed["0730"];
   $("#record").innerHTML = r.kind === "live"
@@ -169,12 +173,20 @@ async function act(el) {
   else if (a === "qty") { if (!$("input", el)) editQty(el); }
   else if (a === "intro") openSheet(V.introSheet(+el.dataset.step || 0));
   else if (a === "introdone") { lsSet("ob.intro", "1"); closeSheet(); }
-  else if (a === "notif") openSheet(V.notifSheet(S.notif));
-  else if (a === "setnotif") { S.notif = el.dataset.v; lsSet("ob.notif", S.notif); closeSheet(); renderScreen(true); toast(`${S.notif}에 아침 브리핑 알림을 받아요(시연)`); }
+  else if (a === "notif") openSheet(V.notifSheet(S, S.day));
+  else if (a === "setnotif") { S.notif = el.dataset.v; lsSet("ob.notif", S.notif); openSheet(V.notifSheet(S, S.day)); renderScreen(true); toast(`${S.notif}에 아침 브리핑 알림을 받아요(시연)`); }
+  else if (a === "setbed") { S.bed = el.dataset.v; lsSet("ob.bed", S.bed); openSheet(V.notifSheet(S, S.day)); renderScreen(true); toast(`잠드는 시각 ${S.bed}로 저장했어요(시연)`); }
+  else if (a === "setbig") { S.big = el.dataset.v === "1"; lsSet("ob.big", S.big ? "1" : "0"); applyBig(); openSheet(V.notifSheet(S, S.day)); }
+  else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
   else if (a === "golive") { S.tab = "news"; S.filter = "live"; render(); }
-  else if (a === "daysheet") openSheet(V.daySheet(S.meta.days, S.liveMode ? "live" : S.T));
-  else if (a === "pickday") { closeSheet(); if (el.dataset.t === "live") await goLive(); else { S.liveMode = false; S.pending = null; await load(el.dataset.t); } }
+  else if (a === "daysheet") openSheet(V.daySheet(S.meta.days, S.preview ? "night" : S.liveMode ? "live" : S.T));
+  else if (a === "pickday") { closeSheet(); await pickDay(el.dataset.t); }
 }
+async function pickDay(t) {                     // 'live' = 지금 시각, 'night' = 밤 화면 미리 보기, 그 밖 = 지난 날짜
+  S.preview = t === "night";
+  if (t === "live" || t === "night") { if (S.preview) S.tab = "brief"; await goLive(); } else { S.liveMode = false; S.pending = null; await load(t); }
+}
+const applyBig = () => { if (S.big) $("#device").dataset.zoom = "lg"; else delete $("#device").dataset.zoom; };
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-node]"); if (g) { S.sel = S.sel === g.dataset.node ? null : g.dataset.node; renderScreen(true); return; }
   const el = e.target.closest("[data-act]"); if (el) { e.preventDefault(); act(el); }
@@ -186,19 +198,19 @@ $("#backdrop").addEventListener("click", closeSheet);
 $("#screen").addEventListener("scroll", () => $("#appbar").classList.toggle("scrolled", $("#screen").scrollTop > 4), { passive: true });
 
 /* ───── 조작판 ───── */
-$("#ctl-day").addEventListener("change", (e) => { if (e.target.value === "live") goLive(); else { S.liveMode = false; S.pending = null; load(e.target.value); } });
+$("#ctl-day").addEventListener("change", (e) => pickDay(e.target.value));
 $("#ctl-acct").addEventListener("change", (e) => switchAcct(e.target.value));
 $("#ctl-slot").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { if (S.liveMode && S.pending) { toast("실시간 보기는 지금 시각을 따라가요. 지난 날짜를 고르면 시각을 바꿀 수 있어요"); return; } S.liveMode = false; S.slot = b.dataset.slot; render(true); } });
 $("#ctl-llm").addEventListener("change", (e) => document.body.classList.toggle("llm-on", e.target.checked));
 $("#ctl-dark").addEventListener("change", (e) => { if (e.target.checked) $("#device").dataset.theme = "dark"; else delete $("#device").dataset.theme; });
 
 /* ───── 주소(#)에 지금 보고 있는 것 남기기 ───── */
-function saveHash() { history.replaceState(null, "", `#T=${S.liveMode ? "live" : S.T}${S.liveMode ? "" : "&slot=" + S.slot}&acct=${S.acct}&tab=${S.tab}${S.tab === "news" ? "&f=" + S.filter : ""}`); }
-function readHash() { const p = new URLSearchParams(location.hash.slice(1)); ["T", "slot", "acct", "tab"].forEach((k) => { if (p.get(k)) S[k] = p.get(k); }); S.liveMode = !p.get("T") || p.get("T") === "live"; if (S.liveMode) S.T = null; if (p.get("f")) S.filter = p.get("f"); if (p.get("llm")) { $("#ctl-llm").checked = true; document.body.classList.add("llm-on"); } const dark = p.get("dark") ? p.get("dark") === "1" : matchMedia("(prefers-color-scheme: dark)").matches; $("#ctl-dark").checked = dark; if (dark) $("#device").dataset.theme = "dark"; else delete $("#device").dataset.theme; }
+function saveHash() { history.replaceState(null, "", `#T=${S.liveMode ? "live" : S.T}${S.liveMode ? (S.preview ? "&preview=night" : "") : "&slot=" + S.slot}&acct=${S.acct}&tab=${S.tab}${S.tab === "news" ? "&f=" + S.filter : ""}`); }
+function readHash() { const p = new URLSearchParams(location.hash.slice(1)); ["T", "slot", "acct", "tab"].forEach((k) => { if (p.get(k)) S[k] = p.get(k); }); S.liveMode = !p.get("T") || p.get("T") === "live"; if (S.liveMode) S.T = null; S.preview = S.liveMode && p.get("preview") === "night"; if (p.get("f")) S.filter = p.get("f"); if (p.get("llm")) { $("#ctl-llm").checked = true; document.body.classList.add("llm-on"); } const dark = p.get("dark") ? p.get("dark") === "1" : matchMedia("(prefers-color-scheme: dark)").matches; $("#ctl-dark").checked = dark; if (dark) $("#device").dataset.theme = "dark"; else delete $("#device").dataset.theme; }
 
 window.addEventListener("hashchange", async () => {      // 주소를 바꾸면 그 화면으로(뒤로 가기·바로 가기 주소)
-  const T0 = S.T, A0 = S.acct, L0 = S.liveMode; readHash();
-  if (S.liveMode) { if (!L0 || S.acct !== A0) await goLive(); else render(); closeSheet(); return; }
+  const T0 = S.T, A0 = S.acct, L0 = S.liveMode, P0 = S.preview; readHash();
+  if (S.liveMode) { if (!L0 || S.acct !== A0 || S.preview !== P0) await goLive(); else render(); closeSheet(); return; }
   S.pending = null;
   if (!S.meta.days.some((d) => d.T === S.T)) S.T = T0;
   if (!TABS.some((t) => t[0] === S.tab)) S.tab = "brief";
@@ -238,7 +250,7 @@ async function load(T) {
   } catch (err) { scr.innerHTML = `<section class="sec"><div class="empty">이 날 자료를 불러오지 못했어요.<br><span class="tiny">${esc(err.message)}</span></div></section>`; }
 }
 const KIND = { live: "오늘 기록", forward: "사후 계산", replay: "과거 재생" };
-function fillDays() { $("#ctl-day").innerHTML = `<option value="live">● 실시간 · 지금 시각</option>` + S.meta.days.map((d) => `<option value="${d.T}">${d.label} · ${KIND[d.kind] || ""}${d.brief ? " · 뉴스" : ""}</option>`).join(""); $("#ctl-day").value = S.liveMode ? "live" : S.T || ""; }
+function fillDays() { $("#ctl-day").innerHTML = `<option value="live">● 실시간 · 지금 시각</option><option value="night">☾ 밤 화면 미리 보기</option>` + S.meta.days.map((d) => `<option value="${d.T}">${d.label} · ${KIND[d.kind] || ""}${d.brief ? " · 뉴스" : ""}</option>`).join(""); $("#ctl-day").value = S.preview ? "night" : S.liveMode ? "live" : S.T || ""; }
 async function switchAcct(id, keepTab) {
   S.acct = id; S.sel = null;
   if (id === "U" && !keepTab && !S.draft.length) S.tab = "mine";
@@ -257,7 +269,7 @@ async function runSearch(v, res) {
   try {
     const rows = await getJSON(`${API}/stocks?q=${encodeURIComponent(v)}&limit=8`);
     if (my !== searchSeq) return;
-    res.innerHTML = rows.length ? rows.map((r) => `<button role="option" data-act="addstock" data-row="${esc(JSON.stringify(r))}"><b>${esc(r.name)}</b><small>${r.code}${r.market ? " · " + esc(r.market) : ""}${r.in_model ? "" : " · 모델 범위 밖"}</small>${S.draft.some((h) => h.code === r.code) ? '<span class="chip">넣음</span>' : ""}</button>`).join("")
+    res.innerHTML = rows.length ? rows.map((r) => `<button role="option" data-act="addstock" data-row="${esc(JSON.stringify(r))}"><b>${esc(r.name)}</b><small>${r.code}${r.market ? " · " + esc(r.market) : ""}${r.in_model ? "" : " · 노란띠 없음"}</small>${S.draft.some((h) => h.code === r.code) ? '<span class="chip">넣음</span>' : ""}</button>`).join("")
       : `<div class="empty" style="padding:12px">‘${esc(v)}’에 맞는 종목이 없어요. 이름이나 6자리 코드로 찾아보세요.</div>`;
     res.hidden = false;
   } catch (err) { res.innerHTML = `<div class="empty" style="padding:12px">찾지 못했어요. ${esc(err.message)}</div>`; res.hidden = false; }
@@ -287,7 +299,7 @@ async function applyDraft() {
 }
 
 (async function boot() {
-  readHash();
+  readHash(); applyBig();
   try {
     [S.meta, S.accts] = await Promise.all([getJSON(`${API}/meta`), getJSON(`${API}/accounts`)]);
   } catch (err) { $("#screen").innerHTML = `<section class="sec"><div class="empty">서버에 연결하지 못했어요.<br><span class="tiny">${esc(err.message)}</span></div></section>`; return; }

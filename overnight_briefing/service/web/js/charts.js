@@ -149,8 +149,11 @@ export function relGraph(nodes, edges, stocks, hot, hotN, sel) {
     ${paths}${left.map(lbox).join("")}${stocks.map(rbox).join("")}</svg></div>`;
 }
 
-/** 한눈에 지도(11/17 팀 의견): 시장 → 업종 → 내 종목을 한 장에. 크기 = 보유 금액, 색 = 예상 시가 변화(어제 종가 기준, 파랑 아래·빨강 위·회색 0),
- *  노란 동그라미 = 밤사이 이어진 소식 수, 점선 테두리 = 관심 종목(보유 없음). 칸을 누르면 종목 창. 글자는 늘 글자색(색만으로 뜻을 전하지 않는다). */
+/** 한눈에 지도(11/17 팀 의견): 맨 위 줄 = 밤사이 실제로 거래된 코스피200 야간선물(관측값), 그 아래 = 업종 이름과 종목 칸.
+ *  크기 = 보유 금액, 색 = 종목마다 계산한 예상 시가 변화(어제 종가 기준, 파랑 아래·빨강 위·회색 0),
+ *  노란 동그라미 = 밤사이 이어진 소식 수, 점선 테두리 = 관심 종목(보유 없음). 칸을 누르면 종목 창. 글자는 늘 글자색(색만으로 뜻을 전하지 않는다).
+ *  11/17 낮 고침: 모델은 시장 → 업종 → 종목으로 나눠 계산하지 않는다. 그래서 맨 위 줄은 색 없이 '실제 값'이라고 적고,
+ *  업종 줄은 %(보유 종목 평균일 뿐) 대신 금액 비중만 둔다. 업종 예상으로 읽히면 모델이 하지 않은 주장이 된다. */
 const DV = [-0.03, -0.015, -0.003, 0.003, 0.015, 0.03];
 export const dvClass = (v) => (v == null ? "dv0" : "dv" + ["n3", "n2", "n1", "0", "p1", "p2", "p3"][DV.filter((t) => v >= t).length]);
 export function acctMap(rows, x, newsOf) {
@@ -163,11 +166,11 @@ export function acctMap(rows, x, newsOf) {
   if (gs.length > 4) { const rest = gs.slice(3); gs = [...gs.slice(0, 3), { name: "그 외", rs: rest.flatMap((g) => g.rs), w: rest.reduce((a, g) => a + g.w, 0), val: rest.reduce((a, g) => a + g.val, 0) }]; }
   const sum = gs.reduce((a, g) => a + g.w, 0), inner = W - G * (gs.length - 1), MINW = 92;
   let ws = gs.map((g) => Math.max(MINW, (g.w / sum) * inner)); const k = inner / ws.reduce((a, b) => a + b, 0); ws = ws.map((w) => w * k);
-  let h = `<rect class="${dvClass(x)}" x="0" y="0" width="${W}" height="${MH}" rx="8"/><text x="10" y="${MH / 2 + 4.3}" font-size="12" font-weight="650" fill="${css("ink")}">시장 · 코스피200 야간선물 ${x == null ? "–" : pct(x, 2)}</text>`;
+  let h = `<rect x=".5" y=".5" width="${W - 1}" height="${MH - 1}" rx="8" fill="${css("card")}" stroke="${css("line")}"/><text x="10" y="${MH / 2 + 4.2}" font-size="11.5" fill="${css("sub")}">밤사이 실제 값 · 코스피200 야간선물 06:00</text><text x="${W - 10}" y="${MH / 2 + 4.4}" font-size="12.5" font-weight="700" fill="${css("ink")}" text-anchor="end">${x == null ? "–" : pct(x, 2)}</text>`;
   let x0 = 0;
   gs.forEach((g, gi) => {
-    const w = ws[gi], gH = g.val > 0 ? g.rs.reduce((a, r) => a + r.value * r.s.H, 0) / g.val : g.rs.reduce((a, r) => a + r.s.H, 0) / g.rs.length, y0 = MH + G;
-    h += `<rect class="${dvClass(gH)}" x="${x0}" y="${y0}" width="${w}" height="${SH}" rx="7"/><text x="${x0 + 8}" y="${y0 + SH / 2 + 4}" font-size="11.5" font-weight="650" fill="${css("ink")}">${esc(fit(g.name, w - 14 - (w > 130 ? 44 : 0), 11.5))}</text>${w > 130 ? `<text x="${x0 + w - 8}" y="${y0 + SH / 2 + 4}" font-size="11" fill="${css("ink2")}" text-anchor="end">${pct(gH)}</text>` : ""}`;
+    const w = ws[gi], y0 = MH + G, share = total > 0 && g.val > 0 ? Math.round((g.val / total) * 100) : null, wide = w > 124 && share != null;
+    h += `<rect x="${x0}" y="${y0}" width="${w}" height="${SH}" rx="7" fill="${css("chip")}"/><text x="${x0 + 8}" y="${y0 + SH / 2 + 4}" font-size="11.5" font-weight="650" fill="${css("ink")}">${esc(fit(g.name, w - 14 - (wide ? 54 : 0), 11.5))}</text>${wide ? `<text x="${x0 + w - 8}" y="${y0 + SH / 2 + 4}" font-size="10.5" fill="${css("sub")}" text-anchor="end">비중 ${share}%</text>` : ""}`;
     const body = BODY - G * (g.rs.length - 1), MINH = 30; let hs = g.rs.map((r) => Math.max(MINH, (wt(r) / g.w) * body)); const kk = body / hs.reduce((a, b) => a + b, 0); hs = hs.map((v) => v * kk);
     let y = y0 + SH + G;
     g.rs.forEach((r, i) => {
@@ -182,6 +185,6 @@ export function acctMap(rows, x, newsOf) {
     x0 += w + G;
   });
   const H = MH + G + SH + G + BODY;
-  return `<div class="amap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시장, 업종, 내 종목의 예상 시가 변화 지도">${h}</svg>
-    <div class="amap-key"><span class="ramp">${["n3", "n2", "n1", "0", "p1", "p2", "p3"].map((c) => `<i class="dv${c}"></i>`).join("")}</span><span>−3%</span><span>어제 종가</span><span>+3%</span><span class="sep"></span><span>크기 = 보유 금액</span><span><i class="nb"></i>밤사이 소식</span></div></div>`;
+  return `<div class="amap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="밤사이 야간선물 값과, 업종별로 묶은 내 종목의 예상 시가 변화 지도">${h}</svg>
+    <div class="amap-key"><span>종목 예상</span><span class="ramp">${["n3", "n2", "n1", "0", "p1", "p2", "p3"].map((c) => `<i class="dv${c}"></i>`).join("")}</span><span>−3%</span><span>어제 종가</span><span>+3%</span><span>크기 = 보유 금액</span><span><i class="nb"></i>밤사이 소식</span></div></div>`;
 }
