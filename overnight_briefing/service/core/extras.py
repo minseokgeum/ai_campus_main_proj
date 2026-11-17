@@ -96,10 +96,21 @@ def earnings_events(T: str, graph: dict, names: dict[str, str], days: int = 7) -
             continue
         us = dt.datetime.strptime(r["date"], "%Y-%m-%d").date()
         k = us + dt.timedelta(days=1)                        # 한국 아침 반영일
-        if not (start < k <= start + dt.timedelta(days=days)):
-            continue
         who = next((nodes[i] for i, t in TICKERS.items() if t == sym and i in nodes), sym)
         codes = linked[sym]
+        tail = " · 이어진 종목 " + "·".join(names.get(c, c) for c in codes[:4]) + (f" 외 {len(codes) - 4}" if len(codes) > 4 else "")
+        us_close = dt.datetime(us.year, us.month, us.day, 16, tzinfo=ZoneInfo("America/New_York")).astimezone(KST)
+        if k == start and r.get("hour") == "amc" and us_close.hour >= 6:
+            # 11/18 추가: 미국 표준시(겨울)에는 장 마감이 한국 06:00이라, 장 마감 뒤 발표는 그날 07:30 예상 범위·밤사이 브리핑(06:00 마감)에 들어가지 않는다.
+            # (서머타임엔 마감이 05:00이라 발표가 밤 창 안에 들어오므로 표시하지 않는다.) 시각 사실만 적고, 가격이 그 때문에 움직였다고는 쓰지 않는다.
+            first = "개장 시가예요(이날은 장전 거래 없음)" if T in SPECIAL else "08:00 장전 거래예요(08:11 기준)"
+            out.append(dict(dday=0, label=_label(k), title=f"{who} 실적 발표 · 06:00 마감 뒤",
+                            note=f"미국 {us.month}/{us.day} 장 마감 뒤(한국 06:00 이후) 발표라 07:30 예상 범위와 밤사이 브리핑에는 들어가지 않았어요. "
+                                 f"발표 뒤 첫 국내 가격은 {first}" + tail,
+                            kind="earnings", codes=codes))
+            continue
+        if not (start < k <= start + dt.timedelta(days=days)):
+            continue
         hour = {"amc": "장 마감 뒤", "bmo": "장 전"}.get(r.get("hour"), "")
         out.append(dict(dday=(k - start).days, label=_label(k), title=f"{who} 실적 발표",
                         note=f"미국 {us.month}/{us.day} {hour} 발표 → 한국 {k.month}/{k.day} 아침에 반영 · 이어진 종목 "
