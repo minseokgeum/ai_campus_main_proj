@@ -122,6 +122,32 @@ def _kst(iso: str) -> str:
         return ""
 
 
+def _night_coverage(d: Path, bed: str, cut: str) -> dict | None:
+    """11/18 추가: 취침 시각~수집 마감 사이에 검색어를 얼마나 받았는지(fetch_log.csv 그대로 센다).
+    구글 뉴스 검색이 밤새 막힌 날(11/18: 끝까지 돈 회차 0)에 '이어진 기사 없음'을 '모은 기사 안에서 없음'으로 읽게 하려는 표시다."""
+    log = _read_csv(d / "fetch_log.csv")
+    if not log:
+        return None
+    b, c = dt.datetime.fromisoformat(bed), dt.datetime.fromisoformat(cut)
+    total = len({r["query"] for r in _read_csv(REPO / "news_search/source/terms/test_queries.csv") if r.get("query", "").startswith('"')}) \
+        or len({r["term"] for r in log})                       # 수집기는 따옴표 검색어만 쓴다(11/18 기준 183개)
+    ok: set = set()
+    rounds: dict[str, set] = {}
+    for r in log:
+        try:
+            when = dt.datetime.fromisoformat(r["fetched_utc"])
+        except (KeyError, ValueError):
+            continue
+        if not (b <= when <= c):
+            continue
+        got = rounds.setdefault(r.get("round", ""), set())
+        if r.get("status") == "200":
+            ok.add(r["term"]); got.add(r["term"])
+    full = sum(1 for v in rounds.values() if total and len(v) >= 0.95 * total)
+    return dict(terms_ok=len(ok), terms=total, rounds=len(rounds), full_rounds=full,
+                partial=bool(total) and (len(ok) < 0.8 * total or full == 0))
+
+
 def pipeline_status(T: str, brief: dict | None) -> dict:
     """그 아침 브리핑이 어떤 자료로 언제 만들어졌는지(화면의 '자료 상태' 배지)."""
     d = NIGHTLY / T
@@ -142,6 +168,7 @@ def pipeline_status(T: str, brief: dict | None) -> dict:
                                      clusters=t.get("clusters"), bodies=t.get("body_ok")))
         if t.get("bedtime_kst") and t.get("cutoff_kst"):      # 11/17: 이 브리핑이 '몇 시부터 몇 시까지 나온 기사'로 만들어졌는지(취침 시각 ~ 수집 마감)
             out["window"] = dict(start=t["bedtime_kst"][11:16], end=t["cutoff_kst"][11:16])
+            out["coverage"] = _night_coverage(d, t["bedtime_kst"], t["cutoff_kst"])
     if brief and not brief.get("stub"):
         out["brief_at"] = _kst(brief.get("generated_at", ""))
         out["model"] = brief.get("model")

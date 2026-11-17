@@ -183,7 +183,8 @@ export function combinedHtml(d, code, ctx) {
   const NOTE = "예상 범위는 이 소식을 반영하지 않은 값이에요";
   if (!b) return s && ctx.nb ? box(" plain", `<p>관계로 이은 미국 기사가 ${ctx.nb}건 있어요.</p>`, NOTE) : "";      // 밤사이 브리핑이 없던 날: 이은 기사가 있을 때만
   if (!st) return s ? box(" plain", `<p class="mute">이 종목의 밤사이 소식 연결은 아직 준비 중이에요.</p>`, "") : "";
-  if (!st.news.length) return s ? box(" plain", `<p>밤사이 이 종목과 이어진 미국 기사는 없었어요.</p>`, "") : "";
+  if (!st.news.length) return s ? (thin(d) ? box(" plain", `<p>모은 기사 중에는 이 종목과 이어진 미국 기사가 없었어요.</p>`, "오늘 밤은 뉴스 검색이 자주 막혀 일부만 모았어요")
+    : box(" plain", `<p>밤사이 이 종목과 이어진 미국 기사는 없었어요.</p>`, "")) : "";
   const direct = st.news.filter((n) => n.tier !== "업종·테마"), theme = st.news.length - direct.length;
   if (!direct.length && b.prompt_version !== "stub") return s ? box(" plain", `<p>직접 이어진 미국 기사는 없었고, 같은 업종·테마 소식이 ${theme}건 있어요.</p>`, NOTE) : "";
   const top = direct[0] || st.news[0], n = direct.length || st.news.length;
@@ -202,11 +203,20 @@ export function winText(d) {
 }
 const winTag = (d) => { const t = winText(d); return t ? `<span class="win">${t}</span>` : ""; };
 
+/** 11/18: 밤새 뉴스 검색이 막혀 일부만 모은 날(core/extras.py _night_coverage). '이어진 기사 없음'을 '모은 기사 안에서 없음'으로 읽게 한다 */
+const thin = (d) => !!(d.pipeline && d.pipeline.coverage && d.pipeline.coverage.partial);
+const emptyMine = (d) => (thin(d) ? "모은 기사 중에는 내 종목과 이어진 미국 기사가 없어요." : "밤사이 내 종목과 이어진 미국 기사가 없어요.");
+function thinHtml(d) {
+  if (!thin(d)) return "";
+  const c = d.pipeline.coverage;
+  return `<div class="notice info" style="margin-top:8px">${I.info}<div><b>오늘 밤은 뉴스를 일부만 모았어요</b>구글 뉴스 검색이 밤새 자주 막혀 검색어 ${num(c.terms)}개 중 ${num(c.terms_ok)}개만 받았어요(끝까지 돈 수집 ${c.rounds}번 중 ${c.full_rounds}번). ‘이어진 기사 없음’은 모은 기사 안에서의 결과예요. 노란띠(예상 범위)는 뉴스를 쓰지 않아 그대로예요.</div></div>`;
+}
+
 export function marketHtml(d) {
   const b = d.brief;
   if (!b) return "";
   const line = b.market && b.market.line_ko;
-  return `<section class="sec" style="padding-top:4px"><div class="mkt${line ? "" : " pending"}" data-llm="1">${line ? AI : `<span class="ai off">AI</span>`}<div><b>밤사이 한 줄${winTag(d)}</b><p>${line ? esc(line) : "미국 장 마감까지 모은 기사로 쓰는 밤사이 요약은 준비 중이에요."}</p></div></div></section>`;
+  return `<section class="sec" style="padding-top:4px"><div class="mkt${line ? "" : " pending"}" data-llm="1">${line ? AI : `<span class="ai off">AI</span>`}<div><b>밤사이 한 줄${winTag(d)}</b><p>${line ? esc(line) : "미국 장 마감까지 모은 기사로 쓰는 밤사이 요약은 준비 중이에요."}</p></div></div>${thinHtml(d)}</section>`;
 }
 
 const pathChips = (path) => { const p = String(path || "").split(" → "); return p.map((x, i) => `<span class="node ${i === 0 ? "mine" : i === p.length - 1 ? "us" : "rel"}">${i > 0 && i < p.length - 1 ? `${I.sm} ${esc(x)} ${I.sm}` : esc(x)}</span>`).join(""); };
@@ -239,7 +249,7 @@ function briefTop(m, d, mine) {
   const top = [...all].sort((a, b) => (b.n.media_count || 0) - (a.n.media_count || 0) || (a.n.story === "새 소식" ? -1 : 1)).slice(0, 3);
   if (d.brief) {
     return `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식</h2>${all.length ? `<button class="more" data-act="tab" data-tab="news">전체 ${all.length}건 ${I.chev}</button>` : ""}</div>
-      ${top.length ? top.map((x) => briefItem(x.n, x.code)).join("") : `<div class="empty">밤사이 내 종목과 이어진 미국 기사가 없어요.</div>`}
+      ${top.length ? top.map((x) => briefItem(x.n, x.code)).join("") : `<div class="empty">${emptyMine(d)}</div>`}
       <div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계로 검색어가 걸렸다는 뜻이에요. 이 기사가 시가를 움직였다는 뜻은 아니에요.</div></section>`;
   }
   return `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식</h2>${mine.length ? `<button class="more" data-act="tab" data-tab="news">전체 ${mine.length}건 ${I.chev}</button>` : ""}</div>
@@ -271,7 +281,7 @@ export function news(m, d, st) {
     + (seg.length ? `<h4 class="h4">업종 낱말이 겹친 기사 <span class="tiny">관련성 확인 전</span></h4><div class="rows">${seg.map(([s, v]) => `<div class="rowline"><div style="min-width:0"><b style="text-align:left;display:block">${esc(s.name)} <span class="tiny">· ${esc(v.group)}</span></b><small style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${esc(v.items[v.items.length - 1].headline)}</small></div><span class="chip">${v.n}건</span></div>`).join("")}</div>` : "");
   else if (!d.brief) body = `<div class="empty">이 날은 밤사이 뉴스 브리핑을 만들지 않았어요.<br>‘관계로 이은 기사’에서 그날 기사를 볼 수 있어요.</div>`;
   else body = (d.brief.stub ? `<div class="notice info" style="margin-bottom:12px">${I.info}<div><b>요약·해석은 준비 중이에요</b>밤사이 모으고 같은 소식끼리 묶은 기사를 원문 제목 그대로 먼저 보여 드려요.</div></div>` : "")
-    + (bl.length ? bl.map((g) => `<div class="bgroup"><div class="bg-h">${avatar(g.code, g.name)}<b>${esc(g.name)}</b>${g.out ? `<span class="chip">노란띠 없음</span>` : ""}<span class="tiny">${g.items.length}건</span></div>${combinedHtml(d, g.code)}${g.items.map((n) => briefItem(n, g.code)).join("")}</div>`).join("") : `<div class="empty">밤사이 내 종목과 이어진 미국 기사가 없어요.</div>`);
+    + (bl.length ? bl.map((g) => `<div class="bgroup"><div class="bg-h">${avatar(g.code, g.name)}<b>${esc(g.name)}</b>${g.out ? `<span class="chip">노란띠 없음</span>` : ""}<span class="tiny">${g.items.length}건</span></div>${combinedHtml(d, g.code)}${g.items.map((n) => briefItem(n, g.code)).join("")}</div>`).join("") : `${thinHtml(d)}<div class="empty">${emptyMine(d)}</div>`);
   const line = f === "brief" && d.brief ? `밤사이 수집 ${d.brief.generated_at ? kst(d.brief.generated_at) + " 마감분" : ""}${d.brief.model ? ` · 요약 ${esc(d.brief.model)}` : ""}` : esc(d.news_meta.line);
   return `<section class="sec" style="padding-top:12px">${bar}${body}</section>
     <div class="foot">${line}<br>이어졌다는 건 사업 관계가 있다는 뜻이에요. 기사의 방향은 주가 방향이 아니고, 원인을 단정하거나 매매를 권하지 않아요.</div>`;
@@ -484,7 +494,8 @@ export function pipeHtml(d) {
   const cut = p.cutoffs.map((c) => `${c.label.replace(" 마감", "")} ${c.deadline.split(" ")[1]}`).join("·");
   const proc = p.processed.length ? ` · 묶기·본문 ${p.processed.map((x) => x.seconds + "초").join("+")}` : "";
   const re = p.brief_at && p.brief_at.slice(0, 5).replace("/", "") !== d.T.slice(4) ? " (다시 만든 판)" : "";
-  return `<section class="sec" style="padding-top:0"><div class="pipe">자료 · 밤사이 미국 기사 ${num(p.collected)}건 모음(마감 ${cut})${proc}${p.brief_at ? ` · AI 문장 ${esc(p.model || "")} ${p.brief_at}${re}` : ""} · 숫자는 모두 코드 계산</div></section>`;
+  const cov = thin(d) ? ` · 검색어 ${num(p.coverage.terms_ok)}/${num(p.coverage.terms)}개만 받음` : "";
+  return `<section class="sec" style="padding-top:0"><div class="pipe">자료 · 밤사이 미국 기사 ${num(p.collected)}건 모음(마감 ${cut})${cov}${proc}${p.brief_at ? ` · AI 문장 ${esc(p.model || "")} ${p.brief_at}${re}` : ""} · 숫자는 모두 코드 계산</div></section>`;
 }
 
 /** 방금 들어온 소식: 지금 모으는 밤의 최신 기사(검색어로 걸린 그대로) */
