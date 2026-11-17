@@ -52,7 +52,7 @@ function stockRow(r, m, st, d) {
       <div><span class="stepper${r.changed ? " changed" : ""}" data-stepper="${s.code}"><button data-step="-1" aria-label="수량 줄이기" ${r.q <= 0 ? "disabled" : ""}>${I.minus}</button><span class="q" data-act="qty" data-code="${s.code}"><span data-f="q">${num(r.q)}</span><small>주</small></span><button data-step="1" aria-label="수량 늘리기">${I.plus}</button></span></div>
       <div class="range"><span data-f="was" class="was" ${r.changed ? "" : "hidden"}>잔고 ${num(r.h.q)}주에서 바꿔 보는 중</span>범위 금액 <b data-f="range">${watch ? "수량을 넣으면 보여요" : `${man(r.lo)} ~ ${man(r.hi)}`}</b></div>
     </div>
-    ${chips.filter(Boolean).length ? `<div class="stock-chips">${chips.join("")}</div>` : ""}${flow}${combinedHtml(d, s.code)}
+    ${chips.filter(Boolean).length ? `<div class="stock-chips">${chips.join("")}</div>` : ""}${flow}${combinedHtml(d, s.code, { s, act: m.showAct, nb: m.newsBy[s.code] || 0 })}
   </article>`;
 }
 
@@ -153,15 +153,43 @@ export function night(m, d, st) {
 const STANCE = { aligned: "띠와 같은 쪽", opposite: "띠와 반대쪽", mixed: "방향이 엇갈림", unclear: "방향을 가리기 어려움" };
 const LOCAL = ["127.0.0.1", "localhost"].includes(location.hostname);
 
-export function combinedHtml(d, code) {
-  const b = d.brief; if (!b) return "";
-  const st = (b.stocks || {})[code], c = st && st.combined;
-  if (!st || !st.news.length) return "";            // 이어진 소식이 없으면 자리를 차지하지 않는다
-  const direct = st.news.filter((n) => n.tier !== "업종·테마");
-  if (c && c.source === "rule" || (!direct.length && b.prompt_version !== "stub")) return "";      // 직접 이어진 소식이 없으면 브리핑 화면에서는 비운다(뉴스 탭에 있음)
-  const top = direct[0] || st.news[0], meta = `직접 이어진 소식 ${direct.length || st.news.length}건${top.media_count > 1 ? ` · 대표 소식은 매체 ${top.media_count}곳` : ""}${top.story ? ` · ${esc(top.story)}` : ""}`;
-  if (c && c.line_ko) return `<div class="combined" data-llm="6">${c.source === "llm" ? AI : ""}<p>${esc(c.line_ko)}</p><div class="cb-meta">${meta} · 예상 범위는 이 소식을 반영하지 않은 값이에요</div></div>`;
-  return `<div class="combined pending" data-llm="6"><span class="ai off">AI</span><p>밤사이 소식을 풀어 쓴 한 줄은 준비 중이에요. 이어진 기사 ${st.news.length}건은 먼저 볼 수 있어요.</p></div>`;
+/** 띠를 말로 옮긴 문장(코드 계산, 화면의 띠와 같은 값). 띠는 야간선물을 넣어 계산한 값이라 그 사실만 말한다(시장의 원인을 단정하지 않는다). */
+export function bandWords(s, x, act) {
+  const [lo, hi] = s.b80, H = s.H, k = hi <= 0 ? 0 : lo >= 0 ? 1 : H <= -0.003 ? 2 : H >= 0.003 ? 3 : 4;
+  const head = x == null ? "예상 범위는" : `밤사이 야간선물(${pct2(x)})을 반영한 예상 범위는`;
+  if (act && s.y != null) return `${head} ${["전체가 어제 종가보다 아래였고", "전체가 어제 종가보다 위였고", "어제 종가보다 아래쪽으로 치우쳐 있었고", "어제 종가보다 위쪽으로 치우쳐 있었고", "어제 종가를 가운데 두고 위아래로 비슷했고"][k]}, 9시에는 범위 ${s.inb ? "안" : s.y > hi ? "위" : "아래"}에서 시작했어요(${pct(s.y)}).`;
+  return `${head} ${["전체가 어제 종가보다 아래예요", "전체가 어제 종가보다 위예요", "어제 종가보다 아래쪽으로 치우쳐 있어요", "어제 종가보다 위쪽으로 치우쳐 있어요", "어제 종가를 가운데 두고 위아래로 비슷해요"][k]}.`;
+}
+
+/** 소식의 방향과 띠를 나란히 읽는 한 문장(코드). 방향은 밤사이 프롬프트가 기사 내용만으로 가린 값(위쪽·아래쪽·엇갈림·불명)이고, 주가 방향이 아니다. */
+function readTogether(c, s) {
+  const dir = c && c.news_direction;
+  if (dir === "위쪽" || dir === "아래쪽") {
+    const good = dir === "위쪽" ? "좋은" : "나쁜", tail = " 기사의 방향이 주가 방향을 뜻하지는 않아요.";
+    if (!s || Math.abs(s.H) < 0.001) return `기사 내용만 보면 이 종목에 ${good} 쪽 소식이에요.${tail}`;
+    return `기사 내용만 보면 이 종목에 ${good} 쪽 소식이고, 예상 범위와는 ${(s.H > 0) === (dir === "위쪽") ? "같은" : "반대"} 방향이에요.${tail}`;
+  }
+  if (dir === "엇갈림") return "이어진 소식들의 방향이 서로 엇갈려요.";
+  return "이 종목에 좋은 쪽인지 나쁜 쪽인지는 기사만으로 가리기 어려워요.";
+}
+
+/** 띠·뉴스 같이 읽기(11/17 낮 되살림): 종목 줄의 띠 아래에 ① 띠를 말로 ② 밤사이 소식(AI 한 줄) ③ 둘을 나란히 읽는 문장을 한 묶음으로.
+ *  ctx.s를 주면(브리핑의 종목 줄) 소식이 없는 종목에도 띠 문장과 '소식 없음'을 보여 준다. ctx 없이 부르면(뉴스 탭·종목 창) 전처럼 소식 한 줄만. */
+export function combinedHtml(d, code, ctx) {
+  const b = d.brief, s = ctx && ctx.s, st = b && (b.stocks || {})[code], c = st && st.combined;
+  const band = s ? `<b class="cb-h">띠와 밤사이 소식, 같이 읽기</b><p class="cb-band">${esc(bandWords(s, d.market.x, ctx.act))}</p>` : "";
+  const box = (cls, body, meta) => `<div class="combined v4${cls}" data-llm="6">${band}${body}${meta ? `<div class="cb-meta">${meta}</div>` : ""}</div>`;
+  const NOTE = "예상 범위는 이 소식을 반영하지 않은 값이에요";
+  if (!b) return s && ctx.nb ? box(" plain", `<p>관계로 이은 미국 기사가 ${ctx.nb}건 있어요.</p>`, NOTE) : "";      // 밤사이 브리핑이 없던 날: 이은 기사가 있을 때만
+  if (!st) return s ? box(" plain", `<p class="mute">이 종목의 밤사이 소식 연결은 아직 준비 중이에요.</p>`, "") : "";
+  if (!st.news.length) return s ? box(" plain", `<p>밤사이 이 종목과 이어진 미국 기사는 없었어요.</p>`, "") : "";
+  const direct = st.news.filter((n) => n.tier !== "업종·테마"), theme = st.news.length - direct.length;
+  if (!direct.length && b.prompt_version !== "stub") return s ? box(" plain", `<p>직접 이어진 미국 기사는 없었고, 같은 업종·테마 소식이 ${theme}건 있어요.</p>`, NOTE) : "";
+  const top = direct[0] || st.news[0], n = direct.length || st.news.length;
+  const meta = `직접 이어진 소식 ${n}건${top.media_count > 1 ? ` · 대표 소식은 매체 ${top.media_count}곳` : ""} · ${NOTE}`;
+  if (c && c.line_ko && c.source !== "rule") return box("", `<p>${c.source === "llm" ? AI : ""}${esc(c.line_ko)}</p>${s ? `<p class="cb-read">${esc(readTogether(c, s))}</p>` : ""}`, meta);
+  if (top.short_summary_ko) return box("", `<p>직접 이어진 미국 기사가 ${n}건 있어요. 대표 소식: ${esc(top.short_summary_ko)}</p>`, meta);
+  return box(" pending", `<p><span class="ai off">AI</span>밤사이 소식을 풀어 쓴 한 줄은 준비 중이에요. 이어진 기사 ${st.news.length}건은 먼저 볼 수 있어요.</p>`, "");
 }
 
 /** 밤사이 한 줄이 '몇 시부터 몇 시까지 나온 소식'으로 쓰였는지(11/17: 한 줄 옆에 기준 시각을 적는다). 처리 기록에 적힌 값 그대로 */

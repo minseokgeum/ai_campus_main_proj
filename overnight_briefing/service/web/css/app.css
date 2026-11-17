@@ -426,3 +426,12 @@ details.more-d summary::after { content: " 펼치기"; font-weight: 400; color: 
 .trustline { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin: 0 0 12px; padding: 9px 11px; border-radius: 10px; background: var(--chip); text-align: left; font-size: 12px; line-height: 1.5; color: var(--sub); }
 .trustline b { color: var(--ink); font-weight: 700; } .trustline svg { flex: none; }
 #device[data-zoom="lg"] #screen > *, #device[data-zoom="lg"] #sheet > * { zoom: 1.12; }
+
+/* ───── 11/17 낮: 띠·뉴스 같이 읽기(종목 줄의 띠 아래) ───── */
+.combined.v4 { display: block; }
+.combined.v4 p { flex: none; } .combined.v4 p + p { margin-top: 5px; }
+.combined.v4 .cb-h { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: var(--teal); letter-spacing: -.01em; }
+.combined.v4 .cb-band { color: var(--ink2); }
+.combined.v4 .cb-read { color: var(--ink2); }
+.combined.v4 p.mute { color: var(--sub); }
+.combined.v4.plain { background: var(--chip); } .combined.v4.plain .cb-h { color: var(--sub); }
