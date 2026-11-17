@@ -33,6 +33,7 @@ function stockRow(r, m, st, d) {
   s.cautions.forEach((c) => chips.push(`<button class="chip btn lo" data-act="stock" data-code="${s.code}">${I.warn.replace('width="16" height="16"', 'width="12" height="12"')} ${esc(c.title)}</button>`));
   if (nxtOut) chips.push(`<button class="chip btn lo" data-act="info" data-info="nxtout">장전 거래가 범위 ${g.g > s.b80[1] ? "위" : "아래"}</button>`);
   if (news) chips.push(`<button class="chip btn" data-act="stock" data-code="${s.code}">${I.news} 밤사이 소식 ${news}</button>`);
+  if (s.eve && s.eve.r != null) chips.push(`<button class="chip btn" data-act="info" data-info="eve">어제 저녁 거래 <b class="${tone(s.eve.r)}" style="margin-left:3px">${pct(s.eve.r)}</b></button>`);   // 참고용(띠 계산에 넣지 않음)
   if (watch) chips.unshift(`<span class="chip accent">관심 종목</span>`);
   if (avgR != null) { const e = tick(s.pc * (1 + v)) / r.h.avg - 1; chips.push(`<span class="chip" title="평균단가 ${num(r.h.avg)}원">${live ? "가정" : "예상"} 시가는 내 평단보다 <b class="${tone(e)}" style="margin-left:3px">${pct(e)}</b></span>`); }
   let flow = "";
@@ -401,7 +402,7 @@ export function stockSheet(r, m, d, st) {
     ${bandHtml(s, { dom: domain([s.b90[0], s.b90[1], s.H, g ? g.g : null, m.showAct ? s.y : null].filter((v) => v != null)), slot: st.slot, showActual: m.showAct, pin: null, wide: true }).replace('data-band="', 'data-band-static="')}
     <table class="tbl"><thead><tr><th>${num(r.q)}주 기준</th><th>어제 종가 대비</th><th>가격</th><th>내 금액</th></tr></thead><tbody>
       ${line("var(--band)", "범위 위쪽 끝", s.b80[1])}${line("var(--ink)", "예상 시가", s.H, true)}${line("var(--band)", "범위 아래쪽 끝", s.b80[0])}
-      ${g && g.g != null ? line("var(--ink2)", "08:10 장전 거래", g.g) : ""}${m.showAct && s.y != null ? line(s.inb ? "var(--ok)" : "var(--miss)", "09:00 실제 시가", s.y, true) : ""}</tbody></table>
+      ${s.eve && s.eve.r != null ? line("var(--mute)", `어제 저녁 거래(${s.eve.at || "20:00"})`, s.eve.r) : ""}${g && g.g != null ? line("var(--ink2)", "08:10 장전 거래", g.g) : ""}${m.showAct && s.y != null ? line(s.inb ? "var(--ok)" : "var(--miss)", "09:00 실제 시가", s.y, true) : ""}</tbody></table>
     <div class="tiny" style="margin-top:8px">옅은 띠는 10번 중 9번이 들어온 더 넓은 범위(${pct(s.b90[0])} ~ ${pct(s.b90[1])})예요.</div>
     ${s.cautions.map((c) => `<div class="notice" style="margin-top:12px">${I.warn}<div><b>${esc(c.title)}</b>${esc(c.body)}</div></div>`).join("")}
     ${g ? `<h4>장전 거래 방향을 믿을 정도</h4><div class="rows"><div class="rowline"><span>등급</span><b>${gradeChip(g)}</b></div><div class="rowline"><span>지난 비슷한 경우 방향이 같았던 비율</span><b>${g.p >= 0.995 ? "99% 이상" : Math.round(g.p * 100) + "%"}</b></div></div>
@@ -455,6 +456,9 @@ const INFO = {
   grade: ["믿을 정도란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 장전 거래가 가리키는 방향(어제 종가보다 위/아래)이 09:00 시가까지 이어질지를 세 단계로 나눈 값이에요.</p>
     <div class="rows" style="margin-top:8px"><div class="rowline"><span class="chip hi">높음 ${meter(3)}</span><b style="font-weight:500;font-size:13px">지난 비슷한 경우 10번 중 9번 이상 같은 방향</b></div><div class="rowline"><span class="chip">보통 ${meter(2)}</span><b style="font-weight:500;font-size:13px">10번 중 7~9번</b></div><div class="rowline"><span class="chip lo">낮음 ${meter(1)}</span><b style="font-weight:500;font-size:13px">그보다 낮음. 방향이 자주 바뀌었어요</b></div></div>
     <div class="tiny" style="margin-top:12px">장전 거래가 어제 종가에서 멀리 움직였을수록 방향이 이어지는 일이 많았어요. 노란띠의 폭이나 예상 시가의 정확도와는 따로 보는 값이에요.</div>`],
+  eve: ["어제 저녁 거래란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">어제 낮 장이 끝난 뒤 저녁 8시까지 열리는 넥스트레이드(대체거래소) 시장에서 마지막으로 거래된 가격을, 어제 낮 종가와 비교한 값이에요.</p>
+    <div class="rows" style="margin-top:8px"><div class="rowline"><span>언제 값인가요</span><b style="font-weight:500;font-size:13px;max-width:215px">어제 저녁 6~8시 사이 마지막 거래. 미국 장이 열리기 전이에요.</b></div><div class="rowline"><span>예상 범위에 들어가나요</span><b style="font-weight:500;font-size:13px;max-width:215px">아니요. 참고로만 보여 드려요.</b></div></div>
+    <div class="tiny" style="margin-top:12px">이 값을 예상 범위 계산에 넣어 보았지만 예상이 눈에 띄게 가까워지지 않아 쓰지 않아요. 저녁 거래 뒤에 미국 장과 야간선물이 움직이기 때문에, 아침 시작 가격은 이 값과 다를 수 있어요. 저녁 거래가 없던 종목에는 나오지 않아요.</div>`],
   nxtout: ["장전 거래가 범위 밖이에요", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 장전 거래가 이미 아침 예상 범위 밖에 있어요. 지난 1년 이런 종목은 범위 안에서 열린 경우가 10번 중 3번 남짓이었고, 시가도 장전 거래 쪽으로 벗어난 경우가 10번 중 6~7번이었어요.</p><div class="tiny" style="margin-top:12px">아직 확인 중인 표시예요.</div>`],
 };
 export const infoSheet = (k) => `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>${INFO[k][0]}</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b">${INFO[k][1]}</div>`;

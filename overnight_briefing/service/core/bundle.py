@@ -197,11 +197,24 @@ def _universe(c8: dict, c7: dict) -> dict:
     return out
 
 
+def _evening(T: str) -> dict:
+    """어제 저녁 NXT 애프터마켓 마지막 거래(참고용, 띠 계산에는 쓰지 않음). workbench/evening_nxt.py가 만든 파일이 있을 때만."""
+    f = DATA_ROOT / "model" / "evening" / f"{T}.json"
+    try:
+        return json.loads(f.read_text(encoding="utf-8")).get("rows") or {} if f.exists() else {}
+    except Exception:
+        return {}
+
+
 def day(T: str) -> dict:
     d = D.day(T)
     c8, c7 = d.get("card_0811") or d["card_0730"], d.get("card_0730") or d["card_0811"]
     src = d.get("source") or {}
     uni = _universe(c8, c7)
+    eve = _evening(T)
+    for code, v in uni.items():
+        e = eve.get(code)
+        v["eve"] = dict(r=_f(e["r"]), at=e.get("at")) if e and e.get("r") is not None else None
     news, seg = _news(T)
     rec = D.news_record(T)
     fw = D.forward_record()
