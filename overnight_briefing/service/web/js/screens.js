@@ -209,8 +209,10 @@ const emptyMine = (d) => (thin(d) ? "모은 기사 중에는 내 종목과 이�
 function thinHtml(d) {
   if (!thin(d)) return "";
   const c = d.pipeline.coverage;
-  return `<div class="notice info" style="margin-top:8px">${I.info}<div><b>오늘 밤은 뉴스를 일부만 모았어요</b>구글 뉴스 검색이 밤새 자주 막혀 검색어 ${num(c.terms)}개 중 ${num(c.terms_ok)}개만 받았어요(끝까지 돈 수집 ${c.rounds}번 중 ${c.full_rounds}번). ‘이어진 기사 없음’은 모은 기사 안에서의 결과예요. 노란띠(예상 범위)는 뉴스를 쓰지 않아 그대로예요.</div></div>`;
+  return `<div class="notice info" style="margin-top:8px">${I.info}<div><b>오늘 밤은 뉴스를 일부만 모았어요</b>AI 요약에 쓰는 구글 뉴스 검색이 밤새 자주 막혀 검색어 ${num(c.terms)}개 중 ${num(c.terms_ok)}개만 받았어요(끝까지 돈 수집 ${c.rounds}번 중 ${c.full_rounds}번). ‘이어진 기사 없음’은 모은 기사 안에서의 결과예요. 노란띠(예상 범위)는 뉴스를 쓰지 않아 그대로예요.</div></div>`;
 }
+/** 11/18: AI 요약(구글 뉴스)이 비어도 관계표로 이은 기사(다른 경로)는 있을 수 있다. 빈 칸에서 그쪽으로 안내 */
+const linkedHint = (d, n) => (n ? `<div style="text-align:center;margin-top:-4px"><button style="font-size:12.5px;color:var(--sub);display:inline-flex;align-items:center;gap:2px;font-weight:500" data-act="filter" data-f="linked">관계표로 이은 기사 ${n}건은 따로 있어요${d.news_meta && d.news_meta.articles ? ` · 밤사이 기사 ${num(d.news_meta.articles)}건에서` : ""} ${I.chev}</button></div>` : "");
 
 export function marketHtml(d) {
   const b = d.brief;
@@ -281,8 +283,10 @@ export function news(m, d, st) {
     + (seg.length ? `<h4 class="h4">업종 낱말이 겹친 기사 <span class="tiny">관련성 확인 전</span></h4><div class="rows">${seg.map(([s, v]) => `<div class="rowline"><div style="min-width:0"><b style="text-align:left;display:block">${esc(s.name)} <span class="tiny">· ${esc(v.group)}</span></b><small style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${esc(v.items[v.items.length - 1].headline)}</small></div><span class="chip">${v.n}건</span></div>`).join("")}</div>` : "");
   else if (!d.brief) body = `<div class="empty">이 날은 밤사이 뉴스 브리핑을 만들지 않았어요.<br>‘관계로 이은 기사’에서 그날 기사를 볼 수 있어요.</div>`;
   else body = (d.brief.stub ? `<div class="notice info" style="margin-bottom:12px">${I.info}<div><b>요약·해석은 준비 중이에요</b>밤사이 모으고 같은 소식끼리 묶은 기사를 원문 제목 그대로 먼저 보여 드려요.</div></div>` : "")
-    + (bl.length ? bl.map((g) => `<div class="bgroup"><div class="bg-h">${avatar(g.code, g.name)}<b>${esc(g.name)}</b>${g.out ? `<span class="chip">노란띠 없음</span>` : ""}<span class="tiny">${g.items.length}건</span></div>${combinedHtml(d, g.code)}${g.items.map((n) => briefItem(n, g.code)).join("")}</div>`).join("") : `${thinHtml(d)}<div class="empty">${emptyMine(d)}</div>`);
-  const line = f === "brief" && d.brief ? `밤사이 수집 ${d.brief.generated_at ? kst(d.brief.generated_at) + " 마감분" : ""}${d.brief.model ? ` · 요약 ${esc(d.brief.model)}` : ""}` : esc(d.news_meta.line);
+    + (bl.length ? bl.map((g) => `<div class="bgroup"><div class="bg-h">${avatar(g.code, g.name)}<b>${esc(g.name)}</b>${g.out ? `<span class="chip">노란띠 없음</span>` : ""}<span class="tiny">${g.items.length}건</span></div>${combinedHtml(d, g.code)}${g.items.map((n) => briefItem(n, g.code)).join("")}</div>`).join("") : `${thinHtml(d)}<div class="empty">${emptyMine(d)}</div>${linkedHint(d, mine.length)}`);
+  // 11/18: 08:15 작업이 프롬프트를 캐시로 다시 돌리면 generated_at이 08:22처럼 바뀐다. 수집 마감은 처리 기록의 창 끝(06:00)을 먼저 쓴다
+  const wEnd = d.pipeline && d.pipeline.window && d.pipeline.window.end;
+  const line = f === "brief" && d.brief ? `밤사이 수집 ${wEnd ? `${d.T.slice(4, 6) * 1}/${d.T.slice(6) * 1} ${wEnd} 마감분` : d.brief.generated_at ? kst(d.brief.generated_at) + " 마감분" : ""}${d.brief.model ? ` · 요약 ${esc(d.brief.model)}` : ""}` : esc(d.news_meta.line);
   return `<section class="sec" style="padding-top:12px">${bar}${body}</section>
     <div class="foot">${line}<br>이어졌다는 건 사업 관계가 있다는 뜻이에요. 기사의 방향은 주가 방향이 아니고, 원인을 단정하거나 매매를 권하지 않아요.</div>`;
 }
