@@ -41,11 +41,11 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
 | 묶음 | 최신 날짜 | 크기(압축) | 담긴 것 | 언제 필요한가 |
 |---|---|---|---|---|
 | `graph_data` | 2026-11-17 | 154MB | `graph_db/source`에서 DART 원문과 로컬 백업 폴더(`backup_`로 시작)를 뺀 것(파일 5,630개, 552MB, 대상 951개 기준): DART 파싱 표·사업의 내용, 뉴스(거르기·LLM 응답·최종본·DB 스냅샷), 이름 통일·제품 사전·LLM 제품 사전·검색어 결과, Neo4j 표, 대상 기업 | 대부분. 앞 단계를 다시 돌리지 않고 원하는 단계부터 이어서 돌릴 때 |
-| `dart_raw` | 2026-11-15 | 510MB | DART 원문 다운로드(`graph_db/source/dart/raw`, 파일 18,178개) | DART 파싱부터 다시 돌릴 때만(없으면 `dart_collector`로 다시 받는다) |
+| `dart_raw` | 2026-11-17 | 510MB | DART 원문 다운로드(`graph_db/source/dart/raw`, 파일 18,178개) | DART 파싱부터 다시 돌릴 때만(없으면 `dart_collector`로 다시 받는다) |
 | `news_search_data` | 2026-11-17 | 131MB | 밤사이 뉴스(`news_search/source`, 파일 11,371개): 보고 날짜별 수집 기사·응답 원본·처리 결과(`prompt_inputs.jsonl`), 임시 검색어 표(`terms/`), 임베딩·원문 페이지 캐시, 지난 묶음 기록(이전 소식 확인용) | 수집·처리를 이어서 돌리거나 지난밤 결과·프롬프트 입력을 볼 때 |
-| `news_tests` | 2026-11-16 | 286MB | 뉴스 매체 시험(`news_source_tests`)과 구글 뉴스 검색 방식 시험(`news_search_tests/source`)의 결과와 캐시(파일 4,456개) | 시험 노트북을 요청 없이 다시 볼 때만. **11-15 묶음은 옛 폴더 구조(`news_search/source`)라 쓰지 않는다** |
-| `backtest_data` | 2026-11-16 | 69MB | 백테스트 캐시와 결과(`backtest/data`: KRX API 캐시·분봉 캐시·야후 분봉, `backtest/outputs`, 파일 1,210개) | 백테스트 노트북을 API 요청 없이 다시 돌릴 때 |
-| `creon_1min` | 2026-11-16 | 6.5GB | 크레온 KRX 1분봉(`stockdata_collection/creon_1min`: 전체 종목 스냅샷·반도체 15종목·조회 범위 점검, 파일 6,328개) | 분봉 백테스트. 크레온으로 다시 받으려면 하루 넘게 걸린다 |
+| `news_tests` | 2026-11-17 | 286MB | 뉴스 매체 시험(`news_source_tests`)과 구글 뉴스 검색 방식 시험(`news_search_tests/source`)의 결과와 캐시(파일 4,456개) | 시험 노트북을 요청 없이 다시 볼 때만 |
+| `backtest_data` | 2026-11-17 | 69MB | 백테스트 캐시와 결과(`backtest/data`: KRX API 캐시·분봉 캐시·야후 분봉, `backtest/outputs`, 파일 1,210개) | 백테스트 노트북을 API 요청 없이 다시 돌릴 때 |
+| `creon_1min` | 2026-11-17 | 6.5GB | 크레온 KRX 1분봉(`stockdata_collection/creon_1min`: 전체 종목 스냅샷·반도체 15종목·조회 범위 점검, 파일 6,328개) | 분봉 백테스트. 크레온으로 다시 받으려면 하루 넘게 걸린다 |
 
 ## 실행 순서 (graph_db)
 
