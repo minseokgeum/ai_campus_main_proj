@@ -8,7 +8,8 @@ import { SLOTS, FIXED } from "./llm.js";
 const $ = (s, r = document) => r.querySelector(s);
 const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "home", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false, liveFeed: null, notif: lsGet("ob.notif") || "06:30",
   liveMode: true, pending: null,        // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
-  preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1", hideAmt: lsGet("ob.hide") === "1" };   // hideAmt: 홈 계좌 카드 금액 가리기(눈 단추)   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
+  preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1", hideAmt: lsGet("ob.hide") === "1",
+  hold4: null, f4: "all", sort4: lsGet("ob.sort4") || "amt", nsub: "pred" };   // 11/19 밤사이 v4: 보유|관심, 필터 칩, 정렬, 상단 하위 탭(시가예측|기록)   // hideAmt: 홈 계좌 카드 금액 가리기(눈 단추)   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 // 11/19 홈 v2(수연 피그마): 홈 · 뉴스 브리핑 · 밤사이(종목별 노란띠, 옛 브리핑) · 내 종목 · 보관(옛 기록). 야간선물 흐름은 홈의 야간선물 띠로 들어가고 아래 메뉴에는 없다(넷째 칸 true).
@@ -75,8 +76,9 @@ function renderShell() {
   const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전";
   const sub = S.liveMode && S.pending ? `${S.pending.preview ? "미리 보기" : "실시간"} · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
   const homeSub = `${d.label}  ·  ${S.liveMode && S.pending ? `${S.pending.label} 아침 준비 중` : when.replace(" · 장 전", "")}  ·  ${a.sample ? "예시 계좌 " + a.id : "내 잔고"}`;
-  $("#appbar").classList.toggle("hbar", S.tab === "home");
+  $("#appbar").classList.toggle("hbar", S.tab === "home"); $("#appbar").classList.toggle("nbar", S.tab === "brief");
   if (S.tab === "home") $("#appbar").innerHTML = V.homeBar(homeSub);
+  else if (S.tab === "brief") $("#appbar").innerHTML = V.nightBar(S.nsub);
   else $("#appbar").innerHTML = `${t[3] ? `<button class="back" data-act="tab" data-tab="home" aria-label="홈으로">${I.back}</button>` : ""}<h1>${t[2]}<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0), fresh = mine + Object.values(m.newsBy).reduce((x, y) => x + y, 0) + ((d.brief && d.brief.market && d.brief.market.items) || []).length;   // 새 소식 점: 내 종목 소식·관계로 이은 기사·시장 전체 소식
   $("#tabbar").innerHTML = TABS.map(([id, nm, , hid]) => `<button class="${S.tab === id ? "on" : ""}${id === "home" && S.tab === "night" ? " on2" : ""}" data-act="tab" data-tab="${id}"${hid ? " hidden" : ""}${id === "news" && mine ? ` aria-label="${nm}, 내 종목 소식 ${mine}건"` : ""}><i class="ti ti-${id}"></i>${id === "news" ? `<i class="ndot${fresh ? "" : " off"}"></i>` : ""}${nm}</button>`).join("");
@@ -96,7 +98,7 @@ function renderShell() {
 function renderScreen(keep = false) {
   const scr = $("#screen"), top = scr.scrollTop, m = model(), d = S.day;
   DOM = m.dom;                                // 끄는 동안에는 눈금을 바꾸지 않는다(손가락 밑에서 띠가 움직이지 않게)
-  let out = S.liveMode && S.pending && (S.tab === "brief" || S.tab === "home") ? V.pendingBrief(m, d, S) : V[S.tab](m, d, S);
+  let out = S.liveMode && S.pending && (S.tab === "brief" || S.tab === "home") ? V.pendingBrief(m, d, S) : S.tab === "brief" && S.nsub === "rec" ? V.record(m, d, S) : V[S.tab](m, d, S);
   scr.innerHTML = typeof out === "string" ? out : out.html;
   if (typeof out !== "string" && out.bind) out.bind(scr, (id) => openNews(id));
   scr.scrollTop = keep ? top : 0;
@@ -120,16 +122,20 @@ function patchRow(code) {                      // 수량·가정 시가가 바�
     $("[data-stepper]", el).classList.toggle("changed", r.changed); $('[data-step="-1"]', el).disabled = r.q <= 0;
   }
   const hero = $("#hero"); if (hero) hero.innerHTML = V.heroHtml(m, S.day, S);
+  const sa = $("#s4acct"); if (sa && r) { sa.innerHTML = V.s4acct(m, r); const qb = $("#sheet [data-f4=qb]"); if (qb) qb.textContent = `(${num(r.q)}주 기준)`; }
+  if (S.tab === "brief" && $("#acct4")) renderScreen(true);   // 밤사이 v4: 목록·계좌 카드 금액도 같이
 }
 
 function onBand(code, v, commit) {
-  if (commit) { S.live = null; S.pin[key(code)] = v; renderScreen(true); return; }
+  if (commit) { S.live = null; S.pin[key(code)] = v; renderScreen(true); refreshS4(code); return; }
   S.live = v == null ? null : { code, v }; patchRow(code);
 }
 
 /* ───── 아래 창 ───── */
 function openSheet(html) { const s = $("#sheet"); s.innerHTML = html; s.hidden = false; $("#backdrop").hidden = false; s.scrollTop = 0; }
 function closeSheet() { $("#sheet").hidden = true; $("#backdrop").hidden = true; }
+function openS4(code) { if (!code) return; const h = V.s4Sheet(code, model(), S.day, S); if (!h) return; openSheet(h); bindBands($("#sheet"), () => DOM, onBand); }
+function refreshS4(code) { const sh = $("#sheet"), on = sh && !sh.hidden && $("[data-s4]", sh); if (on) { const top = sh.scrollTop; openS4(code || on.dataset.s4); sh.scrollTop = top; } }
 const openNews = (id) => { const n = S.day.news.find((x) => x.id === id); if (n) openSheet(V.newsSheet(n, model(), S.day)); };
 const openBrief = (code, id) => { const v = ((S.day.brief || {}).stocks || {})[code], n = v && v.news.find((x) => String(x.id) === id); if (n) openSheet(V.briefSheet(n, code, S.day)); };
 function toast(t) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (el.hidden = true), 1800); }
@@ -171,7 +177,7 @@ async function act(el) {
   else if (a === "addstock") addDraft(JSON.parse(el.dataset.row));
   else if (a === "applydraft") await applyDraft();
   else if (a === "close") closeSheet();
-  else if (a === "unpin") { delete S.pin[key(el.dataset.code)]; renderScreen(true); }
+  else if (a === "unpin") { delete S.pin[key(el.dataset.code)]; renderScreen(true); refreshS4(el.dataset.code); }
   else if (a === "reset") { const m = model(); m.rows.forEach((r) => { delete S.qty[key(r.s.code)]; delete S.pin[key(r.s.code)]; }); renderScreen(true); toast("잔고 수량과 예상 시가로 되돌렸어요"); }
   else if (a === "gsel") { S.sel = el.dataset.id || null; renderScreen(true); }
   else if (a === "gjump") { S.sel = el.dataset.id; S.tab = "news"; S.filter = "graph"; closeSheet(); render(); }
@@ -183,6 +189,15 @@ async function act(el) {
   else if (a === "setbed") { S.bed = el.dataset.v; lsSet("ob.bed", S.bed); openSheet(V.notifSheet(S, S.day)); renderScreen(true); toast(`잠드는 시각 ${S.bed}로 저장했어요(시연)`); }
   else if (a === "setbig") { S.big = el.dataset.v === "1"; lsSet("ob.big", S.big ? "1" : "0"); applyBig(); openSheet(V.notifSheet(S, S.day)); }
   else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
+  else if (a === "s4") openS4(el.dataset.code);
+  else if (a === "hold4") { S.hold4 = el.dataset.v; S.f4 = "all"; renderScreen(true); }
+  else if (a === "f4") { S.f4 = el.dataset.v; renderScreen(true); }
+  else if (a === "sort4") openSheet(V.sort4Sheet(S.sort4));
+  else if (a === "setsort4") { S.sort4 = el.dataset.v; lsSet("ob.sort4", S.sort4); closeSheet(); renderScreen(true); }
+  else if (a === "prog4") openSheet(V.prog4Sheet(model(), S.day, S));
+  else if (a === "map4") openSheet(V.map4Sheet(model(), S.day));
+  else if (a === "nsub") { S.nsub = el.dataset.v; render(); }
+  else if (a === "dayshift") { const ds = S.meta.days, i = ds.findIndex((x) => x.T === S.T), j = i - +el.dataset.dir; if (i >= 0 && ds[j]) { S.liveMode = false; S.pending = null; await load(ds[j].T); } }
   else if (a === "golive") { S.tab = "news"; S.filter = "live"; render(); }
   else if (a === "daysheet") openSheet(V.daySheet(S.meta.days, S.preview ? "night" : S.liveMode ? "live" : S.T));
   else if (a === "pickday") { closeSheet(); await pickDay(el.dataset.t); }

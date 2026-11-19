@@ -15,7 +15,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 DRAFT = [dict(code="000660", name="SK하이닉스", q=5, avg=1300000, in_model=True), dict(code="042700", name="한미반도체", q=0, avg=None, in_model=True),
          dict(code="005930", name="삼성전자", q=30, avg=None, in_model=True)]
 VIEWS = [("home_A", f"#T={T}&slot=0811&acct=A&tab=home", 0), ("home_A_map", f"#T={T}&slot=0811&acct=A&tab=home", 600), ("home_0900", f"#T={T}&slot=0900&acct=A&tab=home", 0), ("home_dark", f"#T={T}&slot=0811&acct=A&tab=home&dark=1", 0),
-         ("brief_A", f"#T={T}&slot=0811&acct=A&tab=brief", 0), ("brief_A_rows", f"#T={T}&slot=0811&acct=A&tab=brief", 900),
+         ("brief_A", f"#T={T}&slot=0811&acct=A&tab=brief", 0), ("night4_B", f"#T={T}&slot=0811&acct=B&tab=brief", 0), ("night4_B2", f"#T={T}&slot=0811&acct=B&tab=brief", 650), ("brief_A_rows", f"#T={T}&slot=0811&acct=A&tab=brief", 900),
          ("news_A", f"#T={T}&slot=0811&acct=A&tab=news&f=brief", 0), ("graph_A", f"#T={T}&slot=0811&acct=A&tab=news&f=graph", 0),
          ("graph_B", f"#T={T}&slot=0811&acct=B&tab=news&f=graph", 0), ("night", f"#T={T}&slot=0811&acct=A&tab=night", 0),
          ("mine_A", f"#T={T}&slot=0811&acct=A&tab=mine", 0), ("record_A", f"#T={T}&slot=0900&acct=A&tab=record", 0),

@@ -49,26 +49,28 @@ with sync_playwright() as p:
                     continue
                 txt = pg.inner_text("#screen")
                 n += 1
-                if tab == "brief" and slot == "0811" and i == 0:
-                    pg.locator("#screen [data-act=stock]").first.click()
-                    if not pg.locator("#sheet .tbl").count(): errs.append("종목 창이 안 열림")
+                if tab == "brief" and slot == "0811" and i == 0:          # 11/19 밤사이 v4: 줄 → 시트(수량 −/+·띠 끌기는 시트 안)
+                    pg.locator("#screen [data-act=s4]").first.click()
+                    if not pg.locator("#sheet [data-s4]").count(): errs.append("종목 시트가 안 열림")
+                    pg.locator("#sheet .s4-btns [data-act=stock]").last.click()
+                    if not pg.locator("#sheet .tbl").count(): errs.append("종목 상세 창이 안 열림")
                     pg.keyboard.press("Escape")
-                    if pg.locator("#screen [data-act=bnews]").count():
-                        pg.locator("#screen [data-act=bnews]").first.click()
-                        if "어떻게 이어지나요" not in pg.inner_text("#sheet"): errs.append("기사 창이 안 열림")
-                        pg.keyboard.press("Escape")
-                    before = pg.inner_text("#hero .big")
-                    pg.locator("[data-step='1']").first.click()
-                    if pg.inner_text("#hero .big") == before: errs.append("수량 +가 합계를 안 바꿈")
-                    bb = pg.locator("[data-band]").first.bounding_box()
+                    pg.locator("#screen [data-act=s4]").first.click()
+                    before = pg.inner_text("#acct4 .amt b")
+                    pg.locator("#sheet [data-step='1']").first.click()
+                    if pg.inner_text("#acct4 .amt b") == before: errs.append("수량 +가 계좌 카드를 안 바꿈")
+                    bb = pg.locator("#sheet [data-band]").first.bounding_box()
                     pg.mouse.click(bb["x"] + bb["width"] * 0.5, bb["y"] + 36)
-                    if not pg.locator("[data-act=unpin]").count(): errs.append("띠를 눌러도 가정이 안 남음")
-                    pg.locator("[data-act=reset]").click()
-                    if pg.inner_text("#hero .big") != before: errs.append("되돌리기 뒤 합계가 다름")
+                    if "가정" not in pg.inner_text("#sheet [data-f=pct]"): errs.append("띠를 눌러도 가정이 안 남음")
+                    pg.locator("#sheet [data-act=unpin]").first.click()
+                    if "가정" in pg.inner_text("#sheet [data-f=pct]"): errs.append("가정 지우기가 안 됨")
+                    pg.locator("#sheet [data-step='-1']").first.click()
+                    if pg.inner_text("#acct4 .amt b") != before: errs.append("수량 −로 되돌려도 합계가 다름")
+                    pg.keyboard.press("Escape")
                 if a == "U" and tab == "brief" and slot == "0811" and not txt.count("SK하이닉스"):
                     errs.append("내 잔고 종목이 브리핑에 안 나옴")
-                if a == "U" and tab == "brief" and slot == "0811" and "노란띠 없음" not in txt:
-                    errs.append("노란띠 없는 종목 표시가 없음")
+                if a == "U" and tab == "brief" and slot == "0811" and "서비스 대상 아님 1" not in txt:
+                    errs.append("노란띠 없는 종목(서비스 대상 아님) 칩이 없음")
                 broken = [w for w in ("undefined", "NaN", "null", "Infinity", "[object Object]") if w in txt]
                 if errs or len(txt) < 60 or broken:
                     bad.append((d["T"], a, slot, tab, f, errs[:2] or broken or "빈 화면"))
