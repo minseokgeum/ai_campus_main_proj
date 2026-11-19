@@ -219,3 +219,53 @@ def live_feed(n: int = 40) -> dict:
     return dict(report=nids[-1], collected=allc, direct=len(items), last_fetch=_kst(last), built=dt.datetime.now(KST).strftime("%m/%d %H:%M"),
                 items=[dict(title=r.get("title", ""), outlet=r.get("outlet") or r.get("domain", ""), published=_kst(r.get("published_utc", "")),
                             seen=_kst(r.get("first_seen_utc", "")), link=r.get("link", ""), stocks=r["_who"], terms=r["_term"]) for r in items[:n]])
+
+
+# ───── 미국 시장 칩(11/19, 홈 v2): S&P 500·나스닥·다우·환율의 전날 대비 ─────
+# 받기(fetch_us_market)는 배포 전 publish.sh에서 한 번만(FinanceDataReader, 약 5초). 화면 묶음(us_market)은 캐시 파일만 읽는다.
+# 기준: 한국 아침 T에는 T보다 앞선 날짜의 마지막 미국 거래일 종가를 쓴다(미국 장 마감 = 한국 06:00, 장 전 자료만).
+US_CACHE = CACHE / "us_market.json"
+US_SYMS = [("US500", "S&P 500"), ("IXIC", "나스닥"), ("DJI", "다우"), ("USD/KRW", "환율")]
+
+
+def fetch_us_market(days: int = 120) -> str:
+    import FinanceDataReader as fdr                         # 로컬에서만(배포판에는 없음)
+    old = {}
+    try:
+        old = json.loads(US_CACHE.read_text()).get("series", {})
+    except (OSError, ValueError):
+        pass
+    start = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    series, got = {}, []
+    for sym, _ in US_SYMS:
+        rows = dict(old.get(sym, []))
+        try:
+            df = fdr.DataReader(sym, start)
+            rows.update({d.strftime("%Y%m%d"): round(float(c), 4) for d, c in zip(df.index, df["Close"]) if c == c})
+            got.append(sym)
+        except Exception:                                   # 하나가 실패해도 나머지와 옛 값은 남긴다
+            pass
+        series[sym] = sorted(rows.items())
+    CACHE.mkdir(exist_ok=True)
+    US_CACHE.write_text(json.dumps(dict(fetched_at=dt.datetime.now(KST).isoformat(timespec="seconds"), series=series)))
+    return f"미국 시장 칩 받기: {len(got)}/{len(US_SYMS)}개"
+
+
+def us_market(T: str) -> dict | None:
+    try:
+        series = json.loads(US_CACHE.read_text())["series"]
+    except (OSError, ValueError, KeyError):
+        return None
+    items, asof = [], None
+    for sym, name in US_SYMS:
+        rows = [r for r in series.get(sym, []) if r[0] < T][-2:]
+        if len(rows) < 2:
+            continue
+        (d0, c0), (d1, c1) = rows
+        items.append(dict(k=name, r=round(c1 / c0 - 1, 6), d=d1))
+        if sym == "US500":
+            asof = d1
+    if not items:
+        return None
+    note = f"{int(asof[4:6])}/{int(asof[6:])} 16:00 마감 (미 동부)" if asof else ""
+    return dict(asof=asof, note=note, items=items)

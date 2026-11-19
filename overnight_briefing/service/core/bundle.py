@@ -238,7 +238,7 @@ def day(T: str) -> dict:
         news_meta=dict(line=D.news_record_line(T), articles=(rec or {}).get("counts", {}).get("articles"),
                        before_open=(rec or {}).get("before_open"), issued=((rec or {}).get("issued_at") or "")[11:16]),
         macro=[] if macro is None else [dict(time=r.time, headline=r.headline) for r in macro[macro["T"] == T].itertuples()][:40],
-        night=_night(T), events=ev, brief=brief, pipeline=X.pipeline_status(T, brief), special=X.SPECIAL.get(T),
+        night=_night(T), events=ev, brief=brief, pipeline=X.pipeline_status(T, brief), special=X.SPECIAL.get(T), us_market=X.us_market(T),
         forward=None if not fw else dict(after=fw[0].get("after_freeze"), prov=fw[0].get("prov_days", []),
                                          per_day=[p for p in fw[0]["per_day"] if p["T"] <= T][-8:]))
 

@@ -23,6 +23,7 @@ const HUES = [212, 262, 338, 18, 150, 190, 42, 286];
 export const avatar = (code, name) => `<span class="avatar" style="background:hsl(${HUES[[...code].reduce((a, c) => a + c.charCodeAt(0), 0) % HUES.length]} 52% 46%)">${esc(name.replace(/^(HD|LS|SK|KB|LG|GS|KT)/, "").trim().slice(0, 1) || name.slice(0, 1))}</span>`;
 export const I = {
   chev: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l4 4-4 4"/></svg>',
+  back: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5L7 10l5.5 5.5"/></svg>',
   down: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l4 4 4-4"/></svg>',
   arrow: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>',
   sm: '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5h7M6 2.5l3 3-3 3"/></svg>',

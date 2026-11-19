@@ -435,3 +435,80 @@ details.more-d summary::after { content: " 펼치기"; font-weight: 400; color: 
 .combined.v4 .cb-read { color: var(--ink2); }
 .combined.v4 p.mute { color: var(--sub); }
 .combined.v4.plain { background: var(--chip); } .combined.v4.plain .cb-h { color: var(--sub); }
+
+/* ───── 홈(11/19, 수연 피그마 '홈 (최종 · v2)' 464:8207) ─────
+   값은 피그마 그대로(간격·크기·모서리). 색은 토큰에 맞춰 어두운 화면도 따라간다. 상승·하락 색은 v2의 저채도(#D35D66·#4C6FC3)를 홈 안에서만 쓴다. */
+.appbar.hbar { padding: 10px 24px 8px; align-items: flex-start; gap: 14px; letter-spacing: 0; }
+.appbar.hbar .hb-l { flex: 1; min-width: 0; }
+.appbar.hbar h1.hb-t { margin: 0; display: block; font-size: 16px; line-height: 24px; font-weight: 700; letter-spacing: 0; color: var(--teal); }
+.appbar.hbar .hb-s { display: block; margin-top: 6px; font-size: 12px; line-height: 18px; color: var(--sub); white-space: pre; text-align: left; }
+.appbar.hbar .hb-i { flex: none; width: 23px; height: 23px; margin-top: 2px; }
+.appbar.hbar .hb-i img { display: block; }
+[data-theme="dark"] .appbar.hbar .hb-i img, [data-theme="dark"] .h-acct .eye img { filter: invert(1) hue-rotate(180deg); }
+
+.home { --up: #D35D66; --down: #4C6FC3; --surf: #F4F6F7; --ink3: #45555A; --chev: #8A9598;
+  display: flex; flex-direction: column; gap: 14px; padding: 6px 24px 12px; letter-spacing: 0; }
+[data-theme="dark"] .home { --up: #FF7A83; --down: #6FA0F2; --surf: var(--chip); --ink3: var(--ink2); --chev: var(--mute); }
+.home .h-acct { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 18px; background: var(--pale); cursor: pointer; text-align: left; }
+.h-acct .r1 { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--teal); }
+.h-acct .r1 span { flex: 1; min-width: 0; }
+.h-acct .r1 em { font-style: normal; white-space: nowrap; }
+.h-acct .eye { flex: none; width: 28px; height: 28px; display: grid; place-items: center; margin: -8px 0; }
+.h-acct .eye img { display: block; }
+.h-acct .amt { display: flex; align-items: baseline; gap: 8px; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+.h-acct .amt b { font-size: 28px; font-weight: 700; } .h-acct .amt small { font-size: 14px; font-weight: 700; }
+.h-acct .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.h-acct .c1 { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 9px; background: var(--card); font-size: 12px; font-weight: 700; line-height: 1.3; color: var(--ink); white-space: nowrap; }
+.h-acct .c1 img { display: block; }
+.h-acct .ch { font-style: normal; font-size: 13px; font-weight: 400; color: var(--chev); }
+.h-acct .c2 { padding: 6px 10px; border-radius: 9px; background: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--ink3); white-space: nowrap; }
+[data-theme="dark"] .h-acct .c2 { background: rgba(255, 255, 255, .06); }
+.h-acct.h-empty b { font-size: 17px; line-height: 1.4; color: var(--ink); }
+.h-acct.h-empty .c1 { align-self: flex-start; }
+.home .h-sec { display: flex; flex-direction: column; gap: 10px; }
+.home .h-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.home .h-row h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--ink); }
+.home .h-more { font-size: 13px; font-weight: 500; color: var(--sub); }
+.home .h-core { display: flex; flex-direction: column; width: 100%; padding: 20px 20px 9px; border-radius: 16px; background: var(--surf); text-align: left; }
+.h-core .k { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--teal); }
+.h-core .hl { margin-top: 8px; font-size: 21px; font-weight: 700; line-height: 30px; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.h-core .hl.long { font-size: 17px; line-height: 26px; -webkit-line-clamp: 4; }
+.h-core .kw { margin-top: 10px; font-size: 12px; color: var(--sub); }
+.h-core .ft { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; padding-top: 11px; border-top: 1px solid var(--line); font-size: 12px; font-weight: 700; color: var(--ink); }
+.h-core .ft i { font-style: normal; font-size: 18px; font-weight: 400; line-height: 1; color: var(--sub); }
+.home .h-us { gap: 8px; }
+.h-us h3 { flex: 1; margin: 0; font-size: 16px; font-weight: 700; line-height: 1.3; color: var(--ink); }
+.h-us .h-row span { font-size: 11px; line-height: 1.3; color: var(--sub); white-space: nowrap; }
+.h-chips { display: flex; gap: 6px; }
+.h-chip { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 9px 10px; border-radius: 12px; background: var(--surf); line-height: 1.3; white-space: nowrap; }
+.h-chip span { font-size: 11px; color: var(--sub); } .h-chip b { font-size: 13px; font-weight: 700; }
+.home .h-night { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); cursor: pointer; }
+.hn-l { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.hn-t { display: flex; align-items: center; gap: 4px; } .hn-t b { font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.hn-q { flex: none; width: 18px; height: 18px; display: grid; place-items: center; border: 1.2px solid var(--sub); border-radius: 9px; font-size: 11px; font-weight: 700; color: var(--sub); cursor: pointer; }
+.hn-l small, .hn-r small { font-size: 11px; color: var(--sub); white-space: nowrap; }
+.h-night svg { flex: none; }
+.hn-r { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; } .hn-r b { font-size: 16px; font-weight: 700; }
+.h-chev { font-size: 16px; color: var(--sub); }
+.h-map h3 { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.2; color: var(--ink); white-space: nowrap; }
+.h-mt { display: flex; align-items: center; gap: 8px; }
+.h-q2 { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 10px; background: var(--chip); font-size: 11px; font-weight: 700; color: var(--sub); }
+.h-link { font-size: 12px; font-weight: 500; line-height: 1.2; color: var(--teal); white-space: nowrap; }
+.h-sub { margin: 0; font-size: 12px; line-height: 1.2; color: var(--sub); }
+.h-foot { margin: 0; font-size: 10px; line-height: 15px; color: var(--sub); }
+
+/* 아래 메뉴(피그마 '하단 메뉴' 474:6489): 아이콘은 피그마 파일을 그대로 마스크로 써서 켜짐·어두운 화면 색만 바꾼다 */
+.tabbar { padding: 16px 0 59px; letter-spacing: 0; }
+.tabbar::after { bottom: 10px; }
+.tabbar button { gap: 7px; padding: 0; font-size: 10px; line-height: 15px; font-weight: 400; color: var(--sub); }
+.tabbar button.on, .tabbar button.on2 { color: var(--teal); font-weight: 700; }
+.tabbar .ti { position: relative; display: block; width: 24px; height: 24px; }
+.tabbar .ti::before { content: ""; position: absolute; background: currentColor; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+.tabbar .ti-home::before { left: 2.15px; top: 2.15px; width: 19.7px; height: 19.7px; -webkit-mask-image: url(../img/home/tab-home.svg); mask-image: url(../img/home/tab-home.svg); }
+.tabbar .ti-news::before { left: 0; top: -1.5px; width: 25.5px; height: 25.5px; -webkit-mask-image: url(../img/home/tab-news.svg); mask-image: url(../img/home/tab-news.svg); }
+.tabbar .ti-brief::before { left: 2.21px; top: 2.15px; width: 19.637px; height: 19.637px; -webkit-mask-image: url(../img/home/tab-night.svg); mask-image: url(../img/home/tab-night.svg); }
+.tabbar .ti-mine::before { left: 2.15px; top: 3.15px; width: 19.7px; height: 18.7px; -webkit-mask-image: url(../img/home/tab-mine.svg); mask-image: url(../img/home/tab-mine.svg); }
+.tabbar .ti-record::before { left: 5.15px; top: 2.15px; width: 13.7px; height: 19.7px; -webkit-mask-image: url(../img/home/tab-saved.svg); mask-image: url(../img/home/tab-saved.svg); }
+.tabbar .ndot { position: absolute; top: -1.5px; left: calc(50% + 2.5px); width: 11px; height: 11px; box-sizing: border-box; border: 1.5px solid var(--card); border-radius: 50%; background: #4C6FC3; }
+.tabbar .ndot.off { width: 13px; height: 13px; top: -2.5px; left: calc(50% + 1.5px); border: 0; background: var(--card); }   /* 새 소식이 없으면 아이콘 파일 속 점을 바탕색으로 덮는다 */
+.appbar .back { align-self: flex-start; height: 30px; margin-top: 1px; }   /* 11/19: 야간선물 화면(홈 띠에서 들어옴)의 뒤로 가기를 제목 줄에 */

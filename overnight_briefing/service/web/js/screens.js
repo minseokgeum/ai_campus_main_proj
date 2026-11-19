@@ -476,6 +476,12 @@ const INFO = {
   eve: ["어제 저녁 거래란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">어제 낮 장이 끝난 뒤 저녁 8시까지 열리는 넥스트레이드(대체거래소) 시장에서 마지막으로 거래된 가격을, 어제 낮 종가와 비교한 값이에요.</p>
     <div class="rows" style="margin-top:8px"><div class="rowline"><span>언제 값인가요</span><b style="font-weight:500;font-size:13px;max-width:215px">어제 저녁 6~8시 사이 마지막 거래. 미국 장이 열리기 전이에요.</b></div><div class="rowline"><span>예상 범위에 들어가나요</span><b style="font-weight:500;font-size:13px;max-width:215px">아니요. 참고로만 보여 드려요.</b></div></div>
     <div class="tiny" style="margin-top:12px">이 값을 예상 범위 계산에 넣어 보았지만 예상이 눈에 띄게 가까워지지 않아 쓰지 않아요. 저녁 거래 뒤에 미국 장과 야간선물이 움직이기 때문에, 아침 시작 가격은 이 값과 다를 수 있어요. 저녁 거래가 없던 종목에는 나오지 않아요.</div>`],
+  nightfx: ["코스피200 야간선물", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">한국거래소 코스피200 선물은 낮 장이 끝난 뒤 밤(18:00~다음 날 06:00)에도 거래돼요. 미국 장이 열려 있는 시간이라 밤사이 소식이 이 값에 먼저 반영돼요.</p>
+    <div class="rows" style="margin-top:8px"><div class="rowline"><span>어떤 값인가요</span><b style="font-weight:500;font-size:13px;max-width:215px">06:00 마감 값이 어제 낮 장 종가보다 몇 % 움직였는지예요.</b></div><div class="rowline"><span>어디에 쓰나요</span><b style="font-weight:500;font-size:13px;max-width:215px">이 값과 지난 기록으로 내 종목의 오늘 시가 예상 범위(노란띠)를 계산해요.</b></div></div>
+    <div class="tiny" style="margin-top:12px">띠를 누르면 밤사이 흐름과 그 시간의 기사를 볼 수 있어요. 기사가 나온 시각과 움직임이 겹쳐도 그 기사 때문이라고 단정하지 않아요.</div>`],
+  hmap: ["내 종목 지도 읽는 법", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">시장(야간선물) → 업종 → 내 종목 순서로 묶었어요.</p>
+    <div class="rows" style="margin-top:8px"><div class="rowline"><span>칸 크기</span><b style="font-weight:500;font-size:13px;max-width:215px">보유 금액</b></div><div class="rowline"><span>칸 색</span><b style="font-weight:500;font-size:13px;max-width:215px">종목마다 계산한 오늘 예상 시가가 어제 종가보다 위면 빨강, 아래면 파랑</b></div><div class="rowline"><span>소식 수</span><b style="font-weight:500;font-size:13px;max-width:215px">밤사이 그 종목과 이어진 미국 기사 수</b></div><div class="rowline"><span>점선 칸</span><b style="font-weight:500;font-size:13px;max-width:215px">관심 종목(수량 0)</b></div></div>
+    <div class="tiny" style="margin-top:12px">업종별 예상은 따로 계산하지 않아서 업종 줄에는 금액 비중만 적었어요. 칸을 누르면 그 종목을 볼 수 있어요.</div>`],
   nxtout: ["장전 거래가 범위 밖이에요", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 장전 거래가 이미 아침 예상 범위 밖에 있어요. 지난 1년 이런 종목은 범위 안에서 열린 경우가 10번 중 3번 남짓이었고, 시가도 장전 거래 쪽으로 벗어난 경우가 10번 중 6~7번이었어요.</p><div class="tiny" style="margin-top:12px">아직 확인 중인 표시예요.</div>`],
 };
 export const infoSheet = (k) => `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>${INFO[k][0]}</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b">${INFO[k][1]}</div>`;
@@ -598,3 +604,71 @@ function casesHtml(w) {
       <p>지금 가진 만큼이었다면 아침 예상은 ${man(c.value * c.exp)}, 실제는 ${man(c.value * c.act)}이었어요. 야간선물 숫자만 그대로 따랐다면 ${man(c.value * c.x)}으로 봤을 거예요.</p></div>`).join("")}
     <div class="tiny" style="margin-top:8px">지난 일을 다시 본 것이고, 앞으로도 같다는 뜻이나 수익을 뜻하지 않아요. 조용한 밤에는 ‘어제 가격 그대로’와 차이가 작았어요.</div></section>`;
 }
+
+
+/* ───── 홈(11/19, 수연 피그마 '홈 (최종 · v2)' 464:8207을 옮김) ─────
+   계좌 카드 → 뉴스 브리핑 핵심 → 미국 시장 → 야간선물 띠 → 내 종목 지도. 숫자는 모두 서버 값 그대로이고,
+   '확인 필요'는 피그마 밤사이 v4 정의(범위 밖 + 믿을 정도 낮음, 개장 뒤엔 범위 밖에서 시작)를 따른다. */
+const HI = "img/home/";
+export const homeBar = (sub) => `<div class="hb-l"><h1 class="hb-t">투자 브리핑</h1><button class="hb-s" data-act="daysheet" aria-label="날짜 바꾸기">${esc(sub)}</button></div>
+  <button class="hb-i" data-act="acctsheet" aria-label="마이 · 계좌 바꾸기"><img src="${HI}my.svg" width="23" height="23" alt=""></button>
+  <button class="hb-i" data-act="notif" aria-label="알림 · 브리핑 받는 시각"><img src="${HI}bell.svg" width="23" height="23" alt=""></button>`;
+
+export function homeNeed(m, st) {                       // 확인이 필요한 보유 종목
+  const held = m.rows.filter((r) => r.h.q > 0);
+  if (m.showAct) return { held, need: held.filter((r) => r.s.y != null && !r.s.inb), base: held.filter((r) => r.s.y != null).length };
+  if (st.slot === "0730") return { held, need: [], base: null };
+  const need = held.filter((r) => { const g = r.s.grade; return g && ((g.g != null && !(r.s.b80[0] <= g.g && g.g <= r.s.b80[1])) || g.level === "낮음"); });
+  return { held, need, base: held.length };
+}
+
+export function home(m, d, st) {
+  const a = m.account, act = m.showAct && m.actSum != null, hypo = m.pinned, sv = m.stockValue;
+  const out = (a.excluded || []).filter((x) => !(x.q === 0)).length;
+  let h = statusHtml(d, st) + `<div class="home">`;
+  if (!m.rows.length && !out) {
+    h += `<button class="h-acct h-empty" data-act="tab" data-tab="mine"><div class="r1"><span>오늘 시가에 예상되는 내 주식 변화</span></div><b>보유 종목을 넣으면 밤사이 변화를 계산해 드려요</b><span class="c1">종목 넣기 <i class="ch">›</i></span></button>`;
+  } else {
+    const main = act ? m.actSum : hypo ? m.hypoSum : m.Hsum;
+    const label = act ? "개장 시가 기준 내 주식 변화" : hypo ? "내가 가정한 시가 기준 내 주식 변화" : "오늘 시가에 예상되는 내 주식 변화";
+    const { need, base } = homeNeed(m, st);
+    const amt = st.hideAmt ? "••••••원" : won(main);
+    const c1 = base == null ? "" : need.length
+      ? `<span class="c1"><img src="${HI}dot-orange.svg" width="7" height="7" alt="">${act ? "범위 밖 시작" : "확인 필요"} ${need.length}종목 <i class="ch">›</i></span>`
+      : `<span class="c1">${act ? "모두 범위 안에서 시작" : "확인 필요 없음"} <i class="ch">›</i></span>`;
+    const c2 = base == null ? `예상 ${m.rows.filter((r) => r.h.q > 0).length}종목${out ? ` · 대상 아님 ${out}` : ""}` : `범위 안 ${base - need.length}${out ? ` · 대상 아님 ${out}` : ""}`;
+    h += `<div class="h-acct" data-act="tab" data-tab="brief" role="link" tabindex="0">
+      <div class="r1"><span>${label}</span><button class="eye" data-act="hideamt" aria-label="${st.hideAmt ? "금액 보기" : "금액 숨기기"}" aria-pressed="${st.hideAmt ? "true" : "false"}"><img src="${HI}eye.svg" width="18" height="12" alt=""${st.hideAmt ? ' style="opacity:.35"' : ""}></button><em>밤사이 ›</em></div>
+      <div class="amt ${tone(main)}"><b class="num">${amt}</b><small class="num">${pct2(sv ? main / sv : null)}</small></div>
+      <div class="chips">${c1}<span class="c2">${c2}</span></div></div>`;
+  }
+  if (d.market.cautions.length) h += d.market.cautions.map((c) => `<div class="notice">${I.warn}<div><b>${esc(c.title)}</b>${esc(c.body)}</div></div>`).join("");
+
+  const b = d.brief, line = b && b.market && b.market.line_ko, tc = {};
+  ((b && b.market && b.market.items) || []).forEach((it) => (it.topics || []).forEach((t) => (tc[t] = (tc[t] || 0) + (it.media_count || 1))));
+  const topics = Object.entries(tc).sort((x, y) => y[1] - x[1]).slice(0, 3).map((x) => x[0]);
+  const mineN = Object.values(m.briefBy).reduce((x, y) => x + y, 0);
+  h += `<div class="h-sec"><div class="h-row"><h2>뉴스 브리핑</h2><button class="h-more" data-act="tab" data-tab="news">전체 보기</button></div>
+    <button class="h-core" data-act="tab" data-tab="news" data-llm="1"><span class="k">${topics.length >= 2 ? `오늘의 핵심 ${topics.length}가지` : "밤사이 한 줄"}${line ? AI : ""}</span>
+      <span class="hl${line && line.length > 28 ? " long" : ""}">${line ? esc(line) : "미국 장 마감까지 모은 기사로 쓰는 밤사이 요약을 준비하고 있어요."}</span>
+      <span class="kw">${topics.length ? topics.map(esc).join(" · ") : mineN ? `내 종목과 이어진 밤사이 소식 ${mineN}건` : "시장 전체 소식은 전체 보기에서"}</span>
+      <span class="ft">3분 브리핑 읽기<i>›</i></span></button></div>`;
+
+  const us = d.us_market;
+  if (us && us.items.length) h += `<div class="h-sec h-us"><div class="h-row"><h3>미국 시장</h3><span>${esc(us.note)}</span></div>
+    <div class="h-chips">${us.items.map((i) => `<div class="h-chip" title="${i.k === "환율" ? "원/달러 환율, 전날 대비" : esc(i.k) + ", 전날 종가 대비"}"><span>${esc(i.k)}</span><b class="num ${tone(i.r)}">${pct2(i.r)}</b></div>`).join("")}</div></div>`;
+
+  const n = d.night, x = d.market.x;
+  h += `<div class="h-night" data-act="tab" data-tab="night" role="link" tabindex="0"><div class="hn-l"><div class="hn-t"><b>코스피200 야간선물</b><span class="hn-q" data-act="info" data-info="nightfx" role="button" tabindex="0" aria-label="야간선물 설명">?</span></div><small>어젯밤 18:00 ~ 06:00</small></div>
+    ${n ? spark(n, 60, 22) : ""}<div class="hn-r"><b class="num ${tone(x)}">${pct2(x)}</b><small>어제 마감 대비</small></div><span class="h-chev">›</span></div>`;
+
+  if (m.rows.length) {
+    const newsOf = (c) => (m.briefBy[c] || 0) + (m.newsBy[c] || 0);
+    const when = act ? "개장 뒤" : `${st.slot.slice(0, 2)}:${st.slot.slice(2)} 기준 · 장 전`;
+    h += `<div class="h-sec h-map"><div class="h-row"><div class="h-mt"><h3>오늘 아침 내 종목 지도</h3><button class="h-q2" data-act="info" data-info="hmap" aria-label="지도 읽는 법">?</button></div><button class="h-link" data-act="tab" data-tab="brief">밤사이 자세히 ›</button></div>
+      <p class="h-sub">${when} · 오늘 예상 시가</p>${acctMap(m.rows, x, newsOf)}</div>`;
+  }
+  h += `<p class="h-foot">${a.sample ? "예시 계좌예요" : "직접 넣은 잔고예요"} · 투자 권유가 아니에요</p></div>`;
+  return h + foot(d);
+}
+

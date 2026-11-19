@@ -14,7 +14,7 @@ from playwright.sync_api import sync_playwright
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8520"
 meta = json.load(urllib.request.urlopen(BASE + "/api/meta"))
 accts = [a["id"] for a in json.load(urllib.request.urlopen(BASE + "/api/accounts"))] + ["U"]
-VIEWS = [("0730", "brief", ""), ("0811", "brief", ""), ("0900", "brief", ""), ("0811", "news", "brief"), ("0811", "news", "linked"),
+VIEWS = [("0730", "home", ""), ("0811", "home", ""), ("0900", "home", ""), ("0730", "brief", ""), ("0811", "brief", ""), ("0900", "brief", ""), ("0811", "news", "brief"), ("0811", "news", "linked"),
          ("0900", "news", "graph"), ("0811", "news", "macro"), ("0811", "night", ""), ("0811", "mine", ""), ("0811", "record", "")]
 DRAFT = [{"code": "000660", "name": "SK하이닉스", "q": 12, "avg": None, "in_model": True},
          {"code": "105840", "name": "우진", "q": 50, "avg": 9000, "in_model": False}]
@@ -82,10 +82,10 @@ with sync_playwright() as p:
     pg.locator("#stock-res button").first.click()
     if "한미반도체" not in pg.inner_text("#draft"): errs.append("검색한 종목이 안 들어감")
     pg.locator("[data-act=applydraft]").click()
-    pg.wait_for_function("document.querySelector('#tabbar .on').dataset.tab === 'brief' && !document.querySelector('#screen .skel')", timeout=10000)
-    if "한미반도체" not in pg.inner_text("#screen"): errs.append("넣은 종목이 브리핑에 안 나옴")
+    pg.wait_for_function("document.querySelector('#tabbar .on').dataset.tab === 'home' && !document.querySelector('#screen .skel')", timeout=10000)
+    if "한미반도체" not in pg.inner_text("#screen"): errs.append("넣은 종목이 홈에 안 나옴")
     n += 1
-    if errs: bad.append((T, "U", "0811", "mine→brief", "", errs[:3]))
+    if errs: bad.append((T, "U", "0811", "mine→home", "", errs[:3]))
     b.close()
 print(f"{n - len(bad)} ok / {len(bad)} 오류")
 for x in bad[:25]:
