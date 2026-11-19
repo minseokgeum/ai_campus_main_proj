@@ -10,10 +10,11 @@ const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A",
   liveMode: true, pending: null,        // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
   preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1",
   hideAmt: lsGet("ob.hide") === "1", ord: lsGet("ob.ord") || "need" };   // 11/20: 금액 가리기, 보유 종목 순서(먼저 볼 순|보유 금액 순)
-MASK.on = S.hideAmt;   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
+MASK.on = S.hideAmt; S.view = "module";   // view: host = 증권사 앱 홈(예시), module = 이 기능. preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 const TABS = [["brief", "브리핑", "아침 브리핑"], ["news", "뉴스", "뉴스 브리핑"], ["night", "밤사이", "밤사이 흐름"], ["mine", "내 종목", "내 종목"], ["record", "기록", "지난 기록"]];
+const HOSTNAV = [["home", "홈"], ["watch", "관심"], ["quote", "시세"], ["order", "주문"], ["acct", "계좌"]];   // 11/20: 증권사 앱(예시) 하단 메뉴
 const key = (code) => `${S.T}|${S.acct}|${code}`;
 let DOM = [-0.02, 0.02];
 
@@ -75,9 +76,14 @@ function renderShell() {
   $("#clock").textContent = S.liveMode ? kst().hhmm : S.slot.slice(0, 2) + ":" + S.slot.slice(2);
   const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전";
   const sub = S.liveMode && S.pending ? `${S.pending.preview ? "미리 보기" : "실시간"} · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
-  $("#appbar").innerHTML = `<h1>${t[2]}<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
+  const host = S.view === "host", acctBtn = `<button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
+  $("#appbar").innerHTML = host   // 11/20: 증권사 앱 안 — 증권사 홈(예시) 머리 | 이 기능을 연 화면(뒤로 가기 + 기능 이름)
+    ? `<div class="host-brand">${I.hostLogo}<b>예시증권</b><small>증권사 앱 예시</small></div>${acctBtn}`
+    : `<button class="back" data-act="hosthome" aria-label="증권사 홈으로">${I.back}</button><h1>당신이 잠든 사이에<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button>${acctBtn}`;
+  $("#tabbar").hidden = host;
+  $("#hostnav").innerHTML = HOSTNAV.map(([id, nm]) => `<button class="${id === "home" ? "on" : ""}" data-act="hostnav" data-v="${id}">${I.host[id]}${nm}</button>`).join("");
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0);
-  $("#tabbar").innerHTML = TABS.map(([id, nm]) => `<button class="${S.tab === id ? "on" : ""}" data-act="tab" data-tab="${id}">${I.tabs[id]}${nm}${id === "news" && mine ? `<span class="dot">${mine}</span>` : ""}</button>`).join("");
+  $("#tabbar").innerHTML = TABS.map(([id, nm]) => `<button class="${S.tab === id ? "on" : ""}" data-act="tab" data-tab="${id}">${nm}${id === "news" && mine ? `<span class="dot">${mine}</span>` : ""}</button>`).join("");
   document.querySelectorAll("#ctl-slot button").forEach((b) => { b.classList.toggle("on", b.dataset.slot === S.slot); b.classList.toggle("auto", S.liveMode); });
   $("#ctl-day").value = S.preview ? "night" : S.liveMode ? "live" : S.T; $("#ctl-acct").value = S.acct;
   $("#src").textContent = S.meta.mode === "live" ? "실제 자료(매일 갱신)를 바로 읽는 중" : "배포용 스냅샷을 읽는 중";
@@ -94,13 +100,13 @@ function renderShell() {
 function renderScreen(keep = false) {
   const scr = $("#screen"), top = scr.scrollTop, m = model(), d = S.day;
   DOM = m.dom;                                // 끄는 동안에는 눈금을 바꾸지 않는다(손가락 밑에서 띠가 움직이지 않게)
-  let out = S.liveMode && S.pending && S.tab === "brief" ? V.pendingBrief(m, d, S) : V[S.tab](m, d, S);
+  let out = S.view === "host" ? V.hostHome(m, d, S) : S.liveMode && S.pending && S.tab === "brief" ? V.pendingBrief(m, d, S) : V[S.tab](m, d, S);
   scr.innerHTML = typeof out === "string" ? out : out.html;
   if (typeof out !== "string" && out.bind) out.bind(scr, (id) => openNews(id));
   scr.scrollTop = keep ? top : 0;
   if (!keep) scr.firstElementChild && scr.firstElementChild.classList.add("fade-in");
-  if (S.tab === "brief") bindBands(scr, () => DOM, onBand);
-  if (S.tab === "mine") bindEditor(scr);
+  if (S.view !== "host" && S.tab === "brief") bindBands(scr, () => DOM, onBand);
+  if (S.view !== "host" && S.tab === "mine") bindEditor(scr);
   $("#appbar").classList.toggle("scrolled", scr.scrollTop > 4);
 }
 const render = (keep) => { renderShell(); renderScreen(keep); saveHash(); };
@@ -213,6 +219,9 @@ async function act(el) {
   else if (a === "setbed") { S.bed = el.dataset.v; lsSet("ob.bed", S.bed); openSheet(V.notifSheet(S, S.day)); renderScreen(true); toast(`잠드는 시각 ${S.bed}로 저장했어요(시연)`); }
   else if (a === "setbig") { S.big = el.dataset.v === "1"; lsSet("ob.big", S.big ? "1" : "0"); applyBig(); openSheet(V.notifSheet(S, S.day)); }
   else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
+  else if (a === "hosthome") { S.view = "host"; render(); }
+  else if (a === "openmodule") { S.view = "module"; S.tab = "brief"; render(); }
+  else if (a === "hostnav") { if (el.dataset.v === "home") { S.view = "host"; render(); } else toast("시연에서는 증권사 화면을 따로 만들지 않았어요"); }
   else if (a === "hideamt") { S.hideAmt = !S.hideAmt; MASK.on = S.hideAmt; lsSet("ob.hide", S.hideAmt ? "1" : "0"); render(true); toast(S.hideAmt ? "금액을 가렸어요" : "금액을 다시 보여 드려요"); }
   else if (a === "ord") { S.ord = el.dataset.v; lsSet("ob.ord", S.ord); renderScreen(true); }
   else if (a === "jump") { jumpTo(el.dataset.code); }

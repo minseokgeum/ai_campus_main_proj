@@ -101,6 +101,11 @@ with sync_playwright() as p:
     pg.locator("details.bulk > summary").click(); pg.fill("#bulk-in", "삼성전자 1 70,000")
     pg.locator("[data-act=bulk]").click(); pg.wait_for_timeout(1500)
     if "삼성전자" not in pg.inner_text("#draft"): errs.append("붙여넣은 종목이 안 들어감")
+    # 11/20 증권사 앱 안(예시): ‹ → 증권사 홈 → 카드 → 다시 이 기능
+    pg.locator("#appbar .back").click(); pg.wait_for_timeout(700)
+    if "예시증권" not in pg.inner_text("#appbar") or not pg.locator("#screen .hh-card").count(): errs.append("증권사 홈(예시)이 안 열림")
+    pg.locator("#screen .hh-card").click(); pg.wait_for_timeout(900)
+    if pg.evaluate("document.querySelector('#tabbar .on').dataset.tab") != "brief" or pg.locator("#tabbar").is_hidden(): errs.append("증권사 홈에서 이 기능으로 안 돌아옴")
     n += 1
     if errs: bad.append((T, "A/U", "0811", "11/20 고도화", "", errs[:3]))
     b.close()

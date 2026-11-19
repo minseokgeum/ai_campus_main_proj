@@ -2,12 +2,12 @@
 :root {
   --dv-n3: #9DBDF2; --dv-n2: #C2D6F7; --dv-n1: #E1EBFB; --dv-0: #EEF1F2; --dv-p1: #FCE3E5; --dv-p2: #F8C3C7; --dv-p3: #F39AA1;
   --bg: #FFFFFF; --card: #FFFFFF; --ink: #192D31; --ink2: #34494D; --sub: #66777A; --mute: #93A3A5; --line: #E4EBEB; --line2: #EEF3F3;
-  --up: #EE5964; --down: #4F82DA; --flat: #66777A;
+  --up: #E8313E; --down: #2B6BE4; --flat: #66777A;
   --band: #FFE191; --band-edge: #E5B83B; --band-soft: #FFF5D6; --band-ink: #7A5B00;
   --ok: #1A9E6B; --ok-soft: #E3F5EC; --miss: #EE5964; --warn: #9A5B00; --warn-soft: #FDF1E3;
   --navy: #192D31; --accent: #008C82; --accent-soft: #EAF7F4; --chip: #F1F4F4; --teal: #008C82; --pale: #EAF7F4;
   --shadow: 0 1px 2px rgba(25, 45, 49, .05), 0 10px 28px rgba(25, 45, 49, .08);
-  --font: "Noto Sans KR", "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
 [data-theme="dark"] {
   --dv-n3: #2F5FA8; --dv-n2: #244A80; --dv-n1: #1C3555; --dv-0: #1F3033; --dv-p1: #55262B; --dv-p2: #7A2F37; --dv-p3: #A53A45;
@@ -76,12 +76,12 @@ button { border: 0; background: none; padding: 0; cursor: pointer; }
 .appbar .acct svg { opacity: .6; }
 .screen { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; overscroll-behavior: contain; outline: none; scroll-behavior: smooth; }
 .screen::-webkit-scrollbar { display: none; }
-.tabbar { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--card); border-top: 1px solid var(--line); padding: 6px 6px 24px; position: relative; z-index: 3; }
-.tabbar::after { content: ""; position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: var(--ink); opacity: .9; }
-.tabbar button { display: grid; justify-items: center; gap: 3px; padding: 5px 0 3px; font-size: 10.5px; font-weight: 600; color: var(--mute); position: relative; }
-.tabbar button svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.tabbar button.on { color: var(--ink); } .tabbar button.on svg { stroke-width: 2.1; }
-.tabbar .dot { position: absolute; top: 3px; left: 50%; margin-left: 9px; min-width: 15px; height: 15px; border-radius: 8px; background: var(--up); color: #fff; font-size: 9.5px; font-weight: 700; display: grid; place-items: center; padding: 0 4px; }
+.hostnav { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--card); border-top: 1px solid var(--line); padding: 6px 6px 24px; position: relative; z-index: 3; }
+.hostnav::after { content: ""; position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: var(--ink); opacity: .9; }
+.hostnav button { display: grid; justify-items: center; gap: 3px; padding: 5px 0 3px; font-size: 10.5px; font-weight: 600; color: var(--mute); position: relative; }
+.hostnav button svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hostnav button.on { color: var(--ink); } .hostnav button.on svg { stroke-width: 2.1; }
+.hostnav .dot { position: absolute; top: 3px; left: 50%; margin-left: 9px; min-width: 15px; height: 15px; border-radius: 8px; background: var(--up); color: #fff; font-size: 9.5px; font-weight: 700; display: grid; place-items: center; padding: 0 4px; }
 
 /* ───── 공통 부품 ───── */
 .sec { background: var(--card); padding: 20px 20px 18px; margin-bottom: 8px; position: relative; }
@@ -261,7 +261,7 @@ body.llm-on [data-llm]::before { content: attr(data-llm); position: absolute; le
 @media (max-width: 800px) { .stage { grid-template-columns: 1fr; padding: 14px 10px 30px; gap: 14px; } .panel { position: static; } .panel-left { order: 2; } .device-wrap { order: 1; } .panel-right { order: 3; } }
 @media (max-width: 520px) {
   .stage { padding: 0; gap: 0; background: var(--bg); } .device { width: 100vw; height: 100dvh; border-radius: 0; box-shadow: none; margin: 0; }
-  .statusbar { display: none; } .appbar { padding-top: max(10px, env(safe-area-inset-top)); } .tabbar { padding-bottom: max(10px, env(safe-area-inset-bottom)); } .tabbar::after { display: none; }
+  .statusbar { display: none; } .appbar { padding-top: max(10px, env(safe-area-inset-top)); } .hostnav { padding-bottom: max(10px, env(safe-area-inset-bottom)); } .hostnav::after { display: none; }
   .panel { border-radius: 0; border-width: 1px 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -467,3 +467,33 @@ details.bulk { margin: 4px 0 12px; padding: 10px 12px; border: 1px dashed var(--
 details.bulk > summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--teal); }
 details.bulk textarea { width: 100%; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
 details.bulk .btn-line { width: 100%; }
+
+/* ───── 11/20 증권사 앱 안(예시): 위 = 뒤로 가기 + 기능 이름 + 기능 탭, 아래 = 증권사 메뉴 ───── */
+.appbar h1 { font-size: 17px; }
+.appbar .back { flex: none; }
+.tabbar { flex: none; display: flex; gap: 2px; padding: 0 10px; background: var(--card); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; position: relative; z-index: 3; }
+.tabbar::-webkit-scrollbar { display: none; }
+.tabbar button { flex: none; position: relative; height: 42px; padding: 0 10px; font-size: 15px; font-weight: 600; color: var(--mute); letter-spacing: -.02em; }
+.tabbar button.on { color: var(--ink); font-weight: 700; }
+.tabbar button.on::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 1px; background: var(--ink); }
+.tabbar .dot { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 3px; padding: 0 4px; border-radius: 8px; font-size: 10px; font-weight: 700; vertical-align: 1px; color: #fff; background: var(--down); }
+.appbar .host-brand { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; height: 40px; }
+.appbar .host-brand b { font-size: 19px; font-weight: 800; letter-spacing: -.045em; }
+.appbar .host-brand small { font-size: 10.5px; font-weight: 600; color: var(--sub); padding: 2px 6px; border-radius: 6px; background: var(--chip); }
+.host-home { min-height: 100%; padding: 12px 16px 28px; display: grid; gap: 12px; align-content: start; background: var(--line2); }
+.hh-acct, .hh-list { background: var(--card); border-radius: 18px; padding: 18px; }
+.hh-acct > span { font-size: 13px; color: var(--sub); font-weight: 500; }
+.hh-acct > b { display: block; margin-top: 4px; font-size: 26px; font-weight: 750; letter-spacing: -.04em; }
+.hh-sub { display: flex; gap: 14px; margin-top: 10px; font-size: 12.5px; color: var(--sub); } .hh-sub b { color: var(--ink2); font-weight: 650; margin-left: 2px; }
+.hh-acct > small { display: block; margin-top: 6px; font-size: 11.5px; color: var(--mute); }
+.hh-card { width: 100%; display: grid; grid-template-columns: 40px 1fr 14px; gap: 12px; align-items: center; text-align: left; padding: 16px; border-radius: 18px; background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgba(0, 140, 130, .14); }
+.hh-card > svg:last-child { color: var(--sub); }
+.hh-card .hh-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--card); padding: 2px 7px; border-radius: 6px; }
+.hh-card b { display: block; margin-top: 6px; font-size: 16px; font-weight: 750; letter-spacing: -.035em; }
+.hh-card p { margin: 3px 0 0; font-size: 13.5px; color: var(--ink2); line-height: 1.45; } .hh-card em { font-style: normal; font-weight: 750; margin-left: 2px; }
+.hh-card .hh-need { display: block; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--warn); }
+.hh-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; } .hh-h b { font-size: 16px; font-weight: 750; letter-spacing: -.03em; } .hh-h span { font-size: 12px; color: var(--mute); }
+.hh-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line2); } .hh-row:first-of-type { border-top: 0; }
+.hh-row .nm { flex: 1; min-width: 0; } .hh-row .nm b { display: block; font-size: 15px; font-weight: 650; letter-spacing: -.03em; } .hh-row .nm small { font-size: 12px; color: var(--sub); }
+.hh-row > b { font-size: 15px; font-weight: 650; }
+.hh-note { margin: 0; padding: 0 4px; font-size: 11.5px; line-height: 1.55; color: var(--mute); }

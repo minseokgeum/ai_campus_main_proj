@@ -11,9 +11,8 @@
 <meta property="og:image" content="og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2715%27 fill=%27%23008C82%27/%3E%3Cpath d=%27M20.5 7.5a9.5 9.5 0 1 0 4 15.8 8 8 0 1 1-4-15.8z%27 fill=%27%23FFD95A%27/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -52,8 +51,9 @@
         </span>
       </div>
       <header class="appbar" id="appbar"></header>
+      <nav class="tabbar" id="tabbar" aria-label="당신이 잠든 사이에 메뉴"></nav>
       <div class="screen" id="screen" tabindex="-1"></div>
-      <nav class="tabbar" id="tabbar"></nav>
+      <nav class="hostnav" id="hostnav" aria-label="증권사 앱 메뉴(예시)"></nav>
       <div class="sheet-backdrop" id="backdrop" hidden></div>
       <section class="sheet" id="sheet" hidden aria-modal="true" role="dialog"></section>
       <div class="toast" id="toast" hidden></div>
@@ -66,6 +66,7 @@
       <li><b>숫자는 계산으로.</b> 예상 가격대(노란 막대)와 금액은 밤사이 야간선물과 지난 기록으로 계산해요. AI가 숫자를 만들지 않아요.</li>
       <li><b>뉴스는 사업 관계로.</b> 공시와 기사에서 뽑은 관계(누가 누구에게 납품하는지 등)로, 내 종목과 이어진 미국 기사만 골라요.</li>
       <li><b>문장만 AI가.</b> 고른 기사를 한두 문장으로 풀어 쓰는 일만 AI가 해요. 다른 AI가 연결을 한 번 더 확인하고, 숫자와 말투는 코드가 다시 검사해요.</li>
+      <li><b>증권사 앱 안에서.</b> 증권사 앱이 이 화면을 열고 잔고(종목·수량)를 넘겨준다는 가정이에요. 휴대폰 위 ‹ 를 누르면 증권사 홈(예시)이 나와요.</li>
       <li><b>아침에는 AI를 다시 부르지 않아요.</b> 밤사이 한 번 만들어 둔 것을 읽기만 해서 빠르고, 쓰는 사람이 늘어도 비용이 늘지 않아요.</li>
     </ol>
     <details class="more-d"><summary>AI가 쓰는 자리 6곳</summary><p class="panel-note">왼쪽 ‘LLM 출력 자리 표시’를 켜면 화면에 번호가 떠요.</p><div id="llm-list"></div></details>
