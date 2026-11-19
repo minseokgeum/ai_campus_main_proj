@@ -2,14 +2,16 @@
 
 git에는 코드·문서·기준 자료만 올리고, 코드가 만든 데이터는 이 묶음으로 공유한다(루트 README "데이터 받기").
 묶음(zip) 안의 파일은 저장소 기준 경로 그대로 들어 있고, 파일 목록(MANIFEST.csv: 경로, 크기, SHA-256)과 안내(README.txt)가 함께 있다.
+드라이브에는 묶음마다 최신 파일 하나만 둔다(이름 끝의 날짜로 언제 만든 것인지 안다). 그래서 pack은 같은 묶음의 옛 날짜 zip을 저장 위치에서 지우고,
+place는 이미 있는 파일도 내용이 다르면 묶음의 것으로 바꾼다.
 
 사용
     python scripts/data_bundle.py list                       # 묶음 종류와 지금 로컬에 있는 용량
-    python scripts/data_bundle.py pack                       # 모든 묶음 만들기(기본 저장 위치: ~/Downloads/ai_campus_main_proj_data)
+    python scripts/data_bundle.py pack                       # 모든 묶음 만들기(기본 저장 위치: ~/Downloads/ai_campus_main_proj_data, 같은 묶음의 옛 zip은 지움)
     python scripts/data_bundle.py pack --only graph_data     # 일부만
     python scripts/data_bundle.py place                      # ~/Downloads(와 그 아래 ai_campus_main_proj_data)에 둔 묶음을 찾아 묶음마다 최신 것을 제자리에 풀기
-    python scripts/data_bundle.py place 받은.zip [더.zip ...] # 받은 묶음을 제자리에 풀기(이미 있는 파일은 건너뜀)
-    python scripts/data_bundle.py place 받은.zip --overwrite # 내용이 다른 파일도 덮어쓰기
+    python scripts/data_bundle.py place 받은.zip [더.zip ...] # 받은 묶음을 제자리에 풀기
+    (place는 이미 있는 파일이 내용이 다르면 묶음의 것으로 바꾸고, 같으면 건너뛴다)
 
 외부 요청은 없다. 표준 라이브러리만 쓴다.
 """
@@ -37,7 +39,7 @@ BUNDLES = {
         desc='DART 원문 다운로드(graph_db/source/dart/raw). DART 파싱(dart_parser, dart_business_parser)부터 다시 돌릴 때만 필요',
         include=['graph_db/source/dart/raw'], exclude=[]),
     'news_search_data': dict(
-        desc='밤사이 뉴스 수집·처리(news_search/source): 보고 날짜별 수집 기사·응답 원본·1·2차 처리 결과(프롬프트 입력), '
+        desc='밤사이 뉴스 수집·처리(news_search/source): 보고 날짜별 수집 기사·응답 원본·수집 마감 뒤 처리 결과(summary_<표시 시각>, 프롬프트 입력. 11-16까지는 1·2차 처리 결과), '
              '임시 검색어 표(terms), 캐시(임베딩·원문 페이지·이야기). 수집·처리를 이어서 돌리거나 지난 결과를 볼 때',
         include=['news_search/source'], exclude=[]),
     'news_tests': dict(
@@ -54,6 +56,7 @@ BUNDLES = {
 FIND_DIRS = ['~/Downloads', '~/Downloads/ai_campus_main_proj_data']   # place에 zip을 주지 않으면 여기서 찾는다
 SKIP_NAMES = {'.DS_Store', '.gitignore', 'collector.lock', 'Thumbs.db'}   # .gitignore는 git이 관리한다
 SKIP_DIRS = {'__pycache__', '.ipynb_checkpoints'}
+SKIP_DIR_PREFIX = 'backup_'                                       # 작업 전에 로컬에 만든 백업 폴더(예: backup_20261117_before_unify)는 공유하지 않는다
 STORED = {'.gz', '.zip', '.parquet', '.png', '.jpg', '.xlsx'}           # 이미 압축된 형식은 다시 압축하지 않는다(시간 절약)
 
 
@@ -78,7 +81,7 @@ def bundle_files(name):
         if not base.exists():
             continue
         for p in base.rglob('*'):
-            if not p.is_file() or p.name in SKIP_NAMES or SKIP_DIRS & set(p.parts):
+            if not p.is_file() or p.name in SKIP_NAMES or SKIP_DIRS & set(p.parts) or any(x.startswith(SKIP_DIR_PREFIX) for x in p.parts):
                 continue
             rel = p.relative_to(ROOT).as_posix()
             if any(rel == e or rel.startswith(e + '/') for e in b['exclude']):
@@ -115,10 +118,7 @@ def cmd_pack(args):
             continue
         if dups:
             print(f'{name}: iCloud 사본으로 보이는 파일 {len(dups)}개는 뺀다: {dups[:3]}')
-        zpath = out / f'{name}_{day}.zip'
-        if zpath.exists() and not args.overwrite:
-            print(f'{name}: {zpath}가 이미 있어 건너뜀(--overwrite로 다시 만든다)')
-            continue
+        zpath = out / f'{name}_{day}.zip'                # 같은 날 다시 만들면 덮어쓴다
         rows, total = [], 0
         tmp = zpath.with_suffix('.zip.part')
         with zipfile.ZipFile(tmp, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
@@ -141,9 +141,14 @@ def cmd_pack(args):
                 f'묶음: {name} ({day})\n내용: {BUNDLES[name]["desc"]}\n파일 {len(rows):,}개, 원래 크기 {human(total)}\n\n'
                 f'압축을 풀지 말고, 저장소 루트에서 아래를 실행하면 제자리(저장소 기준 경로)에 풀린다.\n'
                 f'    python scripts/data_bundle.py place <이 파일 경로>\n'
-                f'이미 있는 파일은 건너뛰고, 내용이 다른 파일은 알려 준다(--overwrite를 주면 덮어쓴다).\n'))
+                f'이미 있는 파일은 내용이 다르면 이 묶음의 것으로 바꾸고, 같으면 건너뛴다.\n'))
         tmp.replace(zpath)
         print(f'{name}: {zpath} 파일 {len(rows):,}개, 원래 {human(total)} → 압축 {human(zpath.stat().st_size)}')
+        old = [z for z in out.glob(f'{name}_*.zip') if z != zpath and z.stem.rpartition('_')[0] == name]
+        for z in old:                                   # 드라이브와 같게 묶음마다 최신 하나만 둔다
+            z.unlink()
+        if old:
+            print(f'  옛 묶음 지움: {", ".join(z.name for z in old)} (드라이브에서도 지우고 새 파일을 올린다)')
 
 
 def safe_target(root, rel):
@@ -183,18 +188,13 @@ def cmd_place(args):
                 print(f'{zp.name}: MANIFEST.csv가 없어 이 스크립트로 만든 묶음이 아니다. 건너뜀')
                 continue
             manifest = list(csv.DictReader(io.StringIO(zf.read('MANIFEST.csv').decode('utf-8'))))
-            new = same = conflict = bad = 0
-            conflicts = []
+            new = replaced = same = bad = 0
             for i, m in enumerate(manifest, 1):
                 target = safe_target(root, m['path'])
-                if target.exists():
-                    if target.stat().st_size == int(m['size']) and sha256(target) == m['sha256']:
-                        same += 1
-                        continue
-                    if not args.overwrite:
-                        conflict += 1
-                        conflicts.append(m['path'])
-                        continue
+                existed = target.exists()
+                if existed and target.stat().st_size == int(m['size']) and sha256(target) == m['sha256']:
+                    same += 1
+                    continue
                 target.parent.mkdir(parents=True, exist_ok=True)
                 tmp = target.with_name(target.name + '.part')
                 with zf.open(m['path']) as src, open(tmp, 'wb') as dst:
@@ -204,13 +204,14 @@ def cmd_place(args):
                     bad += 1
                     print(f'  확인 실패(내용이 목록과 다름): {m["path"]}')
                     continue
-                tmp.replace(target)
-                new += 1
+                tmp.replace(target)                     # 이미 있던 파일은 묶음의 것으로 바뀐다
+                if existed:
+                    replaced += 1
+                else:
+                    new += 1
                 if i % 2000 == 0:
                     print(f'  {zp.name}: {i:,}/{len(manifest):,}')
-            print(f'{zp.name} → {root}: 새로 놓음 {new:,} / 이미 같음 {same:,} / 내용이 달라 건너뜀 {conflict:,} / 확인 실패 {bad:,} (전체 {len(manifest):,})')
-            if conflicts:
-                print(f'  내용이 다른 파일(덮어쓰려면 --overwrite): {conflicts[:10]}' + (' …' if len(conflicts) > 10 else ''))
+            print(f'{zp.name} → {root}: 새로 놓음 {new:,} / 바꿈 {replaced:,} / 이미 같음 {same:,} / 확인 실패 {bad:,} (전체 {len(manifest):,})')
 
 
 def main():
@@ -220,10 +221,8 @@ def main():
     p = sub.add_parser('pack', help='묶음 만들기')
     p.add_argument('--out', default='~/Downloads/ai_campus_main_proj_data', help='저장 위치')
     p.add_argument('--only', default='', help='쉼표로 묶음 이름(예: graph_data)')
-    p.add_argument('--overwrite', action='store_true', help='같은 날짜 묶음이 있어도 다시 만든다')
     p = sub.add_parser('place', help='받은 묶음을 제자리에 풀기')
     p.add_argument('zips', nargs='*', help='풀 zip(주지 않으면 ~/Downloads와 ~/Downloads/ai_campus_main_proj_data에서 묶음마다 최신 것을 찾는다)')
-    p.add_argument('--overwrite', action='store_true', help='내용이 다른 파일도 덮어쓴다')
     p.add_argument('--root', default='', help='풀 위치(기본: 이 저장소 루트). 시험용')
     args = ap.parse_args()
     {'list': cmd_list, 'pack': cmd_pack, 'place': cmd_place}[args.cmd](args)

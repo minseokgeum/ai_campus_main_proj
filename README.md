@@ -27,7 +27,7 @@
 
 ## 데이터 받기 (팀 구글 드라이브)
 
-DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문제와 용량 때문에 git에 올리지 않고 **팀 구글 드라이브**에 날짜를 붙인 묶음(zip)으로 둔다. 드라이브는 팀원 계정만 열 수 있다(공유: 제한됨).
+DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문제와 용량 때문에 git에 올리지 않고 **팀 구글 드라이브**에 날짜를 붙인 묶음(zip)으로 둔다. 드라이브에는 **묶음마다 최신 파일 하나만** 둔다(이름 끝의 날짜로 언제 만든 것인지 안다). 드라이브는 팀원 계정만 열 수 있다(공유: 제한됨).
 
 - 주소: [ai_campus_main_proj_data](https://drive.google.com/drive/folders/1oj6OMBNftt-muaeQL5bmanKTefMR3Ge6?usp=sharing)
 - **받는 법**(명령 하나): 드라이브에서 필요한 묶음(zip)을 내려받아 **압축을 풀지 말고** `~/Downloads`(또는 `~/Downloads/ai_campus_main_proj_data`)에 둔 뒤, 저장소 루트에서 실행한다.
@@ -35,17 +35,17 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
   ```
   python scripts/data_bundle.py place
   ```
-  두 폴더에서 묶음 이름(`<묶음>_<날짜>.zip`)인 파일을 찾아 **묶음마다 가장 최근 날짜 것만** 저장소 기준 경로 그대로 제자리에 푼다. 파일 목록(크기·SHA-256)으로 빠짐없이 들어갔는지 확인하고, 이미 같은 파일은 건너뛰고, 내용이 다른 파일은 알려 준다(`--overwrite`를 주면 덮어쓴다). 다른 곳에 둔 zip은 경로를 직접 준다: `python scripts/data_bundle.py place 경로/graph_data_20261116.zip`.
-- **올리는 법**: `python scripts/data_bundle.py pack`(기본 저장 위치 `~/Downloads/ai_campus_main_proj_data/`, 일부만은 `--only graph_data,news_search_data`)으로 만든 묶음을 드라이브 폴더(하위 폴더 없이 한 곳)에 올리고 아래 표의 날짜·크기를 고친다. 옛 묶음은 지우지 않는다. 묶음 종류와 지금 로컬 용량은 `python scripts/data_bundle.py list`.
+  두 폴더에서 묶음 이름(`<묶음>_<날짜>.zip`)인 파일을 찾아 **묶음마다 가장 최근 날짜 것만** 저장소 기준 경로 그대로 제자리에 푼다. **이미 있는 파일은 내용이 다르면 묶음의 것으로 바꾸고**, 같으면 건너뛴다. 파일 목록(크기·SHA-256)으로 빠짐없이 들어갔는지 확인한다. 다른 곳에 둔 zip은 경로를 직접 준다: `python scripts/data_bundle.py place 경로/graph_data_20261116.zip`.
+- **올리는 법**: `python scripts/data_bundle.py pack`(기본 저장 위치 `~/Downloads/ai_campus_main_proj_data/`, 일부만은 `--only graph_data,news_search_data`)으로 만든 묶음을 드라이브 폴더(하위 폴더 없이 한 곳)에 올리고, **드라이브에 있던 같은 묶음의 옛 날짜 파일은 지운다**. 아래 표의 날짜·크기도 고친다. `pack`은 같은 날 다시 만들면 덮어쓰고, 저장 위치에 있던 같은 묶음의 옛 날짜 zip은 지운다(저장 위치가 늘 드라이브에 올릴 최신 묶음과 같게). 작업 전에 로컬에 만든 백업 폴더(이름이 `backup_`으로 시작)는 묶음에 넣지 않는다. 묶음 종류와 지금 로컬 용량은 `python scripts/data_bundle.py list`.
 
 | 묶음 | 최신 날짜 | 크기(압축) | 담긴 것 | 언제 필요한가 |
 |---|---|---|---|---|
-| `graph_data` | 2026-11-16 | 154MB | `graph_db/source`에서 DART 원문만 뺀 것(파일 5,610개, 546MB): DART 파싱 표·사업의 내용, 뉴스(거르기·LLM 응답·최종본·DB 스냅샷), 이름 통일·제품 사전·LLM 제품 사전·검색어 결과, Neo4j 표, 대상 기업 | 대부분. 앞 단계를 다시 돌리지 않고 원하는 단계부터 이어서 돌릴 때 |
-| `dart_raw` | 2026-11-15 | 510MB | DART 원문 다운로드(`graph_db/source/dart/raw`, 파일 18,178개) | DART 파싱부터 다시 돌릴 때만(없으면 `dart_collector`로 다시 받는다) |
-| `news_search_data` | 2026-11-16 | 80MB | 밤사이 뉴스(`news_search/source`, 파일 6,086개): 보고 날짜별 수집 기사·응답 원본·처리 결과(`prompt_inputs.jsonl`), 임시 검색어 표(`terms/`), 임베딩·원문 페이지 캐시, 지난 묶음 기록(이전 소식 확인용) | 수집·처리를 이어서 돌리거나 지난밤 결과·프롬프트 입력을 볼 때 |
-| `news_tests` | 2026-11-16 | 286MB | 뉴스 매체 시험(`news_source_tests`)과 구글 뉴스 검색 방식 시험(`news_search_tests/source`)의 결과와 캐시(파일 4,456개) | 시험 노트북을 요청 없이 다시 볼 때만. **11-15 묶음은 옛 폴더 구조(`news_search/source`)라 쓰지 않는다** |
-| `backtest_data` | 2026-11-16 | 69MB | 백테스트 캐시와 결과(`backtest/data`: KRX API 캐시·분봉 캐시·야후 분봉, `backtest/outputs`, 파일 1,210개) | 백테스트 노트북을 API 요청 없이 다시 돌릴 때 |
-| `creon_1min` | 2026-11-16 | 6.5GB | 크레온 KRX 1분봉(`stockdata_collection/creon_1min`: 전체 종목 스냅샷·반도체 15종목·조회 범위 점검, 파일 6,328개) | 분봉 백테스트. 크레온으로 다시 받으려면 하루 넘게 걸린다 |
+| `graph_data` | 2026-11-17 | 154MB | `graph_db/source`에서 DART 원문과 로컬 백업 폴더(`backup_`로 시작)를 뺀 것(파일 5,630개, 552MB, 대상 951개 기준): DART 파싱 표·사업의 내용, 뉴스(거르기·LLM 응답·최종본·DB 스냅샷), 이름 통일·제품 사전·LLM 제품 사전·검색어 결과, Neo4j 표, 대상 기업 | 대부분. 앞 단계를 다시 돌리지 않고 원하는 단계부터 이어서 돌릴 때 |
+| `dart_raw` | 2026-11-17 | 510MB | DART 원문 다운로드(`graph_db/source/dart/raw`, 파일 18,178개) | DART 파싱부터 다시 돌릴 때만(없으면 `dart_collector`로 다시 받는다) |
+| `news_search_data` | 2026-11-17 | 131MB | 밤사이 뉴스(`news_search/source`, 파일 11,371개): 보고 날짜별 수집 기사·응답 원본·처리 결과(`prompt_inputs.jsonl`), 임시 검색어 표(`terms/`), 임베딩·원문 페이지 캐시, 지난 묶음 기록(이전 소식 확인용) | 수집·처리를 이어서 돌리거나 지난밤 결과·프롬프트 입력을 볼 때 |
+| `news_tests` | 2026-11-17 | 286MB | 뉴스 매체 시험(`news_source_tests`)과 구글 뉴스 검색 방식 시험(`news_search_tests/source`)의 결과와 캐시(파일 4,456개) | 시험 노트북을 요청 없이 다시 볼 때만 |
+| `backtest_data` | 2026-11-17 | 69MB | 백테스트 캐시와 결과(`backtest/data`: KRX API 캐시·분봉 캐시·야후 분봉, `backtest/outputs`, 파일 1,210개) | 백테스트 노트북을 API 요청 없이 다시 돌릴 때 |
+| `creon_1min` | 2026-11-17 | 6.5GB | 크레온 KRX 1분봉(`stockdata_collection/creon_1min`: 전체 종목 스냅샷·반도체 15종목·조회 범위 점검, 파일 6,328개) | 분봉 백테스트. 크레온으로 다시 받으려면 하루 넘게 걸린다 |
 
 ## 실행 순서 (graph_db)
 
@@ -70,7 +70,7 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
 | 15 | `graph_db` | 그래프 표 만들기와 Neo4j 적재 | Neo4j, `NEO4J_*` | `LOAD` | 없음(로컬) |
 | 16 | `search_terms` | 종목 유형, 검색어 후보, 업종·테마·회사 기본 검색어 | Codex | `RUN` | Codex 구독(요청 4건) |
 | 17 | `../news_search_tests/search_tests` | 구글 뉴스 검색 방식 시험(매체, OR 묶음, 거르기, 검색어 시험. 서비스 실행에는 필요 없음) | | `RUN` | 구글 뉴스 RSS(무료, 한 IP에서 시간당 수백 건이면 막힘) |
-| 18 | `../news_search/news_collect` | 24시간 수집(11절): 수집 마감(표시 시각 `SUMMARY_TIME` 30분 전, 기본 07:30)에 맞춘 일정(밤 16시~마감 1시간, 마감~16시 낮 2시간 간격), 수집 마감 표시 파일 | 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시험 종목 18개·검색어 183개 기준 하루 약 10,400건) |
+| 18 | `../news_search/news_collect` | 24시간 수집(11절): 수집 마감(표시 시각 `SUMMARY_TIME` 30분 전, 기본 07:30)에 맞춘 일정(밤 22시~마감 1시간, 저녁 16~22시 2시간, 낮 마감~16시 4시간 간격), 수집 마감 표시 파일 | 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시험 종목 17개·검색어 169개 기준 하루 약 7,100건) |
 | 19 | `../news_search/news_process` | 수집 마감 뒤 처리(10절 대기하며 돌리기): 취침 시각(`BEDTIME`) 전 기사는 비교용으로 등록, 뒤 기사는 묶기 → 이전 소식 확인 → 종목별 10개 묶음 → 본문 받기 → 프롬프트 입력. 수집과 함께 켜 둔다 | `OPENAI_API_KEY`(임베딩), 알림 키 | `WATCH_RUN`(골라 돌리기는 `PROCESS_RUN`) | OpenAI 임베딩(하룻밤 $0.01~0.03), 원문 주소 복원·원문 페이지(무료) |
 
 - `db_test`는 처리 단계가 아니라 수집 DB를 조회하는 노트북이다.
