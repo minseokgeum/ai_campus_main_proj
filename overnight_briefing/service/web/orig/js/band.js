@@ -27,7 +27,7 @@ export function bandHtml(s, o) {
   const mk = act != null ? act : g;
   const loAt = mk != null && mk < lo && mk > lo - zone ? [mk, -9] : [lo, 0], hiAt = mk != null && mk > hi && mk < hi + zone ? [mk, 9] : [hi, 0];
   const near = (v) => (v == null ? "" : (Math.abs(v - s.H) < 0.25 * width ? " near" : "") + (v > hi && v < hi + zone ? " dim-hi" : "") + (v < lo && v > lo - zone ? " dim-lo" : ""));
-  let h = `<div class="band${o.pin != null ? " pinned" + near(o.pin) : ""}" data-band="${s.code}" data-h="${s.H}" data-lo="${lo}" data-hi="${hi}" style="--g:${G}px" role="img" aria-label="${esc(s.name)} 예상 범위 ${pct(lo)}에서 ${pct(hi)}, 예상 시가 ${pct(s.H)}">`;
+  let h = `<div class="band${o.pin != null ? " pinned" + near(o.pin) : ""}" data-band="${s.code}" data-h="${s.H}" data-lo="${lo}" data-hi="${hi}" style="--g:${G}px" role="img" aria-label="${esc(s.name)} 예상 가격대 ${pct(lo)}에서 ${pct(hi)}, 예상 시작가 ${pct(s.H)}">`;
   h += `<i class="track"></i>${o.wide ? `<i class="f90" style="left:${x(lo9)};width:${w(lo9, hi9)}"></i>` : ""}<i class="f80" style="left:${x(lo)};width:${w(lo, hi)}"></i>`;
   h += `<i class="zero" style="left:${x(0)}"></i>`;
   if (o.avg != null && isFinite(o.avg)) {
@@ -35,7 +35,7 @@ export function bandHtml(s, o) {
   }
   h += `<span class="end lo ${tone(lo)}" style="left:${x(loAt[0], loAt[1])}">${pct(lo)}</span><span class="end hi ${tone(hi)}" style="left:${x(hiAt[0], hiAt[1])}">${pct(hi)}</span>`;
   h += `<i class="dot" style="left:${x(s.H)}"></i><span class="dot-l" style="left:${x(s.H)}">${pct(s.H)}</span>`;
-  if (g != null && act == null) h += `<span class="mk" style="left:${x(g)}"><i></i>장전 ${pct(g)}</span>`;      // 개장 뒤에는 실제 시가 표식만 두고, 장전 거래는 아래 흐름 줄에 적는다
+  if (g != null && act == null) h += `<span class="mk" style="left:${x(g)}"><i></i>개장 전 ${pct(g)}</span>`;      // 개장 뒤에는 실제 시가 표식만 두고, 장전 거래는 아래 흐름 줄에 적는다
   if (act != null) h += `<i class="act${out ? " out" : ""}" style="left:${x(act)}"></i><span class="mk actl${out ? " out" : ""}" style="left:${x(act)}"><i></i>실제 ${pct(act)}</span>`;
   if (o.pin != null) h += `<i class="scrub" style="left:${x(o.pin)}"></i><span class="bubble" style="left:${x(o.pin)}">${pct(o.pin)}에 열리면</span>`;
   return h + "</div>";

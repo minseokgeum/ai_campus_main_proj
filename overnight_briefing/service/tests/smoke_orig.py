@@ -68,8 +68,8 @@ with sync_playwright() as p:
                     if pg.inner_text("#hero .big") != before: errs.append("되돌리기 뒤 합계가 다름")
                 if a == "U" and tab == "brief" and slot == "0811" and not txt.count("SK하이닉스"):
                     errs.append("내 잔고 종목이 브리핑에 안 나옴")
-                if a == "U" and tab == "brief" and slot == "0811" and "노란띠 없음" not in txt:
-                    errs.append("노란띠 없는 종목 표시가 없음")
+                if a == "U" and tab == "brief" and slot == "0811" and "예상 없음" not in txt:
+                    errs.append("예상 없는 종목 표시가 없음")
                 broken = [w for w in ("undefined", "NaN", "null", "Infinity", "[object Object]") if w in txt]
                 if errs or len(txt) < 60 or broken:
                     bad.append((d["T"], a, slot, tab, f, errs[:2] or broken or "빈 화면"))

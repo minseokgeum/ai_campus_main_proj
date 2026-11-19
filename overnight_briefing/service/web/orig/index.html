@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>당신이 잠든 사이에</title>
-<meta name="description" content="한국 주식 보유자를 위한 장 전 브리핑 시연: 밤사이 미국 장·야간선물이 내 종목 오늘 시가와 금액에 주는 변화, 내 종목과 이어진 미국 뉴스">
+<meta name="description" content="한국 주식 보유자를 위한 장 전 브리핑 시연: 밤사이 미국 장·야간선물이 내 종목 오늘 9시 시작가와 금액에 주는 변화, 내 종목과 이어진 미국 뉴스">
 <meta property="og:type" content="website">
 <meta property="og:title" content="당신이 잠든 사이에 · 장 전 브리핑 시연">
-<meta property="og:description" content="밤사이 미국 장과 야간선물이 내 국내 종목 오늘 시가에 주는 변화를 노란띠(예상 범위)와 금액으로, 이어진 미국 뉴스와 함께">
+<meta property="og:description" content="밤사이 미국 장과 야간선물이 내 국내 종목 오늘 9시 시작가에 주는 변화를 예상 가격대와 금액으로, 이어진 미국 뉴스와 함께">
 <meta property="og:image" content="og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2715%27 fill=%27%23008C82%27/%3E%3Cpath d=%27M20.5 7.5a9.5 9.5 0 1 0 4 15.8 8 8 0 1 1-4-15.8z%27 fill=%27%23FFD95A%27/%3E%3C/svg%3E">
@@ -19,7 +19,7 @@
 <body>
 <div class="stage">
   <aside class="panel panel-left" id="controls">
-    <div class="ver" role="group" aria-label="데모 버전"><a href="../" data-ver="s">수연 버전<small>피그마 그대로</small></a><a class="on" href="./" aria-current="page">원래 버전<small>노란띠 끌기 · 수량 조작</small></a></div>
+    <div class="ver" role="group" aria-label="데모 버전"><a href="../" data-ver="s">수연 버전<small>피그마 그대로</small></a><a class="on" href="./" aria-current="page">원래 버전<small>노란 막대 끌기 · 수량 조작</small></a></div>
     <script>document.addEventListener("click",(e)=>{const a=e.target.closest(".ver a[data-ver]");if(!a)return;const p=new URLSearchParams(location.hash.slice(1)),q=new URLSearchParams();["T","slot","acct","dark"].forEach((k)=>{if(p.get(k))q.set(k,p.get(k));});a.href=a.getAttribute("href").split("#")[0]+(String(q)?"#"+q:"");});</script>
     <div class="panel-brand">
       <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#008C82"/><path d="M20.5 7.5a9.5 9.5 0 1 0 4 15.8 8 8 0 1 1-4-15.8z" fill="#FFD95A"/></svg>
@@ -63,7 +63,7 @@
   <aside class="panel panel-right" id="llm-panel">
     <div class="panel-title">이 화면은 이렇게 만들어져요</div>
     <ol class="how">
-      <li><b>숫자는 계산으로.</b> 예상 범위(노란띠)와 금액은 밤사이 야간선물과 지난 기록으로 계산해요. AI가 숫자를 만들지 않아요.</li>
+      <li><b>숫자는 계산으로.</b> 예상 가격대(노란 막대)와 금액은 밤사이 야간선물과 지난 기록으로 계산해요. AI가 숫자를 만들지 않아요.</li>
       <li><b>뉴스는 사업 관계로.</b> 공시와 기사에서 뽑은 관계(누가 누구에게 납품하는지 등)로, 내 종목과 이어진 미국 기사만 골라요.</li>
       <li><b>문장만 AI가.</b> 고른 기사를 한두 문장으로 풀어 쓰는 일만 AI가 해요. 다른 AI가 연결을 한 번 더 확인하고, 숫자와 말투는 코드가 다시 검사해요.</li>
       <li><b>아침에는 AI를 다시 부르지 않아요.</b> 밤사이 한 번 만들어 둔 것을 읽기만 해서 빠르고, 쓰는 사람이 늘어도 비용이 늘지 않아요.</li>

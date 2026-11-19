@@ -83,8 +83,8 @@ function renderShell() {
   $("#src").textContent = S.meta.mode === "live" ? "실제 자료(매일 갱신)를 바로 읽는 중" : "배포용 스냅샷을 읽는 중";
   const r = d.record, s8 = r.sealed["0811"], s7 = r.sealed["0730"];
   $("#record").innerHTML = r.kind === "live"
-    ? ((s7 || s8 || {}).before_open ? `<span class="tag sealed">장 전 고정 기록</span><b>개장 전에 고정해 둔 예상</b>07:30 카드 ${s7 ? s7.issued : "–"} · 08:11 카드 ${s8 ? s8.issued : "–"} 발행${r.open_at ? ` · 시가 ${r.open_at} 수신` : ""}`
-      : `<span class="tag late">개장 뒤 발행</span><b>장 전에 고정한 기록이 아니에요</b>카드가 ${s7 ? s7.issued : "–"}·${s8 ? s8.issued : "–"}에 발행됐어요. 입력은 장 전 자료만 썼어요.${r.open_at ? ` 시가는 ${r.open_at}에 받았어요.` : ""}`)
+    ? ((s7 || s8 || {}).before_open ? `<span class="tag sealed">장 전 고정 기록</span><b>개장 전에 고정해 둔 예상</b>07:30 카드 ${s7 ? s7.issued : "–"} · 08:11 카드 ${s8 ? s8.issued : "–"} 발행${r.open_at ? ` · 시작가 ${r.open_at} 받음` : ""}`
+      : `<span class="tag late">개장 뒤 발행</span><b>장 전에 고정한 기록이 아니에요</b>카드가 ${s7 ? s7.issued : "–"}·${s8 ? s8.issued : "–"}에 발행됐어요. 입력은 장 전 자료만 썼어요.${r.open_at ? ` 시작가는 ${r.open_at}에 받았어요.` : ""}`)
     : r.kind === "forward" && (s7 || s8) ? `<span class="tag late">개장 뒤 발행</span><b>장 전에 고정한 기록이 아니에요</b>카드가 ${s7 ? s7.issued : "–"}·${s8 ? s8.issued : "–"}에 발행됐어요.${r.same_as_sealed ? " 장 마감 뒤 같은 규칙으로 다시 계산해도 숫자가 같았어요." : ""}`
     : r.kind === "forward" ? `<span class="tag post">${r.after_freeze ? "규칙 고정 뒤 · 사후 계산" : "규칙 고정 전 · 사후 계산"}</span><b>고정한 규칙으로 다시 계산한 날</b>그날 이전 자료만 썼지만, 그 아침에 실제로 발행한 화면은 아니에요.`
       : `<span class="tag post">과거 재생</span><b>규칙을 만들 때 이미 본 기간</b>그날 이전 자료만 써서 다시 계산한 화면이에요.`;
@@ -202,7 +202,7 @@ async function act(el) {
   else if (a === "applydraft") await applyDraft();
   else if (a === "close") closeSheet();
   else if (a === "unpin") { delete S.pin[key(el.dataset.code)]; renderScreen(true); }
-  else if (a === "reset") { const m = model(); m.rows.forEach((r) => { delete S.qty[key(r.s.code)]; delete S.pin[key(r.s.code)]; }); renderScreen(true); toast("잔고 수량과 예상 시가로 되돌렸어요"); }
+  else if (a === "reset") { const m = model(); m.rows.forEach((r) => { delete S.qty[key(r.s.code)]; delete S.pin[key(r.s.code)]; }); renderScreen(true); toast("잔고 수량과 예상 시작가로 되돌렸어요"); }
   else if (a === "gsel") { S.sel = el.dataset.id || null; renderScreen(true); }
   else if (a === "gjump") { S.sel = el.dataset.id; S.tab = "news"; S.filter = "graph"; closeSheet(); render(); }
   else if (a === "qty") { if (!$("input", el)) editQty(el); }
@@ -309,7 +309,7 @@ async function runSearch(v, res) {
   try {
     const rows = await getJSON(`${API}/stocks?q=${encodeURIComponent(v)}&limit=8`);
     if (my !== searchSeq) return;
-    res.innerHTML = rows.length ? rows.map((r) => `<button role="option" data-act="addstock" data-row="${esc(JSON.stringify(r))}"><b>${esc(r.name)}</b><small>${r.code}${r.market ? " · " + esc(r.market) : ""}${r.in_model ? "" : " · 노란띠 없음"}</small>${S.draft.some((h) => h.code === r.code) ? '<span class="chip">넣음</span>' : ""}</button>`).join("")
+    res.innerHTML = rows.length ? rows.map((r) => `<button role="option" data-act="addstock" data-row="${esc(JSON.stringify(r))}"><b>${esc(r.name)}</b><small>${r.code}${r.market ? " · " + esc(r.market) : ""}${r.in_model ? "" : " · 예상 없음"}</small>${S.draft.some((h) => h.code === r.code) ? '<span class="chip">넣음</span>' : ""}</button>`).join("")
       : `<div class="empty" style="padding:12px">‘${esc(v)}’에 맞는 종목이 없어요. 이름이나 6자리 코드로 찾아보세요.</div>`;
     res.hidden = false;
   } catch (err) { res.innerHTML = `<div class="empty" style="padding:12px">찾지 못했어요. ${esc(err.message)}</div>`; res.hidden = false; }

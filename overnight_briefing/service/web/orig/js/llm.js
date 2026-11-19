@@ -3,7 +3,7 @@ import { pct, won, man, num, tick } from "./fmt.js";
 
 export const SLOTS = [
   { id: "1", tab: "brief", name: "밤사이 한 줄", where: "브리핑 › 맨 위 카드 아래 한 줄",
-    input: "야간선물 등락률·고저 시각, 내 종목별 예상 시가·금액, 08:10 장전 거래, 이어진 기사 수와 미국 쪽 이름",
+    input: "야간선물 등락률·고저 시각, 내 종목별 예상 시작가·금액, 08:10 개장 전 거래, 이어진 기사 수와 미국 쪽 이름",
     output: "문장 3~4개, 문장마다 40자 안팎, 해요체. 숫자는 입력값 그대로",
     ban: "원인 단정(‘~때문에’), 매수·매도 권유, 오늘 장중 전망",
     now: "밤사이 프롬프트 결과(brief.market.line_ko). 그 아래 ‘오늘 아침 볼 것’은 코드가 고른 줄(AI 아님)" },
@@ -14,16 +14,16 @@ export const SLOTS = [
     input: "기사 제목·근거 구절, 관계표 줄(미국 쪽 → 관계 → 종목, 근거 문장)", output: "한 문장, ‘A의 ○○ → △△ 흐름 → 종목(관계)’ 순서",
     ban: "주가 방향 예측, 관계표에 없는 연결 만들기", now: "판정 단계가 만든 경로 문장" },
   { id: "4", tab: "brief", name: "종목 한 줄", where: "종목 창 맨 위 설명",
-    input: "예상 시가·범위(%, 원), 믿을 정도 등급, 주의 표시, 이어진 기사 수", output: "문장 2개 이내, 숫자는 화면과 같은 자릿수",
-    ban: "‘오를/내릴 것’ 같은 단정, 범위를 확률처럼 말하기", now: "규칙 문장(코드)으로 채움" },
+    input: "예상 시작가·가격대(%, 원), 믿을 정도 등급, 주의 표시, 이어진 기사 수", output: "문장 2개 이내, 숫자는 화면과 같은 자릿수",
+    ban: "‘오를/내릴 것’ 같은 단정, 예상 가격대를 확률처럼 말하기", now: "규칙 문장(코드)으로 채움" },
   { id: "5", tab: "night", name: "밤 흐름 한 줄", where: "밤사이 › 차트 아래 설명",
     input: "야간선물 1분 가격(시작·가장 높은/낮은 때·마감), 15분 기사 수", output: "문장 1~2개, 시각과 등락률만",
     ban: "기사와 가격 움직임을 원인으로 잇기", now: "규칙 문장(코드)으로 채움" },
-  { id: "6", tab: "brief", name: "띠·뉴스 종합 해석", where: "브리핑 › 종목 줄 아래, 뉴스 › 종목 묶음 머리",
-    input: "그 종목의 예상 범위·예상 시가, 밤사이 이어진 기사(요약·관계 근거·매체 수)", output: "한두 문장, 해요체, stance·news_direction·checked",
-    ban: "원인 단정, 매매 권유, 관계 근거 없는 연결, 범위를 확률처럼 말하기", now: "띠를 말로 옮긴 문장과 '좋은 쪽·나쁜 쪽' 한 문장은 코드가 쓰고, 소식 한 줄만 밤사이 프롬프트 결과(brief.json). 다른 모델이 연결을 한 번 더 확인한 기사만 씀" },
+  { id: "6", tab: "brief", name: "예상·뉴스 종합 해석", where: "브리핑 › 종목 줄 아래, 뉴스 › 종목 묶음 머리",
+    input: "그 종목의 예상 가격대·예상 시작가, 밤사이 이어진 기사(요약·관계 근거·매체 수)", output: "한두 문장, 해요체, stance·news_direction·checked",
+    ban: "원인 단정, 매매 권유, 관계 근거 없는 연결, 예상 가격대를 확률처럼 말하기", now: "예상 가격대를 말로 옮긴 문장과 '좋은 쪽·나쁜 쪽' 한 문장은 코드가 쓰고, 소식 한 줄만 밤사이 프롬프트 결과(brief.json). 다른 모델이 연결을 한 번 더 확인한 기사만 씀" },
 ];
-export const FIXED = "주의 문구(월요일·실적 공시·장전 거래가 범위 밖), 믿을 정도 설명, 맨 아래 안내는 미리 정한 고정 문구라 LLM이 쓰지 않아요.";
+export const FIXED = "주의 문구(월요일·실적 공시·개장 전 거래가 예상 밖), 믿을 정도 설명, 맨 아래 안내는 미리 정한 고정 문구라 LLM이 쓰지 않아요.";
 
 const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); };
 
@@ -36,16 +36,16 @@ export function summary(m, d, slot) {
   }
   if (n) {
     const dn = m.rows.filter((r) => r.s.H < 0).length, top = [...m.rows].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt))[0];
-    const head = dn === n ? `내 종목 ${n}개 모두 예상 시가가 어제 종가보다 낮아요.` : dn === 0 ? `내 종목 ${n}개 모두 예상 시가가 어제 종가보다 높거나 같아요.` : `내 종목 ${n}개 중 ${dn}개는 예상 시가가 어제 종가보다 낮아요.`;
+    const head = dn === n ? `내 종목 ${n}개 모두 예상 시작가가 어제 종가보다 낮아요.` : dn === 0 ? `내 종목 ${n}개 모두 예상 시작가가 어제 종가보다 높거나 같아요.` : `내 종목 ${n}개 중 ${dn}개는 예상 시작가가 어제 종가보다 낮아요.`;
     out.push(`${head} 금액 변화가 가장 큰 종목은 ${josa(top.s.name, "으로", "로")} ${won(top.Hamt)}이에요.`);
   }
   if (slot !== "0730") {
     const g = m.rows.filter((r) => r.s.grade && r.s.grade.g != null), inb = g.filter((r) => r.s.b80[0] <= r.s.grade.g && r.s.grade.g <= r.s.b80[1]);
-    if (g.length) out.push(`08:10 장전 거래는 ${g.length}종목 중 ${inb.length}종목이 예상 범위 안이에요.` + (g.length - inb.length ? ` 범위 밖은 ${g.filter((r) => !inb.includes(r)).map((r) => r.s.name).join("·")}예요.` : ""));
+    if (g.length) out.push(`08:10 개장 전 거래는 ${g.length}종목 중 ${inb.length}종목이 예상대로예요.` + (g.length - inb.length ? ` 벗어난 종목: ${g.filter((r) => !inb.includes(r)).map((r) => r.s.name).join("·")}.` : ""));
   }
   if (slot === "0900" && m.showAct) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb);
-    if (got.length) out.push(`개장 시가는 ${got.length}종목 중 ${ok.length}종목이 예상 범위 안에서 열렸어요.`);
+    if (got.length) out.push(`9시 시작가는 ${got.length}종목 중 ${ok.length}종목이 예상대로였어요.`);
   }
   if (d.brief) {                                     // 밤사이 뉴스 브리핑이 있으면 그 기사 수로 말한다(모델 범위 밖 종목 포함)
     const codes = [...m.codes, ...m.account.excluded.map((x) => x.code)], by = codes.map((c) => [c, m.briefBy[c] || 0]).filter(([, k]) => k > 0).sort((a, b) => b[1] - a[1]);
@@ -70,15 +70,15 @@ export function glance(m, d, slot, evs) {
     const top = [...held].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt))[0], dn = held.filter((r) => r.s.H < 0).length;
     const dir = dn === held.length ? `${held.length}종목 모두 어제보다 낮게` : dn === 0 ? `${held.length}종목 모두 어제보다 높게` : `${held.length}종목 중 ${dn}종목은 어제보다 낮게, ${held.length - dn}종목은 높게`;
     out.push({ ic: "내", cls: "a", act: `data-act="stock" data-code="${top.s.code}"`, t: `${josa(top.s.name, "이", "가")} 가장 크게 움직여요 · 예상 ${won(top.Hamt)}`,
-      s: `${dir} 시작할 것으로 보여요. ${top.s.name}의 범위는 ${man(top.lo)} ~ ${man(top.hi)}이에요.` });
+      s: `${dir} 시작할 것으로 보여요. ${top.s.name} 금액은 노란 막대 안이면 ${man(top.lo)} ~ ${man(top.hi)}이에요.` });
   }
   if (slot === "0900" && m.showAct) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb), miss = got.filter((r) => !r.s.inb);
-    if (got.length) out.push({ ic: "9시", cls: "", act: 'data-act="tab" data-tab="record"', t: `${got.length}종목 중 ${ok.length}종목이 예상 범위 안에서 열렸어요`, s: miss.length ? `범위 밖: ${miss.map((r) => r.s.name).join("·")}` : "지난 기록 탭에 쌓여요." });
+    if (got.length) out.push({ ic: "9시", cls: "", act: 'data-act="tab" data-tab="record"', t: `${got.length}종목 중 ${ok.length}종목이 예상대로 시작했어요`, s: miss.length ? `벗어난 종목: ${miss.map((r) => r.s.name).join("·")}` : "지난 기록 탭에 쌓여요." });
   } else if (slot !== "0730") {
     const g = m.rows.filter((r) => r.s.grade && r.s.grade.g != null), outb = g.filter((r) => !(r.s.b80[0] <= r.s.grade.g && r.s.grade.g <= r.s.b80[1]));
-    if (g.length) out.push({ ic: "8시", cls: "", act: 'data-act="info" data-info="nxtout"', t: outb.length ? `장 열리기 전 거래가 범위를 벗어난 종목: ${outb.map((r) => r.s.name).join("·")}` : `장 열리기 전 거래는 ${g.length}종목 모두 예상 범위 안이에요`,
-      s: outb.length ? "08:10 가격이 이미 범위 밖이면, 과거에는 시가도 범위를 벗어난 날이 더 많았어요." : "08:00~08:10에 실제로 거래된 가격이 아침 예상과 크게 다르지 않아요." });
+    if (g.length) out.push({ ic: "8시", cls: "", act: 'data-act="info" data-info="nxtout"', t: outb.length ? `개장 전 거래가 예상을 벗어난 종목: ${outb.map((r) => r.s.name).join("·")}` : `개장 전 거래는 ${g.length}종목 모두 예상대로예요`,
+      s: outb.length ? "08:10 가격이 이미 예상을 벗어나면, 과거에는 시작가도 벗어난 날이 더 많았어요." : "08:00~08:10에 실제로 거래된 가격이 아침 예상과 크게 다르지 않아요." });
   }
   if (d.brief) {
     const codes = [...m.codes, ...m.account.excluded.map((x) => x.code)], all = codes.flatMap((c) => (((d.brief.stocks || {})[c] || {}).news || []).map((n) => ({ n, c })));
@@ -96,8 +96,8 @@ export function glance(m, d, slot, evs) {
 
 export function stockNote(r, slot, nNews) {
   const s = r.s, p = tick(s.pc * (1 + s.H));
-  let t = `예상 시가는 어제 종가보다 ${pct(Math.abs(s.H)).replace("+", "")} ${s.H < 0 ? "낮은" : "높은"} ${num(p)}원이에요. 지난 비슷한 아침 10번 중 8번은 ${num(tick(s.pc * (1 + s.b80[0])))}원~${num(tick(s.pc * (1 + s.b80[1])))}원 사이에서 열렸어요.`;
-  if (slot !== "0730" && s.grade) t += ` 08:10 장전 거래는 ${pct(s.grade.g)}이고, 이 방향이 시가까지 이어질 믿을 정도는 ‘${s.grade.level}’이에요.`;
+  let t = `예상 시작가는 어제 종가보다 ${pct(Math.abs(s.H)).replace("+", "")} ${s.H < 0 ? "낮은" : "높은"} ${num(p)}원이에요. 지난 비슷한 아침 10번 중 8번은 ${num(tick(s.pc * (1 + s.b80[0])))}원~${num(tick(s.pc * (1 + s.b80[1])))}원 사이에서 열렸어요.`;
+  if (slot !== "0730" && s.grade) t += ` 08:10 개장 전 거래는 ${pct(s.grade.g)}이고, 이 방향이 9시 시작가까지 이어질 믿을 정도는 ‘${s.grade.level}’이에요.`;
   if (nNews) t += ` 밤사이 이어진 미국 기사가 ${nNews}건 있어요.`;
   return t;
 }

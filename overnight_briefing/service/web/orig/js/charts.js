@@ -80,7 +80,7 @@ export function recordBars(daily, T, freeze = "20261103") {
   const bw = (W - L - R) / d.length, Y = (v) => Tp + (1 - v / 100) * PH;
   const bars = d.map((x, i) => `<rect x="${L + i * bw + 1.5}" y="${Y(Math.max(x.cov, 2))}" width="${bw - 3}" height="${PH - (Y(Math.max(x.cov, 2)) - Tp)}" rx="2.5" fill="${x.T === T ? css("ink") : x.T >= freeze ? css("mute") : css("line")}"><title>${dlabel(x.T)} ${x.cov}%</title></rect>`).join("");
   const lab = [0, Math.floor(d.length / 2), d.length - 1].map((i, k) => `<text x="${L + i * bw + bw / 2}" y="${Tp + PH + 15}" font-size="10.5" fill="${css("mute")}" text-anchor="${k === 0 ? "start" : k === 2 ? "end" : "middle"}">${dlabel(d[i].T).replace(/\(.+/, "")}</text>`).join("");
-  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="날마다 내 종목이 예상 범위 안에 든 비율">
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="날마다 내 종목이 예상대로 시작한 비율">
     ${[0, 50, 100].map((v) => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${css("line2")}"/><text x="${W - R + 6}" y="${Y(v) + 3.5}" font-size="10.5" fill="${css("mute")}">${v}%</text>`).join("")}
     ${bars}<line x1="${L}" x2="${W - R}" y1="${Y(80)}" y2="${Y(80)}" stroke="${css("band-edge")}" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${W - R + 6}" y="${Y(80) + 3.5}" font-size="10.5" font-weight="700" fill="${css("band-ink")}">80%</text>${lab}</svg></div>`;
 }
@@ -91,7 +91,7 @@ export function histChart(hist, T) {
   const W = 350, H = 150, L = 4, R = 38, Tp = 10, PH = 112, n = hist.length;
   const vals = hist.flatMap((h) => [h.lo, h.hi, h.y]), m = Math.max(0.01, ...vals.map(Math.abs)) * 1.1;
   const cw = (W - L - R) / n, X = (i) => L + i * cw + cw / 2, Y = (v) => Tp + (1 - (v + m) / (2 * m)) * PH;
-  const cols = hist.map((h, i) => `<g><title>${dlabel(h.T)} 범위 ${pct(h.lo)}~${pct(h.hi)} · 예상 ${pct(h.H)} · 실제 ${pct(h.y)}</title>
+  const cols = hist.map((h, i) => `<g><title>${dlabel(h.T)} 예상 가격대 ${pct(h.lo)}~${pct(h.hi)} · 예상 ${pct(h.H)} · 실제 ${pct(h.y)}</title>
     <rect x="${X(i) - Math.min(5, cw / 2 - 1.5)}" y="${Y(h.hi)}" width="${Math.min(10, cw - 3)}" height="${Math.max(2, Y(h.lo) - Y(h.hi))}" rx="3" fill="${css("band")}" ${h.T === T ? `stroke="${css("band-edge")}" stroke-width="1.3"` : 'opacity=".75"'}/>
     <line x1="${X(i) - 5}" x2="${X(i) + 5}" y1="${Y(h.H)}" y2="${Y(h.H)}" stroke="${css("ink")}" stroke-width="1.6"/>
     <circle cx="${X(i)}" cy="${Y(h.y)}" r="3.3" fill="${css("card")}" stroke="${css(h.inb ? "ok" : "miss")}" stroke-width="2"/></g>`).join("");
@@ -99,7 +99,7 @@ export function histChart(hist, T) {
   const st = m > 0.06 ? 0.04 : m > 0.03 ? 0.02 : 0.01, ticks = [];
   for (let v = -Math.floor(m / st) * st; v <= m; v += st) ticks.push(Math.abs(v) < 1e-9 ? 0 : v);
   const lab = [0, n - 1].map((i, k) => `<text x="${X(i)}" y="${Tp + PH + 16}" font-size="10.5" fill="${css("mute")}" text-anchor="${k ? "end" : "start"}">${dlabel(hist[i].T)}</text>`).join("");
-  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="지난 거래일의 예상 범위와 실제 시가">${ticks.map(tick).join("")}${cols}${lab}</svg></div>`;
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="지난 거래일의 예상 가격대와 실제 시작가">${ticks.map(tick).join("")}${cols}${lab}</svg></div>`;
 }
 
 /** 관계 그림: 왼쪽 해외 쪽, 오른쪽 내 종목. hot = 오늘 밤 기사가 붙은 (src|dst) → 건수, hotN = 상자별 기사 수.
@@ -185,6 +185,6 @@ export function acctMap(rows, x, newsOf) {
     x0 += w + G;
   });
   const H = MH + G + SH + G + BODY;
-  return `<div class="amap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="밤사이 야간선물 값과, 업종별로 묶은 내 종목의 예상 시가 변화 지도">${h}</svg>
+  return `<div class="amap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="밤사이 야간선물 값과, 업종별로 묶은 내 종목의 예상 시작가 변화 지도">${h}</svg>
     <div class="amap-key"><span>종목 예상</span><span class="ramp">${["n3", "n2", "n1", "0", "p1", "p2", "p3"].map((c) => `<i class="dv${c}"></i>`).join("")}</span><span>−3%</span><span>어제 종가</span><span>+3%</span><span>크기 = 보유 금액</span><span><i class="nb"></i>밤사이 소식</span></div></div>`;
 }
