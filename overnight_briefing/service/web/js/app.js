@@ -190,6 +190,8 @@ async function act(el) {
   else if (a === "setbig") { S.big = el.dataset.v === "1"; lsSet("ob.big", S.big ? "1" : "0"); applyBig(); openSheet(V.notifSheet(S, S.day)); }
   else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
   else if (a === "s4") openS4(el.dataset.code);
+  else if (a === "needgo") { S.tab = "brief"; S.nsub = "pred"; S.hold4 = "own"; S.f4 = "out"; closeSheet(); render(); }   // 프로토타입: 홈 확인 필요 → 밤사이 필터 결과(범위 밖)
+  else if (a === "newsmine") { S.tab = "news"; S.filter = "brief"; closeSheet(); render(); }                               // 프로토타입: 시트 밤사이 소식 → 뉴스 브리핑 · 내 종목
   else if (a === "hold4") { S.hold4 = el.dataset.v; S.f4 = "all"; renderScreen(true); }
   else if (a === "f4") { S.f4 = el.dataset.v; renderScreen(true); }
   else if (a === "sort4") openSheet(V.sort4Sheet(S.sort4));

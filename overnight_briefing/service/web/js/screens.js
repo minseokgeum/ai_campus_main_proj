@@ -635,7 +635,7 @@ export function home(m, d, st) {
     const { need, base } = homeNeed(m, st);
     const amt = st.hideAmt ? "••••••원" : won(main);
     const c1 = base == null ? "" : need.length
-      ? `<span class="c1"><img src="${HI}dot-orange.svg" width="7" height="7" alt="">${act ? "범위 밖 시작" : "확인 필요"} ${need.length}종목 <i class="ch">›</i></span>`
+      ? `<button class="c1" data-act="needgo"><img src="${HI}dot-orange.svg" width="7" height="7" alt="">${act ? "범위 밖 시작" : "확인 필요"} ${need.length}종목 <i class="ch">›</i></button>`
       : `<span class="c1">${act ? "모두 범위 안에서 시작" : "확인 필요 없음"} <i class="ch">›</i></span>`;
     const c2 = base == null ? `예상 ${m.rows.filter((r) => r.h.q > 0).length}종목${out ? ` · 대상 아님 ${out}` : ""}` : `범위 안 ${base - need.length}${out ? ` · 대상 아님 ${out}` : ""}`;
     h += `<div class="h-acct" data-act="tab" data-tab="brief" role="link" tabindex="0">
@@ -830,7 +830,7 @@ export function s4Sheet(code, m, d, st) {
     <div class="s4-amt"><span>예상 금액 변화</span><b class="num ${tone(amt)}" data-f="amt">${amt == null ? "관심" : won(amt)}</b><small data-f4="qb">(${num(r.q)}주 기준)</small></div>
     <span data-f="range" hidden></span><span data-f="was" hidden></span>
   </div>
-  <div class="s4-btns"><button data-act="stock" data-code="${code}"><b>밤사이 소식</b><em>${x.news}건</em><i>›</i></button><button data-act="stock" data-code="${code}"><b>종목 상세</b><i>›</i></button></div>`;
+  <div class="s4-btns"><button data-act="newsmine"><b>밤사이 소식</b><em>${x.news}건</em><i>›</i></button><button data-act="stock" data-code="${code}"><b>종목 상세</b><i>›</i></button></div>`;
 }
 
 export const sort4Sheet = (cur) => `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>정렬</h3></div><div class="s4-sort">${Object.entries(SORT4).map(([k, t]) => `<button class="${k === cur ? "on" : ""}" data-act="setsort4" data-v="${k}"><b>${t}</b>${k === "weight" ? "<small>내 계좌에서 차지하는 비율</small>" : ""}${k === cur ? "<i>✓</i>" : ""}</button>`).join("")}</div>`;
