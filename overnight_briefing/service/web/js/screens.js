@@ -317,7 +317,8 @@ export function bstockSheet(code, d, name) {
 }
 
 /* ───── 내 종목: 예시 계좌 보기 · 내 잔고 넣기 ───── */
-export function draftRows(draft) {
+/** 옛 '내 잔고 넣기' 줄(원래 버전과 같은 것) */
+export function draftRowsOld(draft) {
   if (!draft.length) return `<div class="empty" style="padding:18px 0">아직 넣은 종목이 없어요. 위에서 종목을 찾아 넣거나, <button class="link" data-act="copyacct" data-id="A">예시 계좌 A를 가져와</button> 고쳐 보세요.</div>`;
   return draft.map((h) => `<div class="drow" data-code="${h.code}"><div class="dn"><b>${esc(h.name)}</b><small>${h.code}${h.in_model ? "" : " · 노란띠 없음"}</small></div>
     <label><span>수량${h.q === 0 ? " · 관심" : ""}</span><input type="number" inputmode="numeric" min="0" max="10000000" step="1" data-f="q" value="${h.q}" aria-label="${esc(h.name)} 수량(0이면 관심 종목)"></label>
@@ -335,7 +336,8 @@ function holdingsCard(m, d) {
     <div class="tiny">노란띠가 있는 ${m.rows.length}종목 기준${m.account.excluded.length ? ` · 노란띠가 없는 ${m.account.excluded.length}종목은 금액에서 빠져요` : ""}</div></div>${rows}${outs}</section>`;
 }
 
-export function mine(m, d, st) {
+/** 옛 내 종목 화면(원래 버전과 같은 것) */
+export function mineOld(m, d, st) {
   const cur = st.acct, accts = st.accts || [];
   const pills = [...accts.map((a) => [a.id, `예시 ${a.id}`, a.name]), ["U", "내 잔고", st.draft.length ? `${st.draft.length}종목` : "직접 넣기"]];
   let h = `<section class="sec" style="padding-top:12px"><div class="acct-pills" role="tablist">${pills.map(([id, t, s]) => `<button role="tab" aria-selected="${id === cur}" class="${id === cur ? "on" : ""}" data-act="acct" data-id="${id}"><b>${t}</b><small>${esc(s)}</small></button>`).join("")}</div></section>`;
@@ -930,5 +932,64 @@ function newsMine(m, d, st) {
 export function news(m, d, st) {
   const f = ["market", "ind", "brief"].includes(st.filter) ? st.filter : "market";
   return `<div class="nw">${f === "ind" ? newsInd(m, d, st) : f === "brief" ? newsMine(m, d, st) : newsMarket(m, d)}</div>`;
+}
+
+
+/* ───── 내 종목 v2(11/19, 수연 피그마 보유 513:9980 · 관심 513:10329 · 종목 추가 541:8111) ─────
+   종목 검색·담기·적용은 원래 코드 그대로(#stock-q · #stock-res · #draft · applydraft), 모양만 피그마. */
+const GCOL = ["#008C82", "#6A5BE0", "#A0522D", "#3E5FAE", "#C2477F"];
+export const MSORT = { weight: "비중 큰 순", pl: "수익률 큰 순", name: "이름 순" };
+export const mineAddMode = (st) => st.msub === "add" || (st.acct === "U" && !st.pfUser);
+export const mineBar = (d, add) => add
+  ? `<div class="nb-r mb-add"><button class="mb-back" data-act="mlist" aria-label="뒤로">‹</button><h1>종목 추가</h1></div>`
+  : `<div class="nb-r"><h1>내 종목</h1><button class="hb-i" data-act="acctsheet" aria-label="마이 · 계좌 바꾸기"><img src="img/night/my.svg" width="23" height="23" alt=""></button></div><p class="wb-sub">${esc(d.label)} · 어제 종가 기준</p>`;
+
+/** 담은 종목 줄(피그마 '추가한 종목'): − 수량 + ✕. 수량 칸은 원래 입력(data-f="q")이라 직접 쳐도 된다 */
+export function draftRows(draft) {
+  if (!draft.length) return `<div class="ma-empty">아직 담은 종목이 없어요. 위에서 찾아 넣거나, <button class="link" data-act="copyacct" data-id="A">예시 계좌 A를 가져와</button> 고쳐 보세요.</div>`;
+  return draft.map((h) => `<div class="drow ma-row" data-code="${h.code}"><div class="dn"><b>${esc(h.name)}</b>${h.q === 0 || !h.in_model ? `<small>${h.q === 0 ? "관심 종목" : ""}${h.q === 0 && !h.in_model ? " · " : ""}${h.in_model ? "" : "노란띠 없음"}</small>` : ""}</div>
+    <span class="ma-step"><button data-act="dstep" data-code="${h.code}" data-d="-1" aria-label="${esc(h.name)} 수량 줄이기"${h.q <= 0 ? " disabled" : ""}><img src="img/night/minus.svg" width="12" height="12" alt=""></button><label><input type="number" inputmode="numeric" min="0" max="10000000" step="1" data-f="q" value="${h.q}" aria-label="${esc(h.name)} 수량(0이면 관심 종목)"><span>주</span></label><button data-act="dstep" data-code="${h.code}" data-d="1" aria-label="${esc(h.name)} 수량 늘리기"><img src="img/night/plus.svg" width="12" height="12" alt=""></button></span>
+    <button class="ma-rm" data-act="rmdraft" data-code="${h.code}" aria-label="${esc(h.name)} 빼기">✕</button></div>`).join("");
+}
+
+function mineAdd(st) {
+  return `<div class="ma"><h2>추가할 종목을<br>찾아보세요</h2><p class="ma-sub">보유 종목은 수량을 넣고, 관심 종목은 수량 0으로 추가하면 돼요.${st.acct !== "U" ? " 예시 계좌는 고칠 수 없어서 ‘내 잔고’에 담아요." : ""}</p>
+    <div class="ma-search">${I.search}<input id="stock-q" type="search" placeholder="종목명이나 코드로 찾기" autocomplete="off" maxlength="30" aria-label="종목 검색" aria-controls="stock-res"><div id="stock-res" class="search-res" role="listbox" hidden></div></div>
+    <p class="ma-cnt">추가한 종목 ${st.draft.length}</p><div id="draft">${draftRows(st.draft)}</div>
+    <p class="ma-hint">수량을 넣으면 내 계좌 기준 금액으로, 0으로 두면 관심 종목으로 %만 보여 드려요. 넣은 잔고는 이 브라우저에만 저장돼요.</p>
+    <div class="tiny" id="draft-msg" role="status"></div>
+    <button class="ma-go" data-act="applydraft"${st.draft.length ? "" : " disabled"}>${st.draft.length}종목 추가하기</button></div>`;
+}
+
+export function mine(m, d, st) {
+  if (mineAddMode(st)) return mineAdd(st);
+  const a = m.account, tm = tintMap(m), held = m.rows.filter((r) => r.h.q > 0), wat = m.rows.filter((r) => r.h.q === 0), ex = (a.excluded || []).filter((x) => x.q > 0);
+  const watch = (st.hold4 || (held.length || ex.length ? "own" : "watch")) === "watch", hide = st.hideAmt, H = (v) => (hide ? "••••••원" : won(v, false));
+  const val = (r) => r.h.q * r.s.pc, total = held.reduce((x, r) => x + val(r), 0);
+  const allAvg = held.length && held.every((r) => r.h.avg > 0), cost = allAvg ? held.reduce((x, r) => x + r.h.avg * r.h.q, 0) : 0, pl = allAvg ? total - cost : null;
+  const g = {}; held.forEach((r) => { const k = r.s.group || "기타"; (g[k] = g[k] || { v: 0, names: [] }).v += val(r); g[k].names.push(r.s.name); });
+  let gs = Object.entries(g).sort((x, y) => y[1].v - x[1].v);
+  if (gs.length > 4) { const rest = gs.slice(3); gs = [...gs.slice(0, 3), ["그 외", { v: rest.reduce((x, [, o]) => x + o.v, 0), names: rest.flatMap(([, o]) => o.names) }]]; }
+  const top = gs[0] && total ? gs[0][1].v / total : 0;
+  let h = `<div class="mn"><div class="mn-add"><button data-act="madd">+ 종목 추가</button></div>
+    <div class="mn-card"><div class="mn-h"><b>업종별 투자 비중</b><button class="mn-eye" data-act="hideamt"><img src="img/home/eye.svg" width="18" height="12" alt=""${hide ? ' style="opacity:.35"' : ""}>${hide ? "금액 보기" : "금액 숨기기"}</button></div>
+      <div class="mn-total num">${H(total)}</div>
+      ${pl != null ? `<div class="mn-pl">평단 대비 <b class="num ${tone(pl)}">${pl >= 0 ? "▲" : "▼"} ${hide ? "••••••원" : won(Math.abs(pl), false)} (${pct(pl / cost)})</b></div>` : ""}
+      <p class="mn-note">입력한 수량 기준 · ${a.sample ? `예시 계좌 ${esc(a.id)}` : "이 브라우저에 저장한 잔고"}${ex.length ? ` · 노란띠 없는 ${ex.length}종목은 금액에서 빠져요` : ""}</p>
+      <div class="mn-bars">${gs.map(([k, o], i) => { const p = total ? o.v / total : 0, c = k === "그 외" ? "#93A3A5" : GCOL[i] || "#93A3A5";
+        return `<div class="mn-bar"><div class="mn-bar-h"><i style="background:${c}"></i><b>${esc(k)}</b><small>${esc(o.names.join(" · "))}</small><span class="num">${H(o.v)}</span><em class="num">${Math.round(p * 100)}%</em></div><div class="mn-track"><span style="width:${(p * 100).toFixed(1)}%;background:${c}"></span></div></div>`; }).join("")}</div>
+      ${top >= 0.5 ? `<div class="mn-warn"><i>ⓘ</i><span>${esc(gs[0][0])} 업종이 ${Math.round(top * 100)}%예요. 같이 움직이는 날에는 계좌 전체가 크게 흔들릴 수 있어요.</span></div>` : ""}
+      <div class="n4-hold"><button class="${watch ? "" : "on"}" data-act="hold4" data-v="own">보유 ${held.length + ex.length}</button><button class="${watch ? "on" : ""}" data-act="hold4" data-v="watch"${wat.length ? "" : " disabled"}>관심 ${wat.length}</button></div></div>
+    <div class="mn-sort"><button data-act="msort">${MSORT[st.msort || "weight"]} ▾</button>${a.sample ? `<button class="mn-copy" data-act="copyacct" data-id="${esc(a.id)}">내 잔고로 가져와 고치기 ›</button>` : ""}</div>`;
+  const k = st.msort || "weight", rr = (r) => (r.h.avg > 0 ? r.s.pc / r.h.avg - 1 : -Infinity);
+  const list = [...(watch ? wat : held)].sort((x, y) => (k === "name" ? x.s.name.localeCompare(y.s.name, "ko") : k === "pl" ? rr(y) - rr(x) : val(y) - val(x)));
+  h += `<div class="mn-list">${list.map((r) => { const v = val(r), plr = r.h.avg > 0 ? (r.s.pc - r.h.avg) * r.h.q : null;
+    return watch
+      ? `<button class="mn-row" data-act="stock" data-code="${r.s.code}">${ico4(r.s, tm, 32)}<span class="nm"><b>${esc(r.s.name)}</b><small>관심 종목 · 어제 종가 ${num(r.s.pc)}원</small></span><span class="v"><small>오늘 예상</small><b class="num ${tone(r.s.H)}">${pct(r.s.H)}</b></span></button>`
+      : `<button class="mn-row" data-act="stock" data-code="${r.s.code}">${ico4(r.s, tm, 32)}<span class="nm"><b>${esc(r.s.name)}</b><small>${num(r.h.q)}주${r.h.avg > 0 ? ` · 평단 ${num(r.h.avg)}원` : ""}</small></span><span class="v"><b class="num">${H(v)}</b>${plr != null ? `<small class="num ${tone(plr)}">${hide ? "••••" : won(plr)} (${pct(r.s.pc / r.h.avg - 1)})</small>` : ""}<small class="w">비중 ${total ? Math.round((v / total) * 100) : 0}%</small></span></button>`; }).join("")}
+    ${watch ? "" : ex.map((x) => `<div class="mn-row nc">${ico4({ name: x.name, group: "" }, tm, 32)}<span class="nm"><b>${esc(x.name)}</b><small>${num(x.q)}주${x.avg ? ` · 평단 ${num(x.avg)}원` : ""}</small></span><span class="v"><span class="chip">노란띠 없음</span></span></div>`).join("")}
+    ${list.length || (!watch && ex.length) ? "" : `<div class="empty">${watch ? "관심 종목이 없어요" : "보유 종목이 없어요"}</div>`}</div>
+    <p class="n4-foot">평가 금액은 어제 종가 × 입력한 수량이에요. ${a.sample ? "예시 계좌의 평균단가는 시연용 가정이에요. " : ""}투자 권유가 아니에요.</p></div>`;
+  return h;
 }
 

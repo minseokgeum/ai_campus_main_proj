@@ -10,7 +10,7 @@ const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A",
   liveMode: true, pending: null,        // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
   preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1", hideAmt: lsGet("ob.hide") === "1",
   hold4: null, f4: "all", sort4: lsGet("ob.sort4") || "amt", nsub: "pred",
-  ind: [], nsel: [], nexp: {} };   // 뉴스 브리핑 v2: 고른 업종·종목, 펼친 종목   // 11/19 밤사이 v4: 보유|관심, 필터 칩, 정렬, 상단 하위 탭(시가예측|기록)   // hideAmt: 홈 계좌 카드 금액 가리기(눈 단추)   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
+  ind: [], nsel: [], nexp: {}, msub: "list", msort: "weight" };   // 내 종목 v2: 목록|종목 추가, 정렬   // 뉴스 브리핑 v2: 고른 업종·종목, 펼친 종목   // 11/19 밤사이 v4: 보유|관심, 필터 칩, 정렬, 상단 하위 탭(시가예측|기록)   // hideAmt: 홈 계좌 카드 금액 가리기(눈 단추)   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 // 11/19 홈 v2(수연 피그마): 홈 · 뉴스 브리핑 · 밤사이(종목별 노란띠, 옛 브리핑) · 내 종목 · 보관(옛 기록). 야간선물 흐름은 홈의 야간선물 띠로 들어가고 아래 메뉴에는 없다(넷째 칸 true).
@@ -77,9 +77,11 @@ function renderShell() {
   const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전";
   const sub = S.liveMode && S.pending ? `${S.pending.preview ? "미리 보기" : "실시간"} · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
   const homeSub = `${d.label}  ·  ${S.liveMode && S.pending ? `${S.pending.label} 아침 준비 중` : when.replace(" · 장 전", "")}  ·  ${a.sample ? "예시 계좌 " + a.id : "내 잔고"}`;
-  $("#appbar").classList.toggle("hbar", S.tab === "home"); $("#appbar").classList.toggle("nbar", S.tab === "brief" || S.tab === "news"); $("#appbar").classList.toggle("wbar", S.tab === "news");
+  $("#appbar").classList.toggle("hbar", S.tab === "home"); $("#appbar").classList.toggle("nbar", S.tab === "brief" || S.tab === "news"); $("#appbar").classList.toggle("wbar", S.tab === "news" || S.tab === "mine"); $("#appbar").classList.toggle("nbar", ["brief", "news", "mine"].includes(S.tab));
+  const addMode = S.tab === "mine" && V.mineAddMode(S); $("#tabbar").hidden = addMode;
   if (S.tab === "home") $("#appbar").innerHTML = V.homeBar(homeSub);
   else if (S.tab === "brief") $("#appbar").innerHTML = V.nightBar(S.nsub);
+  else if (S.tab === "mine") $("#appbar").innerHTML = V.mineBar(d, addMode);
   else if (S.tab === "news") $("#appbar").innerHTML = V.newsBar(["market", "ind", "brief"].includes(S.filter) ? S.filter : "market");
   else $("#appbar").innerHTML = `${t[3] ? `<button class="back" data-act="tab" data-tab="home" aria-label="홈으로">${I.back}</button>` : ""}<h1>${t[2]}<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0), fresh = mine + Object.values(m.newsBy).reduce((x, y) => x + y, 0) + ((d.brief && d.brief.market && d.brief.market.items) || []).length;   // 새 소식 점: 내 종목 소식·관계로 이은 기사·시장 전체 소식
@@ -193,6 +195,10 @@ async function act(el) {
   else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
   else if (a === "s4") openS4(el.dataset.code);
   else if (a === "needgo") { S.tab = "brief"; S.nsub = "pred"; S.hold4 = "own"; S.f4 = "out"; closeSheet(); render(); }   // 프로토타입: 홈 확인 필요 → 밤사이 필터 결과(범위 밖)
+  else if (a === "madd") { S.msub = "add"; render(); }
+  else if (a === "mlist") { S.msub = "list"; if (S.acct === "U" && !S.pfUser) S.tab = "home"; render(); }
+  else if (a === "msort") { const ks = Object.keys(V.MSORT), i = ks.indexOf(S.msort); S.msort = ks[(i + 1) % ks.length]; renderScreen(true); toast(V.MSORT[S.msort]); }
+  else if (a === "dstep") { const h = S.draft.find((x) => x.code === el.dataset.code); if (h) { h.q = Math.max(0, (h.q || 0) + +el.dataset.d); saveDraft(); refreshDraft(); } }
   else if (a === "nf") { S.tab = "news"; S.filter = el.dataset.v; closeSheet(); render(); }
   else if (a === "indsel") { const v = el.dataset.v; S.ind = !v ? [] : S.ind.includes(v) ? S.ind.filter((x) => x !== v) : [...S.ind, v]; renderScreen(true); }
   else if (a === "nsel") { const v = el.dataset.v; S.nsel = !v ? [] : S.nsel.includes(v) ? S.nsel.filter((x) => x !== v) : [...S.nsel, v]; renderScreen(true); }
@@ -302,7 +308,7 @@ async function runSearch(v, res) {
     res.hidden = false;
   } catch (err) { res.innerHTML = `<div class="empty" style="padding:12px">찾지 못했어요. ${esc(err.message)}</div>`; res.hidden = false; }
 }
-function refreshDraft() { const el = $("#draft"); if (el) el.innerHTML = V.draftRows(S.draft); const b = $('[data-act="applydraft"]'); if (b) b.disabled = !S.draft.length; }
+function refreshDraft() { const el = $("#draft"); if (el) el.innerHTML = V.draftRows(S.draft); const b = $('[data-act="applydraft"]'); if (b) { b.disabled = !S.draft.length; if (b.classList.contains("ma-go")) b.textContent = `${S.draft.length}종목 추가하기`; } const c = $(".ma-cnt"); if (c) c.textContent = `추가한 종목 ${S.draft.length}`; }
 function addDraft(r) {
   if (S.draft.some((h) => h.code === r.code)) toast("이미 넣은 종목이에요");
   else if (S.draft.length >= 30) toast("최대 30종목까지 넣을 수 있어요");
@@ -323,7 +329,7 @@ async function applyDraft() {
   if (!S.draft.length) return;
   const msg = $("#draft-msg"); if (msg) msg.textContent = "브리핑을 만드는 중이에요…";
   S.acct = "U"; await load(S.T);
-  if (S.pfUser) { S.tab = "home"; render(); toast("내 잔고로 브리핑을 만들었어요"); }
+  if (S.pfUser) { S.tab = "mine"; S.msub = "list"; render(); toast("내 잔고로 브리핑을 만들었어요"); }   // 프로토타입: 종목 추가 → 내 종목
 }
 
 (async function boot() {

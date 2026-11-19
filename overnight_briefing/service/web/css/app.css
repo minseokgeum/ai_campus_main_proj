@@ -675,3 +675,53 @@ details.more-d summary::after { content: " 펼치기"; font-weight: 400; color: 
 .nw-more { padding: 12px 0; border-top: 1px solid #E4E9EA; font-size: 13px; font-weight: 500; color: var(--teal); }
 .nw-none { padding: 12px 14px; border-radius: 12px; background: var(--n4-surf); font-size: 13px; line-height: 1.4; color: var(--sub); }
 .nw-note { margin: 0; font-size: 11px; line-height: 1.45; color: var(--sub); }
+
+/* ───── 내 종목 v2(11/19, 수연 피그마 513:9980 · 513:10329 · 종목 추가 541:8111) ───── */
+.mn { --up: #D35D66; --down: #4C6FC3; padding: 6px 24px 20px; letter-spacing: 0; }
+[data-theme="dark"] .mn { --up: #FF7A83; --down: #6FA0F2; }
+.mn-add { display: flex; justify-content: flex-end; } .mn-add button { padding: 6px 0; font-size: 14px; font-weight: 700; color: var(--teal); }
+.mn-card { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 18px 16px 12px; border-radius: 18px; background: var(--n4-surf); }
+.mn-h { display: flex; align-items: center; gap: 8px; } .mn-h b { flex: 1; font-size: 15px; font-weight: 700; color: var(--ink); }
+.mn-eye { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; background: var(--card); font-size: 11px; color: var(--sub); }
+[data-theme="dark"] .mn-eye img { filter: invert(1) hue-rotate(180deg); }
+.mn-total { font-size: 26px; font-weight: 700; color: var(--ink); }
+.mn-pl { font-size: 13px; color: var(--sub); } .mn-pl b { margin-left: 4px; font-weight: 700; }
+.mn-note { margin: 0; font-size: 11px; color: var(--sub); }
+.mn-bars { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.mn-bar-h { display: flex; align-items: center; gap: 6px; } .mn-bar-h i { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.mn-bar-h b { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.mn-bar-h small { flex: 1; min-width: 0; font-size: 11px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn-bar-h span { font-size: 12px; color: var(--sub); white-space: nowrap; } .mn-bar-h em { width: 38px; text-align: right; font-style: normal; font-size: 14px; font-weight: 700; color: var(--ink); }
+.mn-track { height: 6px; margin-top: 6px; border-radius: 3px; background: var(--line); overflow: hidden; } .mn-track span { display: block; height: 100%; border-radius: 3px; }
+.mn-warn { display: flex; gap: 8px; padding: 12px 14px; border-radius: 12px; background: #F6EFE5; font-size: 12.5px; line-height: 1.55; color: var(--n4-ink3); }
+.mn-warn i { font-style: normal; color: #B86E12; } [data-theme="dark"] .mn-warn { background: var(--warn-soft); }
+.mn-card .n4-hold { background: var(--card); }
+.mn-sort { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 8px; }
+.mn-sort button { font-size: 13px; font-weight: 600; color: var(--ink); } .mn-sort .mn-copy { font-size: 12px; font-weight: 500; color: var(--teal); }
+.mn-list { padding: 4px 16px; border-radius: 18px; background: var(--n4-surf); }
+.mn-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 0; text-align: left; } .mn-row + .mn-row { border-top: 1px solid var(--line); }
+.mn-row .nm { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mn-row .nm b { font-size: 15px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .mn-row .nm small { font-size: 12px; color: var(--sub); }
+.mn-row .v { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; } .mn-row .v b { font-size: 15px; font-weight: 700; color: var(--ink); }
+.mn-row .v b.up, .mn-row .v b.down { color: inherit; } .mn-row .v b.up { color: var(--up); } .mn-row .v b.down { color: var(--down); }
+.mn-row .v small { font-size: 11.5px; } .mn-row .v small.w { color: var(--sub); }
+.appbar.nbar .mb-add { gap: 4px; } .mb-back { font-size: 28px; line-height: 1; color: var(--ink); padding: 0 6px 2px 0; }
+.appbar.nbar .mb-add h1 { font-size: 17px; }
+.ma { display: flex; flex-direction: column; padding: 28px 24px 24px; letter-spacing: 0; }
+.ma h2 { margin: 0; font-size: 24px; line-height: 1.35; font-weight: 700; color: var(--ink); }
+.ma-sub { margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: var(--n4-ink3); }
+.ma-search { position: relative; display: flex; align-items: center; gap: 8px; height: 50px; margin-top: 20px; padding: 0 16px; border-radius: 14px; background: var(--n4-surf); color: var(--sub); }
+.ma-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 15px; color: var(--ink); } .ma-search:focus-within { box-shadow: 0 0 0 2px var(--teal); }
+.ma-search .search-res { top: 54px; }
+.ma-cnt { margin: 22px 0 2px; font-size: 13px; font-weight: 700; color: var(--n4-ink3); }
+.ma .drow.ma-row { display: flex; align-items: center; gap: 10px; padding: 14px 0; border-top: 0; border-bottom: 1px solid var(--line); }
+.ma-row .dn { flex: 1; min-width: 0; } .ma-row .dn b { display: block; font-size: 15px; font-weight: 700; color: var(--ink); } .ma-row .dn small { font-size: 11px; color: var(--sub); }
+.ma-step { display: flex; align-items: center; gap: 8px; }
+.ma-step button { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 15px; background: var(--chip); } .ma-step button:disabled { opacity: .35; }
+[data-theme="dark"] .ma-step img { filter: invert(1) hue-rotate(180deg); }
+.ma-step label { display: flex; align-items: baseline; font-size: 15px; font-weight: 700; color: var(--teal); }
+.ma-step input { width: 46px; border: 0; outline: 0; background: none; text-align: right; font: inherit; color: inherit; -moz-appearance: textfield; } .ma-step input::-webkit-inner-spin-button, .ma-step input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.ma-rm { padding: 4px; font-size: 14px; color: var(--mute); }
+.ma-hint { margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: var(--sub); }
+.ma-empty { padding: 16px 0; font-size: 13px; line-height: 1.6; color: var(--sub); }
+.ma-go { height: 52px; margin-top: 28px; border-radius: 14px; background: var(--teal); font-size: 16px; font-weight: 700; color: #fff; } .ma-go:disabled { opacity: .4; }

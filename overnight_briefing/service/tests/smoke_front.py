@@ -79,15 +79,16 @@ with sync_playwright() as p:
     T = meta["default"]
     pg.evaluate(f"location.hash = 'T={T}&slot=0811&acct=U&tab=mine'")
     wait(pg, T, "0811", "U", "mine")
+    if pg.locator("[data-act=madd]").count(): pg.locator("[data-act=madd]").click()   # 수연 버전: 내 종목 → + 종목 추가
     pg.fill("#stock-q", "한미반도체")
     pg.wait_for_selector("#stock-res button", timeout=5000)
     pg.locator("#stock-res button").first.click()
     if "한미반도체" not in pg.inner_text("#draft"): errs.append("검색한 종목이 안 들어감")
     pg.locator("[data-act=applydraft]").click()
-    pg.wait_for_function("document.querySelector('#tabbar .on').dataset.tab === 'home' && !document.querySelector('#screen .skel')", timeout=10000)
-    if "한미반도체" not in pg.inner_text("#screen"): errs.append("넣은 종목이 홈에 안 나옴")
+    pg.wait_for_function("document.querySelector('#tabbar .on').dataset.tab === 'mine' && !document.querySelector('#screen .skel')", timeout=10000)
+    if "한미반도체" not in pg.inner_text("#screen"): errs.append("넣은 종목이 내 종목에 안 나옴")
     n += 1
-    if errs: bad.append((T, "U", "0811", "mine→home", "", errs[:3]))
+    if errs: bad.append((T, "U", "0811", "mine→list", "", errs[:3]))
     b.close()
 print(f"{n - len(bad)} ok / {len(bad)} 오류")
 for x in bad[:25]:
