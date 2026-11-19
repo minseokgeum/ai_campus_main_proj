@@ -512,3 +512,9 @@ details.more-d summary::after { content: " 펼치기"; font-weight: 400; color: 
 .tabbar .ndot { position: absolute; top: -1.5px; left: calc(50% + 2.5px); width: 11px; height: 11px; box-sizing: border-box; border: 1.5px solid var(--card); border-radius: 50%; background: #4C6FC3; }
 .tabbar .ndot.off { width: 13px; height: 13px; top: -2.5px; left: calc(50% + 1.5px); border: 0; background: var(--card); }   /* 새 소식이 없으면 아이콘 파일 속 점을 바탕색으로 덮는다 */
 .appbar .back { align-self: flex-start; height: 30px; margin-top: 1px; }   /* 11/19: 야간선물 화면(홈 띠에서 들어옴)의 뒤로 가기를 제목 줄에 */
+
+/* 11/19 데모 두 버전: 조작판 맨 위 전환(수연 버전 = 피그마 그대로 / 원래 버전 = 노란띠 끌기·수량 조작) */
+.ver { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin: -2px 0 14px; border-radius: 12px; background: #EEF1F4; }
+.ver a { display: block; padding: 7px 6px; border-radius: 9px; text-align: center; font-size: 13px; font-weight: 700; line-height: 1.25; color: #6C7789; text-decoration: none; }
+.ver a small { display: block; font-size: 10.5px; font-weight: 500; opacity: .85; }
+.ver a.on { background: #fff; color: #008C82; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
