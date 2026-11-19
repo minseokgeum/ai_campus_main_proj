@@ -405,6 +405,10 @@ def news_record(T: str) -> dict | None:
     m = json.loads(p.read_text())
     sha = LIVE_RUN / f"news_{T}/manifest.json.sha256"
     m["manifest_sha256"] = sha.read_text().split()[0] if sha.exists() else ""
+    # 11/19: 고정 기록(manifest)의 before_open은 09:00 기준으로 적혀 있다. 수능일처럼 10:00에 여는 날은 발행 시각을 그날 개장 시각과 다시 견준다(파일은 고치지 않음)
+    iss = str(m.get("issued_at", ""))
+    if iss[:10].replace("-", "") == T:
+        m["before_open"] = iss[11:16] < {"20261119": "10:00"}.get(T, "09:00")
     return m
 
 
