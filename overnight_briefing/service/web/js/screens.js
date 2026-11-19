@@ -648,13 +648,13 @@ export function home(m, d, st) {
   }
   if (d.market.cautions.length) h += d.market.cautions.map((c) => `<div class="notice">${I.warn}<div><b>${esc(c.title)}</b>${esc(c.body)}</div></div>`).join("");
 
-  const b = d.brief, line = b && b.market && b.market.line_ko, tc = {};
+  const b = d.brief, line = b && b.market && b.market.line_ko, tc = {}, kn = kstNow(), prepping = !line && d.T === kn.T && kn.hm < 700;   // 아침 07:00 전 그날만 '준비 중'
   ((b && b.market && b.market.items) || []).forEach((it) => (it.topics || []).forEach((t) => (tc[t] = (tc[t] || 0) + (it.media_count || 1))));
   const topics = Object.entries(tc).sort((x, y) => y[1] - x[1]).slice(0, 3).map((x) => x[0]);
   const mineN = Object.values(m.briefBy).reduce((x, y) => x + y, 0);
   h += `<div class="h-sec"><div class="h-row"><h2>뉴스 브리핑</h2><button class="h-more" data-act="nf" data-v="market">전체 보기</button></div>
     <button class="h-core" data-act="nf" data-v="market" data-llm="1"><span class="k">${topics.length >= 2 ? `오늘의 핵심 ${topics.length}가지` : "밤사이 한 줄"}${line ? AI : ""}</span>
-      <span class="hl${line && line.length > 28 ? " long" : ""}">${line ? esc(line) : "미국 장 마감까지 모은 기사로 쓰는 밤사이 요약을 준비하고 있어요."}</span>
+      <span class="hl${line && line.length > 28 ? " long" : ""}">${line ? esc(line) : prepping ? "미국 장 마감까지 모은 기사로 쓰는 밤사이 요약을 준비하고 있어요." : "이 날은 밤사이 AI 요약이 없어요. 뉴스 브리핑에서 관계로 이은 기사를 볼 수 있어요."}</span>
       <span class="kw">${topics.length ? topics.map(esc).join(" · ") : mineN ? `내 종목과 이어진 밤사이 소식 ${mineN}건` : "시장 전체 소식은 전체 보기에서"}</span>
       <span class="ft">3분 브리핑 읽기<i>›</i></span></button></div>`;
 
