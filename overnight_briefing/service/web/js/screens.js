@@ -707,6 +707,12 @@ export function rows4(m, st) {
   return { list: out, watch };
 }
 
+/** 화면에 보이는 순서(시트 ‹ ›도 이 순서): 전체면 확인 필요 먼저, 아니면 고른 필터만 */
+function order4(list, f) {
+  if (f === "all") return [...list.filter((x) => x.need), ...list.filter((x) => !x.need)];
+  if (f === "nc") return [];
+  return list.filter((x) => (f === "out" ? x.isOut : f === "low" ? x.low : grpOf(x.s) === f.slice(2)));
+}
 function mini4(v, s, dom, mark) {   // mark: 범위 밖으로 판단한 근거 값(08:10 장전 거래) — 주황 고리                             // 작은 범위 띠 64×14(피그마 '작은 범위 띠'와 같은 모양, 값은 실제)
   const X = (x) => Math.max(5, Math.min(59, ((x - dom[0]) / (dom[1] - dom[0])) * 64));
   const lo = X(s.b80[0]), hi = X(s.b80[1]), c = X(0), p = X(v);
@@ -805,7 +811,7 @@ export const nightBar = (sub) => `<div class="nb-r"><h1>밤사이</h1><button cl
 export const s4acct = (m, r) => { const tot = m.pinned ? m.hypoSum : m.Hsum, v = r.pin != null ? r.pin : r.s.H, amt = r.q > 0 ? r.value * v : null;
   return `<span>계좌 예상</span><b class="num ${tone(tot)}">${won(tot)}</b><em>${amt == null ? "관심 종목" : `이 종목 ${won(amt)}`}</em>`; };
 export function s4Sheet(code, m, d, st) {
-  const { list } = rows4(m, st), idx = list.findIndex((x) => x.s.code === code), x = list[idx] || rows4(m, { ...st, hold4: st.hold4 === "watch" ? "own" : "watch" }).list.find((y) => y.s.code === code);
+  const list = order4(rows4(m, st).list, st.f4 || "all"), idx = list.findIndex((x) => x.s.code === code), x = list[idx] || rows4(m, { ...st, hold4: st.hold4 === "watch" ? "own" : "watch" }).list.find((y) => y.s.code === code);
   if (!x) return "";
   const r = x.r, s = r.s, tm = tintMap(m), live = r.pin != null, v = live ? r.pin : s.H, amt = r.q > 0 ? r.value * v : null;
   const prev = list[idx - 1], next = list[idx + 1], g = st.slot !== "0730" ? s.grade : null, same = m.rows.filter((y) => y.h.q > 0 && grpOf(y.s) === grpOf(s)).length;
