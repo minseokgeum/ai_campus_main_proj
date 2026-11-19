@@ -271,7 +271,8 @@ function excludedHtml(m, d) {
     ${ex.map((x) => { const n = (bs[x.code] || { news: [] }).news.length; return `<div class="out-row">${avatar(x.code, x.name)}<span class="nm"><b>${esc(x.name)}</b><small>${num(x.q)}주 · ${x.code}</small></span><span class="chip">노란띠 없음</span>${n ? `<button class="chip btn" data-act="bstock" data-code="${x.code}">${I.news} ${n}</button>` : ""}</div>`; }).join("")}</div>`;
 }
 
-export function news(m, d, st) {
+/** 옛 뉴스 화면(원래 버전과 같은 것). 수연 버전 뉴스 탭은 아래 news(뉴스 브리핑 v2). */
+export function newsOld(m, d, st) {
   const mine = d.news.filter((n) => n.stocks.some((s) => m.codes.has(s.code)));
   const f = st.filter, bl = briefList(m, d), nb = bl.reduce((a, g) => a + g.items.length, 0);
   const seg = m.rows.map((r) => [r.s, d.segnews[r.s.code]]).filter(([, v]) => v);
@@ -649,8 +650,8 @@ export function home(m, d, st) {
   ((b && b.market && b.market.items) || []).forEach((it) => (it.topics || []).forEach((t) => (tc[t] = (tc[t] || 0) + (it.media_count || 1))));
   const topics = Object.entries(tc).sort((x, y) => y[1] - x[1]).slice(0, 3).map((x) => x[0]);
   const mineN = Object.values(m.briefBy).reduce((x, y) => x + y, 0);
-  h += `<div class="h-sec"><div class="h-row"><h2>뉴스 브리핑</h2><button class="h-more" data-act="tab" data-tab="news">전체 보기</button></div>
-    <button class="h-core" data-act="tab" data-tab="news" data-llm="1"><span class="k">${topics.length >= 2 ? `오늘의 핵심 ${topics.length}가지` : "밤사이 한 줄"}${line ? AI : ""}</span>
+  h += `<div class="h-sec"><div class="h-row"><h2>뉴스 브리핑</h2><button class="h-more" data-act="nf" data-v="market">전체 보기</button></div>
+    <button class="h-core" data-act="nf" data-v="market" data-llm="1"><span class="k">${topics.length >= 2 ? `오늘의 핵심 ${topics.length}가지` : "밤사이 한 줄"}${line ? AI : ""}</span>
       <span class="hl${line && line.length > 28 ? " long" : ""}">${line ? esc(line) : "미국 장 마감까지 모은 기사로 쓰는 밤사이 요약을 준비하고 있어요."}</span>
       <span class="kw">${topics.length ? topics.map(esc).join(" · ") : mineN ? `내 종목과 이어진 밤사이 소식 ${mineN}건` : "시장 전체 소식은 전체 보기에서"}</span>
       <span class="ft">3분 브리핑 읽기<i>›</i></span></button></div>`;
@@ -842,4 +843,92 @@ export function prog4Sheet(m, d, st) {
   return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>오늘 아침 진행</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b"><div class="s4-steps">${steps.map(([t, n, sub, sl], i) => `<button class="${i + 1 < now ? "done" : i + 1 === now ? "now" : ""}"${sl && !(sl === "0730" && !sealed["0730"] && Object.keys(sealed).length) ? ` data-act="slot" data-slot="${sl}"` : " disabled"}><i></i><b>${t}</b><span>${n}<small>${sub}</small></span></button>`).join("")}</div></div>`;
 }
 export const map4Sheet = (m, d) => `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>종목별 보기</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b" style="padding-top:0">${mapSection(m, d, "업종별 내 종목")}</div>`;
+
+
+/* ───── 뉴스 브리핑 v2(11/19, 수연 피그마 시장 522:6706 · 산업별 493:9838 · 내 종목 532:6226) ─────
+   AI 요약은 밤사이 프롬프트 결과(brief) 그대로, 기사는 brief 기사(한국어 한 줄) + 관계표로 이은 기사(영문 제목). */
+const WI = "img/news/";
+/** AI 종목 한 줄 중 실제 소식이 있는 것만, 같은 문장은 한 번(빈 기본 문장 '…기사는 없었어요' 제외) */
+const aiLines = (d, codes, n = 3) => { const bs = (d.brief || {}).stocks || {}, seen = new Set();
+  return codes.map((c) => bs[c]).filter((v) => v && (v.news || []).length && v.combined && v.combined.line_ko && !/기사는 없었어요/.test(v.combined.line_ko))
+    .map((v) => v.combined.line_ko).filter((l) => !seen.has(l) && seen.add(l)).slice(0, n); };
+const kHM = (iso) => { if (!iso) return ""; const t = new Date(iso); return isNaN(t) ? String(iso).slice(-5) : new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false }).format(t); };
+const sents = (t) => String(t || "").split(/(?<=요\.|다\.)\s*/).map((x) => x.trim()).filter(Boolean);
+const TONE = { "긍정": "pos", "부정": "neg", "중립": "neu", "혼합": "neu" };
+export const newsBar = (f) => `<div class="nb-r"><h1>뉴스 브리핑</h1><button class="hb-i" data-act="acctsheet" aria-label="마이 · 계좌 바꾸기"><img src="img/night/my.svg" width="23" height="23" alt=""></button></div>
+  <p class="wb-sub">국내 종목에 영향을 줄 미국 뉴스만 모았어요 · 06:00 마감 기준</p>
+  <div class="nb-tabs wb-tabs">${[["market", "시장"], ["ind", "산업별"], ["brief", "내 종목"]].map(([v, t]) => `<button class="${f === v ? "on" : ""}" data-act="nf" data-v="${v}">${t}</button>`).join("")}</div>`;
+const aiCard = (meta, lines, foot) => `<div class="nw-ai"><div class="nw-ai-h"><span class="nw-chip">AI 전체 요약</span><i></i><small>${esc(meta)}</small></div>
+  ${lines.map((l) => `<div class="nw-li"><img src="${WI}bullet.svg" width="5" height="14" alt=""><p>${esc(l)}</p></div>`).join("")}<small class="nw-foot">${esc(foot)}</small></div>`;
+const secH = (t, right, dot = true) => `<div class="nw-sec"><b><i></i>${esc(t)}</b><span>${dot ? `<img src="${WI}dot-red.svg" width="6" height="6" alt="">` : ""}${esc(right)}</span></div>`;
+const toneChip = (t) => (t ? `<span class="nw-tone ${TONE[t] || "neu"}">${esc(t)}</span>` : "");
+const link = (u) => (u ? `<a class="nw-link" href="${esc(u)}" target="_blank" rel="noopener noreferrer">원문 보기 <b>↗</b></a>` : "");
+
+/** 내 종목 기사: brief(한국어 한 줄·논조·출처) + 관계표로 이은 기사(영문 제목) */
+function newsOf(d, code) {
+  const out = ((((d.brief || {}).stocks || {})[code] || {}).news || []).map((n) => ({ id: "b" + n.id, t: n.short_summary_ko || n.title, tone: n.tone, src: n.source, at: kHM(n.published_at), url: n.url, ts: n.published_at || "", tier: n.tier }));
+  d.news.filter((n) => n.stocks.some((s) => s.code === code)).forEach((n) => out.push({ id: "n" + n.id, t: n.headline, tone: null, src: "관계표로 이은 기사", at: String(n.time || "").slice(-5), url: null, ts: n.ts || "", linked: true }));
+  return out.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+}
+const card = (x, tags) => `<div class="nw-card"><b class="nw-t">${esc(x.t)}</b>${tags ? `<div class="nw-tags">${tags}</div>` : ""}<div class="nw-meta"><span>${esc(x.src || "")}${x.at ? ` · ${esc(x.at)}` : ""}</span>${link(x.url)}</div></div>`;
+
+function newsMarket(m, d) {
+  const b = d.brief, mk = b && b.market, items = (mk && mk.items) || [];
+  let h = mk && mk.line_ko ? aiCard(`06:00 마감 기준 · 뉴스 ${items.length}건`, sents(mk.line_ko), "AI가 요약했어요. 원문과 다를 수 있어요.")
+    : `<div class="nw-ai"><div class="nw-ai-h"><span class="nw-chip">AI 전체 요약</span></div><p class="nw-empty">이 날은 밤사이 AI 요약이 없어요. 아래 기사는 관계표로 내 종목과 이은 미국 기사예요.</p></div>`;
+  if (items.length) {
+    h += secH("최신 뉴스", `${kHM(b.generated_at)} 갱신`);
+    h += items.map((it) => card({ t: it.short_summary_ko || it.title, src: it.source + (it.media_count > 1 ? ` · 매체 ${it.media_count}곳` : ""), url: it.url }, (it.topics || []).map((t, i) => `<span class="${i ? "" : "hl"}">${esc(t)}</span>`).join(""))).join("");
+  } else if (d.news.length) {
+    h += secH("관계표로 이은 기사", `${d.news.length}건`, false);
+    h += d.news.slice(0, 12).map((n) => card({ t: n.headline, src: n.us, at: String(n.time).slice(-5) }, n.stocks.slice(0, 3).map((s) => `<span>${esc(s.name)}</span>`).join(""))).join("");
+  }
+  return h;
+}
+
+function newsInd(m, d, st) {
+  const by = {};
+  m.rows.forEach((r) => { const g = r.s.group || "기타"; (by[g] = by[g] || { codes: [], items: {} }).codes.push(r.s.code); newsOf(d, r.s.code).forEach((x) => (by[g].items[x.id] = { ...x, names: [...((by[g].items[x.id] || {}).names || []), r.s.name] })); });
+  const gs = Object.entries(by).sort((a, b) => Object.keys(b[1].items).length - Object.keys(a[1].items).length);
+  const sel = (st.ind || []).filter((g) => by[g]), all = !sel.length, pick = all ? gs.map((x) => x[0]) : sel;
+  let h = `<div class="nw-pick"><div class="nw-pick-in"><button class="${all ? "all on" : "all"}" data-act="indsel" data-v="">내 업종 전체</button>${gs.map(([g]) => `<button class="${sel.includes(g) ? "on" : ""}" data-act="indsel" data-v="${esc(g)}"><img src="${WI}bullet.svg" width="5" height="14" alt="" class="dot">${esc(g)}${sel.includes(g) ? " <em>✓</em>" : ""}</button>`).join("")}</div></div>
+    <p class="nw-cap">● 내 종목이 있는 업종 · 오늘 뉴스 많은 순</p>`;
+  const codes = pick.flatMap((g) => by[g].codes), bs = (d.brief || {}).stocks || {};
+  const lines = aiLines(d, codes);
+  const items = Object.values(Object.assign({}, ...pick.map((g) => by[g].items))).sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+  const label = all ? "내 업종 전체" : pick.join(" · ");
+  if (lines.length) h += aiCard(`${label} · 뉴스 ${items.length}건`, lines, "AI가 요약했어요. 원문과 다를 수 있어요.");
+  h += secH(`${all ? "내 업종" : pick.join("·")} 관련 뉴스`, `최신순 · ${items.length}건`);
+  h += items.length ? items.slice(0, 20).map((x) => card(x, [toneChip(x.tone), ...(x.names || []).slice(0, 3).map((n) => `<span>${esc(n)}</span>`)].join(""))).join("") : `<div class="nw-none">밤사이 이 업종과 이어진 소식이 없어요</div>`;
+  return h;
+}
+
+function newsMine(m, d, st) {
+  const own = m.rows.filter((r) => r.h.q > 0), wat = m.rows.filter((r) => r.h.q === 0), ex = (m.account.excluded || []).filter((x) => x.q > 0);
+  const watch = (st.hold4 || (own.length ? "own" : "watch")) === "watch", base = watch ? wat : own;
+  const stocks = [...base.map((r) => ({ code: r.s.code, name: r.s.name })), ...(watch ? [] : ex.map((x) => ({ code: x.code, name: x.name })))];
+  const sel = (st.nsel || []).filter((c) => stocks.some((s) => s.code === c)), shown = sel.length ? stocks.filter((s) => sel.includes(s.code)) : stocks;
+  const blocks = shown.map((s) => ({ ...s, items: newsOf(d, s.code) })), withN = blocks.filter((b) => b.items.length), noN = blocks.filter((b) => !b.items.length);
+  withN.sort((a, b) => (b.items.some((x) => x.tone === "부정") ? 1 : 0) - (a.items.some((x) => x.tone === "부정") ? 1 : 0) || b.items.length - a.items.length);
+  const tc = { "긍정": 0, "부정": 0, "중립": 0, "혼합": 0 }; withN.forEach((b) => b.items.forEach((x) => x.tone && (tc[x.tone] = (tc[x.tone] || 0) + 1)));
+  const lines = aiLines(d, withN.map((b) => b.code));
+  const total = withN.reduce((a, b) => a + b.items.length, 0);
+  let h = `<div class="n4-hold nw-hold"><button class="${watch ? "" : "on"}" data-act="hold4" data-v="own">보유 ${own.length + ex.length}</button><button class="${watch ? "on" : ""}" data-act="hold4" data-v="watch"${wat.length ? "" : " disabled"}>관심 ${wat.length}</button></div>
+    <div class="nw-pick"><div class="nw-pick-in"><button class="${sel.length ? "all" : "all on"}" data-act="nsel" data-v="">${watch ? "관심" : "보유"} 종목 전체</button>${stocks.map((s) => `<button class="${sel.includes(s.code) ? "on" : ""}" data-act="nsel" data-v="${s.code}">${esc(s.name)}${sel.includes(s.code) ? " <em>✓</em>" : ""}</button>`).join("")}</div></div>`;
+  if (lines.length) h += aiCard(`긍정 ${tc["긍정"]} · 부정 ${tc["부정"]} · 중립 ${tc["중립"] + tc["혼합"]}`, lines, `${watch ? "관심" : "보유"} ${stocks.length}종목 · 밤사이 소식 ${total}건 기준 · AI가 요약했어요`);
+  h += secH("종목별 뉴스", "부정 소식이 있는 종목 먼저");
+  const exp = st.nexp || {};
+  h += withN.map((b) => { const lim = exp[b.code] ? b.items.length : 2;
+    return `<div class="nw-blk"><div class="nw-blk-h"><b>${esc(b.name)}</b><small>뉴스 ${b.items.length}건</small></div>${b.items.slice(0, lim).map((x) => `<div class="nw-it"><b class="nw-t">${esc(x.t)}</b>${x.tone || x.linked ? `<div class="nw-tags">${x.tone ? toneChip(x.tone) : `<span>관계로 이은 기사</span>`}</div>` : ""}<div class="nw-meta"><span>${esc(x.src || "")}${x.at ? ` · ${esc(x.at)}` : ""}</span>${link(x.url)}</div></div>`).join("")}
+      ${b.items.length > 2 ? `<button class="nw-more" data-act="nexp" data-v="${b.code}">${exp[b.code] ? "접기" : `${esc(b.name)} 뉴스 ${b.items.length}건 모두 보기 ›`}</button>` : ""}</div>`; }).join("");
+  if (noN.length) h += `<div class="nw-none">밤사이 소식 없음 · ${noN.slice(0, 2).map((b) => esc(b.name)).join(", ")}${noN.length > 2 ? ` 외 ${noN.length - 2}종목` : ""}</div>`;
+  h += `<p class="nw-note">긍정·부정·혼합은 AI가 기사 논조를 판단한 거예요. 주가 방향 예측이 아니에요.</p>`;
+  return h;
+}
+
+/** 수연 버전 '뉴스 브리핑' 탭 */
+export function news(m, d, st) {
+  const f = ["market", "ind", "brief"].includes(st.filter) ? st.filter : "market";
+  return `<div class="nw">${f === "ind" ? newsInd(m, d, st) : f === "brief" ? newsMine(m, d, st) : newsMarket(m, d)}</div>`;
+}
 

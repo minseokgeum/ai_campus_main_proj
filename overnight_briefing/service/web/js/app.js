@@ -9,7 +9,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "home", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false, liveFeed: null, notif: lsGet("ob.notif") || "06:30",
   liveMode: true, pending: null,        // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
   preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1", hideAmt: lsGet("ob.hide") === "1",
-  hold4: null, f4: "all", sort4: lsGet("ob.sort4") || "amt", nsub: "pred" };   // 11/19 밤사이 v4: 보유|관심, 필터 칩, 정렬, 상단 하위 탭(시가예측|기록)   // hideAmt: 홈 계좌 카드 금액 가리기(눈 단추)   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
+  hold4: null, f4: "all", sort4: lsGet("ob.sort4") || "amt", nsub: "pred",
+  ind: [], nsel: [], nexp: {} };   // 뉴스 브리핑 v2: 고른 업종·종목, 펼친 종목   // 11/19 밤사이 v4: 보유|관심, 필터 칩, 정렬, 상단 하위 탭(시가예측|기록)   // hideAmt: 홈 계좌 카드 금액 가리기(눈 단추)   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 // 11/19 홈 v2(수연 피그마): 홈 · 뉴스 브리핑 · 밤사이(종목별 노란띠, 옛 브리핑) · 내 종목 · 보관(옛 기록). 야간선물 흐름은 홈의 야간선물 띠로 들어가고 아래 메뉴에는 없다(넷째 칸 true).
@@ -76,9 +77,10 @@ function renderShell() {
   const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전";
   const sub = S.liveMode && S.pending ? `${S.pending.preview ? "미리 보기" : "실시간"} · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
   const homeSub = `${d.label}  ·  ${S.liveMode && S.pending ? `${S.pending.label} 아침 준비 중` : when.replace(" · 장 전", "")}  ·  ${a.sample ? "예시 계좌 " + a.id : "내 잔고"}`;
-  $("#appbar").classList.toggle("hbar", S.tab === "home"); $("#appbar").classList.toggle("nbar", S.tab === "brief");
+  $("#appbar").classList.toggle("hbar", S.tab === "home"); $("#appbar").classList.toggle("nbar", S.tab === "brief" || S.tab === "news"); $("#appbar").classList.toggle("wbar", S.tab === "news");
   if (S.tab === "home") $("#appbar").innerHTML = V.homeBar(homeSub);
   else if (S.tab === "brief") $("#appbar").innerHTML = V.nightBar(S.nsub);
+  else if (S.tab === "news") $("#appbar").innerHTML = V.newsBar(["market", "ind", "brief"].includes(S.filter) ? S.filter : "market");
   else $("#appbar").innerHTML = `${t[3] ? `<button class="back" data-act="tab" data-tab="home" aria-label="홈으로">${I.back}</button>` : ""}<h1>${t[2]}<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0), fresh = mine + Object.values(m.newsBy).reduce((x, y) => x + y, 0) + ((d.brief && d.brief.market && d.brief.market.items) || []).length;   // 새 소식 점: 내 종목 소식·관계로 이은 기사·시장 전체 소식
   $("#tabbar").innerHTML = TABS.map(([id, nm, , hid]) => `<button class="${S.tab === id ? "on" : ""}${id === "home" && S.tab === "night" ? " on2" : ""}" data-act="tab" data-tab="${id}"${hid ? " hidden" : ""}${id === "news" && mine ? ` aria-label="${nm}, 내 종목 소식 ${mine}건"` : ""}><i class="ti ti-${id}"></i>${id === "news" ? `<i class="ndot${fresh ? "" : " off"}"></i>` : ""}${nm}</button>`).join("");
@@ -191,6 +193,10 @@ async function act(el) {
   else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
   else if (a === "s4") openS4(el.dataset.code);
   else if (a === "needgo") { S.tab = "brief"; S.nsub = "pred"; S.hold4 = "own"; S.f4 = "out"; closeSheet(); render(); }   // 프로토타입: 홈 확인 필요 → 밤사이 필터 결과(범위 밖)
+  else if (a === "nf") { S.tab = "news"; S.filter = el.dataset.v; closeSheet(); render(); }
+  else if (a === "indsel") { const v = el.dataset.v; S.ind = !v ? [] : S.ind.includes(v) ? S.ind.filter((x) => x !== v) : [...S.ind, v]; renderScreen(true); }
+  else if (a === "nsel") { const v = el.dataset.v; S.nsel = !v ? [] : S.nsel.includes(v) ? S.nsel.filter((x) => x !== v) : [...S.nsel, v]; renderScreen(true); }
+  else if (a === "nexp") { S.nexp[el.dataset.v] = !S.nexp[el.dataset.v]; renderScreen(true); }
   else if (a === "newsmine") { S.tab = "news"; S.filter = "brief"; closeSheet(); render(); }                               // 프로토타입: 시트 밤사이 소식 → 뉴스 브리핑 · 내 종목
   else if (a === "hold4") { S.hold4 = el.dataset.v; S.f4 = "all"; renderScreen(true); }
   else if (a === "f4") { S.f4 = el.dataset.v; renderScreen(true); }
