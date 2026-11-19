@@ -31,7 +31,7 @@ export function bandHtml(s, o) {
   h += `<i class="track"></i>${o.wide ? `<i class="f90" style="left:${x(lo9)};width:${w(lo9, hi9)}"></i>` : ""}<i class="f80" style="left:${x(lo)};width:${w(lo, hi)}"></i>`;
   h += `<i class="zero" style="left:${x(0)}"></i>`;
   if (o.avg != null && isFinite(o.avg)) {
-    if (o.avg >= dom[0] && o.avg <= dom[1]) h += `<i class="avg" style="left:${x(o.avg)}"></i><span class="avg-l" style="left:${x(o.avg)}">평단</span>`;
+    if (o.avg >= dom[0] && o.avg <= dom[1]) h += `<i class="avg" style="left:${x(o.avg)}"></i><span class="avg-l" style="left:${x(o.avg)}">평균가</span>`;
   }
   h += `<span class="end lo ${tone(lo)}" style="left:${x(loAt[0], loAt[1])}">${pct(lo)}</span><span class="end hi ${tone(hi)}" style="left:${x(hiAt[0], hiAt[1])}">${pct(hi)}</span>`;
   h += `<i class="dot" style="left:${x(s.H)}"></i><span class="dot-l" style="left:${x(s.H)}">${pct(s.H)}</span>`;

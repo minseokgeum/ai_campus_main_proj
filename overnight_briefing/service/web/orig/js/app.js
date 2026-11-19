@@ -106,6 +106,10 @@ function renderScreen(keep = false) {
   scr.scrollTop = keep ? top : 0;
   if (!keep) scr.firstElementChild && scr.firstElementChild.classList.add("fade-in");
   if (S.view !== "host" && S.tab === "brief") bindBands(scr, () => DOM, onBand);
+  if (S.view !== "host" && S.tab === "brief" && !lsGet("ob.coach")) {   // 11/20: 처음 한 번, 노란 막대를 눌러 보게 알려 준다
+    const band = scr.querySelector("[data-band]");
+    if (band) band.insertAdjacentHTML("afterend", `<div class="coach" role="note"><span>노란 막대를 눌러 보세요. 그 가격에 시작하면 내 금액이 바로 보여요.</span><button data-act="coachok">알겠어요</button></div>`);
+  }
   if (S.view !== "host" && S.tab === "mine") bindEditor(scr);
   $("#appbar").classList.toggle("scrolled", scr.scrollTop > 4);
 }
@@ -126,7 +130,9 @@ function patchRow(code) {                      // 수량·가정 시가가 바�
   const hero = $("#hero"); if (hero) hero.innerHTML = V.heroHtml(m, S.day, S);
 }
 
+const coachDone = () => { lsSet("ob.coach", "1"); document.querySelectorAll(".coach").forEach((x) => x.remove()); };
 function onBand(code, v, commit) {
+  if (!lsGet("ob.coach")) coachDone();
   if (commit) { S.live = null; S.pin[key(code)] = v; renderScreen(true); return; }
   S.live = v == null ? null : { code, v }; patchRow(code);
 }
@@ -219,6 +225,7 @@ async function act(el) {
   else if (a === "setbed") { S.bed = el.dataset.v; lsSet("ob.bed", S.bed); openSheet(V.notifSheet(S, S.day)); renderScreen(true); toast(`잠드는 시각 ${S.bed}로 저장했어요(시연)`); }
   else if (a === "setbig") { S.big = el.dataset.v === "1"; lsSet("ob.big", S.big ? "1" : "0"); applyBig(); openSheet(V.notifSheet(S, S.day)); }
   else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
+  else if (a === "coachok") coachDone();
   else if (a === "hosthome") { S.view = "host"; render(); }
   else if (a === "openmodule") { S.view = "module"; S.tab = "brief"; render(); }
   else if (a === "hostnav") { if (el.dataset.v === "home") { S.view = "host"; render(); } else toast("시연에서는 증권사 화면을 따로 만들지 않았어요"); }

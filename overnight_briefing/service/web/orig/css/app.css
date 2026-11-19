@@ -497,3 +497,11 @@ details.bulk .btn-line { width: 100%; }
 .hh-row .nm { flex: 1; min-width: 0; } .hh-row .nm b { display: block; font-size: 15px; font-weight: 650; letter-spacing: -.03em; } .hh-row .nm small { font-size: 12px; color: var(--sub); }
 .hh-row > b { font-size: 15px; font-weight: 650; }
 .hh-note { margin: 0; padding: 0 4px; font-size: 11.5px; line-height: 1.55; color: var(--mute); }
+/* 11/20: 08:11 개장 전 거래가 예상 밖일 때 한 줄, 처음 한 번 노란 막대 안내 */
+.flow-note { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 12px; font-weight: 500; line-height: 1.45; text-align: left; }
+.flow-note svg { flex: none; margin-left: auto; opacity: .7; }
+.coach { position: relative; display: flex; align-items: center; gap: 10px; margin: 12px 0 4px; padding: 10px 10px 10px 12px; border-radius: 12px; background: var(--ink); color: var(--card); font-size: 12.5px; font-weight: 500; line-height: 1.45; animation: fade-up .25s ease; }
+.coach::before { content: ""; position: absolute; top: -6px; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top: 0; border-bottom-color: var(--ink); }
+.coach span { flex: 1; } .coach button { flex: none; height: 28px; padding: 0 10px; border-radius: 8px; background: rgba(127, 127, 127, .28); color: inherit; font-size: 12px; font-weight: 700; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.stock-foot .range b[data-f="range"] { display: block; white-space: nowrap; }   /* 11/20: '노란 막대 안이면' 아래 줄에 금액 */

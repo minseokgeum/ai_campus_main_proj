@@ -31,7 +31,8 @@ function stockRow(r, m, st, d) {
   const nxtOut = g && g.g != null && !(s.b80[0] <= g.g && g.g <= s.b80[1]);
   const chips = [S_PIN(r, s), gradeChip(g)];
   s.cautions.forEach((c) => chips.push(`<button class="chip btn lo" data-act="stock" data-code="${s.code}">${I.warn.replace('width="16" height="16"', 'width="12" height="12"')} ${esc(c.title)}</button>`));
-  if (nxtOut) chips.push(`<button class="chip btn lo" data-act="info" data-info="nxtout">개장 전 거래가 예상보다 ${g.g > s.b80[1] ? "높아요" : "낮아요"}</button>`);
+  const nxtNote = nxtOut && st.slot === "0811" && !m.showAct;   // 11/20: 08:11엔 아래 흐름 줄에 '그래서 어땠나' 한 줄을 붙이고 칩은 뺀다
+  if (nxtOut && !nxtNote) chips.push(`<button class="chip btn lo" data-act="info" data-info="nxtout">개장 전 거래가 예상보다 ${g.g > s.b80[1] ? "높아요" : "낮아요"}</button>`);
   if (news) chips.push(`<button class="chip btn" data-act="stock" data-code="${s.code}">${I.news} 밤사이 소식 ${news}</button>`);
   if (s.eve && s.eve.r != null) chips.push(`<button class="chip btn" data-act="info" data-info="eve">어제 저녁 거래 <b class="${tone(s.eve.r)}" style="margin-left:3px">${pct(s.eve.r)}</b></button>`);   // 참고용(띠 계산에 넣지 않음)
   if (watch) chips.unshift(`<span class="chip accent">관심 종목</span>`);
@@ -42,7 +43,8 @@ function stockRow(r, m, st, d) {
       <span class="chip ${s.inb ? "hi" : "lo"}" style="margin-left:auto">${s.inb ? "예상대로" : s.y > s.b80[1] ? "예상보다 높게" : "예상보다 낮게"}</span></div>`;
   } else if (st.slot === "0811" && g && g.g != null) {           // 11/17: 07:30 예상과 08:10 개장 전 거래를 한 줄로 잇는다(실시간 시세는 증권사 몫)
     flow = `<div class="stock-flow"><span>07:30 예상 <b class="${tone(s.H)}">${pct(s.H)}</b></span>${I.sm}<span>08:10 개장 전 거래 <b class="${tone(g.g)}">${pct(g.g)}</b></span>
-      <span class="chip ${nxtOut ? "lo" : "hi"}" style="margin-left:auto">${nxtOut ? (g.g > s.b80[1] ? "예상보다 높게" : "예상보다 낮게") : "예상대로"}</span></div>`;
+      <span class="chip ${nxtOut ? "lo" : "hi"}" style="margin-left:auto">${nxtOut ? (g.g > s.b80[1] ? "예상보다 높게" : "예상보다 낮게") : "예상대로"}</span></div>`
+      + (nxtNote ? `<button class="flow-note" data-act="info" data-info="nxtout">지난 1년 기록으로는 이런 날 10번 중 6~7번, 9시 시작가도 ${g.g > s.b80[1] ? "높은" : "낮은"} 쪽으로 벗어났어요 ${I.chev}</button>` : "");
   }
   return `<article class="stock" data-row="${s.code}">
     <button class="stock-top" data-act="stock" data-code="${s.code}">${avatar(s.code, s.name)}
@@ -118,7 +120,7 @@ export function brief(m, d, st) {
     <div class="ordrow"><div class="ord" role="group" aria-label="종목 순서"><button class="${(st.ord || "need") === "need" ? "on" : ""}" data-act="ord" data-v="need">먼저 볼 순</button><button class="${st.ord === "value" ? "on" : ""}" data-act="ord" data-v="value">보유 금액 순</button></div></div>
     ${nw && own ? `<div class="filters holdf">${[["all", "전체", m.rows.length], ["own", "보유 종목", own], ["watch", "관심 종목", nw]].map(([v, t, n]) => `<button class="${hf === v ? "on" : ""}" data-act="hold" data-v="${v}">${t}<small>${n}</small></button>`).join("")}</div>` : ""}
     ${fa && fa.in80 != null ? `<button class="trustline" data-act="tab" data-tab="record"><span>규칙을 고정한 11/2 뒤 ${fa.days}거래일 동안, 200종목 가운데 <b>${fa.in80.toFixed(1)}%</b>가 예상대로 시작했어요(목표 80%)</span>${I.chev}</button>` : ""}
-    <div class="legend-row"><span><i class="lg-band"></i>예상 가격대</span><span><i class="lg-dot"></i>예상 시작가</span><span><i class="lg-zero"></i>어제 종가(가운데)</span>${m.rows.some((r) => r.h.avg > 0) ? '<span><i class="lg-avg"></i>내 평단</span>' : ""}${st.slot !== "0730" && !m.showAct ? '<span><i class="lg-nxt"></i>개장 전 거래</span>' : ""}${m.showAct ? '<span><i class="lg-act"></i>실제 시작가</span>' : ""}</div>
+    <div class="legend-row"><span><i class="lg-band"></i>예상 가격대</span><span><i class="lg-dot"></i>예상 시작가</span><span><i class="lg-zero"></i>어제 종가(가운데)</span>${m.rows.some((r) => r.h.avg > 0) ? '<span><i class="lg-avg"></i>내 평균 단가</span>' : ""}${st.slot !== "0730" && !m.showAct ? '<span><i class="lg-nxt"></i>개장 전 거래</span>' : ""}${m.showAct ? '<span><i class="lg-act"></i>실제 시작가</span>' : ""}</div>
     ${shown.map((r) => stockRow(r, m, st, d)).join("")}${m.rows.length ? "" : `<div class="empty">예상 가격대를 볼 수 있는 종목이 없어요.</div>`}
     ${excludedHtml(m, d)}
     <div class="tiny" style="margin-top:10px">노란 막대를 누르거나 끌면 그 가격에 시작했을 때 내 금액을 볼 수 있어요. 수량을 바꿔도 실제 주문은 나가지 않아요.${d.brief && m.rows.some((r) => !(d.brief.stocks || {})[r.s.code]) ? " 밤사이 소식 한 줄(AI)은 지금 시험 종목 18개부터 나와요." : ""}</div></section>`;
@@ -328,9 +330,9 @@ export function draftRows(draft) {
 function holdingsCard(m, d) {
   const total = m.baseValue;
   const rows = m.rows.map((r) => { const v = r.h.q * r.s.pc, pl = r.h.avg ? (r.s.pc - r.h.avg) * r.h.q : null;
-    return `<button class="hrow" data-act="stock" data-code="${r.s.code}"><span class="nm"><b>${esc(r.s.name)}</b><small>${num(r.h.q)}주${r.h.avg ? ` · 평단 ${num(r.h.avg)}원` : ""}</small><small>오늘 예상 <span class="${tone(r.s.H)}">${pct(r.s.H)}</span></small></span>
+    return `<button class="hrow" data-act="stock" data-code="${r.s.code}"><span class="nm"><b>${esc(r.s.name)}</b><small>${num(r.h.q)}주${r.h.avg ? ` · 평균 단가 ${num(r.h.avg)}원` : ""}</small><small>오늘 예상 <span class="${tone(r.s.H)}">${pct(r.s.H)}</span></small></span>
       <span class="amt"><b>${won(v, false)}</b>${pl != null ? `<small class="${tone(pl)}">${won(pl)} (${pct(r.s.pc / r.h.avg - 1)})</small>` : ""}<small>비중 ${total ? Math.round((v / total) * 100) : 0}%</small></span></button>`; }).join("");
-  const outs = m.account.excluded.map((x) => `<div class="hrow"><span class="nm"><b>${esc(x.name)}</b><small>${num(x.q)}주${x.avg ? ` · 평단 ${num(x.avg)}원` : ""}</small></span><span class="amt"><span class="chip">예상 없음</span></span></div>`).join("");
+  const outs = m.account.excluded.map((x) => `<div class="hrow"><span class="nm"><b>${esc(x.name)}</b><small>${num(x.q)}주${x.avg ? ` · 평균 단가 ${num(x.avg)}원` : ""}</small></span><span class="amt"><span class="chip">예상 없음</span></span></div>`).join("");
   return `<section class="sec"><div class="hold-card"><div class="sub">어제 종가 기준 주식</div><div class="big num">${won(total, false)}</div>
     <div class="tiny">예상이 있는 ${m.rows.length}종목 기준${m.account.excluded.length ? ` · 예상이 없는 ${m.account.excluded.length}종목은 금액에서 빠져요` : ""}</div></div>${rows}${outs}</section>`;
 }
