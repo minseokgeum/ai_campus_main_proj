@@ -71,7 +71,7 @@ async function refreshLive() {                  // 5분마다: 새 날짜·새 �
 function renderShell() {
   const d = S.day, m = model(), a = m.account, t = TABS.find((x) => x[0] === S.tab);
   $("#clock").textContent = S.liveMode ? kst().hhmm : S.slot.slice(0, 2) + ":" + S.slot.slice(2);
-  const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? "09:00 개장" : "개장 전";
+  const when = S.slot === "0730" ? "07:30 기준 · 장 전" : S.slot === "0811" ? "08:11 기준 · 장 전" : d.has_open ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전";
   const sub = S.liveMode && S.pending ? `${S.pending.preview ? "미리 보기" : "실시간"} · ${S.pending.label} 아침 준비 중` : `${S.liveMode ? "실시간 · " : ""}${d.label} · ${when}`;
   $("#appbar").innerHTML = `<h1>${t[2]}<button class="sub-btn" data-act="daysheet" aria-label="날짜 바꾸기"><small>${sub} ${I.down}</small></button></h1><button class="help" data-act="intro" data-step="0" aria-label="처음 안내 보기">?</button><button class="acct" data-act="acctsheet" aria-label="계좌 바꾸기">${a.sample ? "예시 " + a.id : "내 잔고"} ${I.down}</button>`;
   const mine = Object.values(m.briefBy).reduce((x, y) => x + y, 0);

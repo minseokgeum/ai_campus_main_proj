@@ -63,7 +63,7 @@ export function heroHtml(m, d, st) {
   const label = act ? "개장 시가 기준 내 주식 변화" : hypo ? "내가 가정한 시가 기준 내 주식 변화" : "오늘 시가에 예상되는 내 주식 변화";
   const now = { "0730": 1, "0811": 2, "0900": 3 }[st.slot];
   const pillOpen = st.slot === "0900" && d.has_open;
-  let h = `<div class="when"><span>${d.label}</span><span class="live${pillOpen ? " open" : ""}"><i></i>${st.slot === "0730" ? "07:30 기준 · 장 전" : st.slot === "0811" ? "08:11 기준 · 장 전" : pillOpen ? "09:00 개장" : "개장 전"}</span></div>
+  let h = `<div class="when"><span>${d.label}</span><span class="live${pillOpen ? " open" : ""}"><i></i>${st.slot === "0730" ? "07:30 기준 · 장 전" : st.slot === "0811" ? "08:11 기준 · 장 전" : pillOpen ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전"}</span></div>
     <div class="label">${label}</div>
     <div class="big num ${tone(main)}">${won(main)}<small>${pct2(sv ? main / sv : null)}</small></div>
     <div class="flow"><div><span>어제 종가 기준</span><b class="num">${won(sv, false)}</b></div>${I.arrow}<div><span>${act ? "개장 시가 기준" : hypo ? "가정한 시가 기준" : "예상 시가 기준"}</span><b class="num">${won(sv + main, false)}</b></div></div>`;
@@ -74,17 +74,20 @@ export function heroHtml(m, d, st) {
     const mx = Math.max(...all.map((c) => Math.abs(c.v)), 1);
     h += `<div class="contrib"><div class="ch"><span>종목별로 보면</span><span>가운데 = 어제 종가</span></div>${all.map((c) => `<div class="cr"><span class="cn">${esc(c.n)}</span><span class="cb"><i class="${c.v < 0 ? "neg" : "pos"}" style="width:${((Math.abs(c.v) / mx) * 50).toFixed(1)}%"></i></span><b class="num ${tone(c.v)}">${won(c.v)}</b></div>`).join("")}</div>`;
   }
-  if (st.slot === "0811" && !act) h += `<div class="tiny" style="margin-top:8px">08:00~08:10 장전 거래까지 반영했어요. 실서비스에서는 증권사 실시간 시세로 개장 전까지 계속 바뀌어요.</div>`;
+  // 11/19: 장전 거래가 없는 날(수능일 등, core/extras.py SPECIAL)엔 08:11도 07:30과 같은 값이다. 개장 시각도 그날 값을 쓴다
+  const noPre = !!(d.special && d.special.premarket === false), openAt = (d.special && d.special.open) || "09:00";
+  const sealed = d.record && d.record.sealed, no730 = !!(sealed && Object.keys(sealed).length && !sealed["0730"]);
+  if (st.slot === "0811" && !act) h += `<div class="tiny" style="margin-top:8px">${noPre ? "오늘은 장전 거래(NXT 프리마켓)가 없어 07:30 예상 범위와 같은 값이에요." : "08:00~08:10 장전 거래까지 반영했어요. 실서비스에서는 증권사 실시간 시세로 개장 전까지 계속 바뀌어요."}</div>`;
   if (m.changed || m.pinned) h += `<div class="what-if"><span>${m.changed && m.pinned ? "수량과 시가를" : m.changed ? "수량을" : "시가를"} 바꿔서 보는 중이에요</span><button data-act="reset">${I.undo} 되돌리기</button></div>`;
   if (act) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb).length, dr = got.filter((r) => r.s.dir != null), dok = dr.filter((r) => r.s.dir).length;
     const hs = m.HsumAct != null ? m.HsumAct : m.Hsum;             // 시가를 못 받은 종목이 있으면 같은 종목끼리만 견준다
     h += `<div class="result"><span class="chip">아침 예상 ${won(hs)}</span><span class="chip">차이 ${won(m.actSum - hs)}</span><span class="chip ${ok === got.length ? "hi" : ""}">범위 안 ${ok}/${got.length}종목</span>${dr.length ? `<span class="chip">장전 방향 일치 ${dok}/${dr.length}</span>` : ""}${m.actMissing ? `<span class="chip lo">시가를 아직 못 받은 ${m.actMissing}종목은 빠졌어요</span>` : ""}</div>`;
   } else if (st.slot === "0900") {
-    h += `<div class="notice info" style="margin-top:12px">${I.info}<div><b>아직 개장 전이에요</b>09:00 시가가 나오면 아침 예상과 나란히 보여 드려요.</div></div>`;
+    h += `<div class="notice info" style="margin-top:12px">${I.info}<div><b>아직 개장 전이에요</b>${openAt} 시가가 나오면 아침 예상과 나란히 보여 드려요.</div></div>`;
   }
-  h += `<div class="steps"><i class="prog" style="width:${(now / 3) * 75}%"></i>${[["06:00", "야간장 마감", ""], ["07:30", "예상 범위", "0730"], ["08:11", "장전 거래", "0811"], ["09:00", "개장", "0900"]]
-    .map(([t, n, sl], i) => `<button class="${i < now ? "done" : i === now ? "now" : ""}" ${sl ? `data-act="slot" data-slot="${sl}"` : 'data-act="tab" data-tab="night"'}><b>${t}</b>${n}</button>`).join("")}</div>
+  h += `<div class="steps"><i class="prog" style="width:${(now / 3) * 75}%"></i>${[["06:00", "야간장 마감", ""], ["07:30", no730 ? "예상 범위 · 없음" : "예상 범위", no730 ? "-" : "0730"], ["08:11", noPre ? "장전 거래 없음" : "장전 거래", "0811"], [openAt, "개장", "0900"]]
+    .map(([t, n, sl], i) => `<button class="${i < now ? "done" : i === now ? "now" : ""}" ${sl === "-" ? "disabled" : sl ? `data-act="slot" data-slot="${sl}"` : 'data-act="tab" data-tab="night"'}><b>${t}</b>${n}</button>`).join("")}</div>
     <div class="tiny" style="margin-top:8px;display:flex;justify-content:space-between;gap:8px"><span>브리핑 받는 시각 ${st.notif || "06:30"} · 잠드는 시각 ${st.bed || "00:00"}</span><button class="link" data-act="notif">설정</button></div>`;
   if (st.slot !== "0730" && d.graded && sv) {
     const sh = { "높음": 0, "보통": 0, "낮음": 0, "없음": 0 };
