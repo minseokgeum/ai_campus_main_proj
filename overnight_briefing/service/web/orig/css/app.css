@@ -441,3 +441,29 @@ details.more-d summary::after { content: " 펼치기"; font-weight: 400; color: 
 .ver a { display: block; padding: 7px 6px; border-radius: 9px; text-align: center; font-size: 13px; font-weight: 700; line-height: 1.25; color: #6C7789; text-decoration: none; }
 .ver a small { display: block; font-size: 10.5px; font-weight: 500; opacity: .85; }
 .ver a.on { background: #fff; color: #008C82; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+
+/* ───── 11/20 원래 버전 고도화(아침 흐름 기준) ───── */
+.hero .label { display: flex; align-items: center; gap: 6px; }
+.hero .label .eye { margin-left: auto; width: 32px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: var(--teal); }
+.need-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.need-line > span { font-size: 12.5px; font-weight: 700; color: var(--warn); margin-right: 2px; }
+.need-line.ok > span { color: var(--ink2); } .need-line.ok small { font-size: 12.5px; color: var(--sub); }
+.ordrow { display: flex; justify-content: flex-end; margin: -2px 0 10px; }
+.ord { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--chip); }
+.ord button { padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--sub); }
+.ord button.on { background: var(--card); font-weight: 700; color: var(--ink); box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
+.stock.flash { animation: flash 1.8s ease; border-radius: 12px; }
+@keyframes flash { 0%, 45% { background: var(--band-soft); box-shadow: 0 0 0 6px var(--band-soft); } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; } }
+details.more { margin-top: 8px; }
+details.more > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; font-size: 12.5px; font-weight: 600; color: var(--sub); }
+details.more > summary::after { content: "▾"; font-size: 11px; } details.more[open] > summary::after { content: "▴"; }
+details.more > summary::-webkit-details-marker { display: none; } details.more[open] > summary { margin-bottom: 6px; }
+details.thin { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--chip); color: var(--ink2); font-size: 12.5px; line-height: 1.55; }
+details.thin > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+details.thin > summary::-webkit-details-marker { display: none; } details.thin > summary b { flex: 1; font-size: 13px; } details.thin > summary small { font-size: 12px; color: var(--sub); }
+details.thin[open] > summary small { display: none; } details.thin > p { margin: 8px 0 0; }
+.btn-line.lastm { width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; }
+details.bulk { margin: 4px 0 12px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+details.bulk > summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--teal); }
+details.bulk textarea { width: 100%; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+details.bulk .btn-line { width: 100%; }

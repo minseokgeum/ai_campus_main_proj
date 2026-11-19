@@ -6,9 +6,13 @@ const sign = (v) => (v > 0 ? "+" : v < 0 ? "−" : "");
 export const pct = (v, d = 1) => (v == null ? "–" : sign(round(v * 100, d)) + Math.abs(v * 100).toFixed(d) + "%");
 export const pct2 = (v) => pct(v, 2);
 const round = (x, d) => Math.round(x * 10 ** d) / 10 ** d;
-export const won = (v, signed = true) => (v == null ? "–" : (signed ? sign(Math.round(v)) : "") + Math.abs(Math.round(v)).toLocaleString("ko-KR") + "원");
+/** 11/20: 금액 가리기(지하철 등). 켜면 원 단위 금액만 ••••로, %는 그대로 */
+export const MASK = { on: false };
+const won0 = (v, signed = true) => (v == null ? "–" : (signed ? sign(Math.round(v)) : "") + Math.abs(Math.round(v)).toLocaleString("ko-KR") + "원");
 export const num = (v) => (v == null ? "–" : Math.round(v).toLocaleString("ko-KR"));
-export function man(v, signed = true) {          // 만원 단위로 짧게
+export const won = (v, signed = true) => (MASK.on && v != null ? "••••원" : won0(v, signed));
+export const man = (v, signed = true) => (MASK.on && v != null ? "••••원" : man0(v, signed));
+function man0(v, signed = true) {          // 만원 단위로 짧게
   if (v == null) return "–";
   const a = Math.abs(v) / 1e4;
   const s = a >= 1e4 ? (a / 1e4).toFixed(2).replace(/\.?0+$/, "") + "억" : a >= 100 ? Math.round(a).toLocaleString("ko-KR") + "만" : a.toFixed(1) + "만";
@@ -26,6 +30,8 @@ export const I = {
   down: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l4 4 4-4"/></svg>',
   arrow: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>',
   sm: '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5h7M6 2.5l3 3-3 3"/></svg>',
+  eye: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 9s2.8-5 7.5-5 7.5 5 7.5 5-2.8 5-7.5 5-7.5-5-7.5-5z"/><circle cx="9" cy="9" r="2.2"/></svg>',
+  eyeOff: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l14 14M7.3 4.2A7.6 7.6 0 0 1 9 4c4.7 0 7.5 5 7.5 5a12.8 12.8 0 0 1-2.3 2.9M5 5.6C2.8 7 1.5 9 1.5 9s2.8 5 7.5 5c1.2 0 2.3-.3 3.2-.8"/></svg>',
   minus: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7h8"/></svg>',
   plus: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7h8M7 3v8"/></svg>',
   x: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8"/></svg>',

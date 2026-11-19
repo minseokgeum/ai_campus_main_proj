@@ -1,5 +1,5 @@
 // 상태·그리기·누르기. 금액 계산은 '수량 × 어제 종가 × 등락률' 하나뿐이고, 나머지 숫자는 서버가 준 그대로 보여 준다.
-import { esc, tone, pct2, won, num, man, tick, priceShort, I } from "./fmt.js";
+import { esc, tone, pct2, won, num, man, tick, priceShort, I, MASK } from "./fmt.js";
 const API = "../api";   // 원래 버전은 /orig/ 아래에서 열린다
 import { bindBands, domain } from "./band.js";
 import * as V from "./screens.js";
@@ -8,7 +8,9 @@ import { SLOTS, FIXED } from "./llm.js";
 const $ = (s, r = document) => r.querySelector(s);
 const S = { meta: null, base: null, day: null, T: null, slot: "0811", acct: "A", tab: "brief", filter: "brief", sel: null, qty: {}, pin: {}, live: null, accts: [], draft: loadDraft(), pfUser: false, liveFeed: null, notif: lsGet("ob.notif") || "06:30",
   liveMode: true, pending: null,        // liveMode: '실시간' 보기(지금 시각을 따라감). pending: 다음 아침 브리핑을 모으는 중(밤)
-  preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1" };   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
+  preview: false, hold: "all", bed: lsGet("ob.bed") || "00:00", big: lsGet("ob.big") === "1",
+  hideAmt: lsGet("ob.hide") === "1", ord: lsGet("ob.ord") || "need" };   // 11/20: 금액 가리기, 보유 종목 순서(먼저 볼 순|보유 금액 순)
+MASK.on = S.hideAmt;   // preview: 밤 화면을 낮에도 미리 보기. hold: 보유|관심 나눠 보기. bed·big: 브리핑 설정(시연, 이 브라우저에만)
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 const TABS = [["brief", "브리핑", "아침 브리핑"], ["news", "뉴스", "뉴스 브리핑"], ["night", "밤사이", "밤사이 흐름"], ["mine", "내 종목", "내 종목"], ["record", "기록", "지난 기록"]];
@@ -128,6 +130,39 @@ function openSheet(html) { const s = $("#sheet"); s.innerHTML = html; s.hidden =
 function closeSheet() { $("#sheet").hidden = true; $("#backdrop").hidden = true; }
 const openNews = (id) => { const n = S.day.news.find((x) => x.id === id); if (n) openSheet(V.newsSheet(n, model(), S.day)); };
 const openBrief = (code, id) => { const v = ((S.day.brief || {}).stocks || {})[code], n = v && v.news.find((x) => String(x.id) === id); if (n) openSheet(V.briefSheet(n, code, S.day)); };
+function jumpTo(code) {                       // 먼저 볼 종목 칩 → 그 종목 줄로 이동 + 잠깐 표시
+  let row = $(`#screen [data-row="${code}"]`);
+  if (!row && S.hold !== "all") { S.hold = "all"; renderScreen(true); row = $(`#screen [data-row="${code}"]`); }
+  if (!row) return;
+  row.scrollIntoView({ behavior: "smooth", block: "start" }); row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+}
+let bulkCat = null;
+async function bulkAdd() {                    // 여러 종목 붙여넣기: '종목명|코드 수량 [평단]' 한 줄씩
+  const ta = $("#bulk-in"), msg = $("#bulk-msg"); if (!ta || !msg) return;
+  const lines = ta.value.split(/\n|;/).map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) { msg.textContent = "종목과 수량을 한 줄에 하나씩 적어 주세요"; return; }
+  msg.textContent = "종목을 찾는 중이에요…";
+  try { if (!bulkCat) bulkCat = await getJSON(`${API}/stocks?limit=2000`); } catch (err) { msg.textContent = `종목 목록을 받지 못했어요. ${err.message}`; return; }
+  const added = [], miss = [], norm = (x) => x.replace(/\s/g, "").toLowerCase();
+  for (const l of lines) {
+    const nums = [], name = [];
+    l.replace(/(\d),(?=\d{3}\b)/g, "$1").replace(/[,\t:：·]/g, " ").replace(/(\d)\s*(주|원)/g, "$1 ").split(/\s+/).filter(Boolean).forEach((t) => {
+      if (/^\d{6}$/.test(t)) name.push(t); else if (/^[\d.]+$/.test(t)) nums.push(+t); else name.push(t);
+    });
+    const key = name.join(" ").trim(), k = norm(key);
+    const r = key && (bulkCat.find((x) => x.code === key) || bulkCat.find((x) => norm(x.name) === k) || bulkCat.find((x) => norm(x.name).startsWith(k)) || bulkCat.find((x) => norm(x.name).includes(k)));
+    if (!r) { miss.push(l); continue; }
+    const q = nums.length ? Math.max(0, Math.round(nums[0])) : 0, avg = nums.length > 1 ? Math.round(nums[1]) : null;
+    const ex = S.draft.find((h) => h.code === r.code);
+    if (ex) { ex.q = q; if (avg) ex.avg = avg; }
+    else if (S.draft.length < 30) S.draft.push({ code: r.code, name: r.name, q, avg, in_model: !!r.in_model });
+    else { miss.push(`${l}(30종목 넘음)`); continue; }
+    added.push(r.name);
+  }
+  saveDraft(); refreshDraft();
+  msg.textContent = `${added.length}종목을 넣었어요${added.length ? `: ${added.slice(0, 4).join("·")}${added.length > 4 ? " 외" : ""}` : ""}${miss.length ? ` · 못 찾은 줄 ${miss.length}개: ${miss.slice(0, 2).join(", ")}` : ""}`;
+  if (added.length && !miss.length) ta.value = "";
+}
 function toast(t) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (el.hidden = true), 1800); }
 
 /* ───── 수량 − + ───── */
@@ -178,6 +213,11 @@ async function act(el) {
   else if (a === "setbed") { S.bed = el.dataset.v; lsSet("ob.bed", S.bed); openSheet(V.notifSheet(S, S.day)); renderScreen(true); toast(`잠드는 시각 ${S.bed}로 저장했어요(시연)`); }
   else if (a === "setbig") { S.big = el.dataset.v === "1"; lsSet("ob.big", S.big ? "1" : "0"); applyBig(); openSheet(V.notifSheet(S, S.day)); }
   else if (a === "hold") { S.hold = el.dataset.v; renderScreen(true); }
+  else if (a === "hideamt") { S.hideAmt = !S.hideAmt; MASK.on = S.hideAmt; lsSet("ob.hide", S.hideAmt ? "1" : "0"); render(true); toast(S.hideAmt ? "금액을 가렸어요" : "금액을 다시 보여 드려요"); }
+  else if (a === "ord") { S.ord = el.dataset.v; lsSet("ob.ord", S.ord); renderScreen(true); }
+  else if (a === "jump") { jumpTo(el.dataset.code); }
+  else if (a === "lastmorning") { const t = S.meta.days[0]; S.liveMode = false; S.pending = null; S.preview = false; S.tab = "brief"; S.slot = t.has_open ? "0900" : (t.slots || []).includes("0811") ? "0811" : "0730"; await load(t.T); }
+  else if (a === "bulk") await bulkAdd();
   else if (a === "golive") { S.tab = "news"; S.filter = "live"; render(); }
   else if (a === "daysheet") openSheet(V.daySheet(S.meta.days, S.preview ? "night" : S.liveMode ? "live" : S.T));
   else if (a === "pickday") { closeSheet(); await pickDay(el.dataset.t); }
@@ -191,7 +231,7 @@ document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-node]"); if (g) { S.sel = S.sel === g.dataset.node ? null : g.dataset.node; renderScreen(true); return; }
   const el = e.target.closest("[data-act]"); if (el) { e.preventDefault(); act(el); }
 });
-document.addEventListener("pointerdown", (e) => { const b = e.target.closest("[data-step]"); if (b && !b.disabled) { e.preventDefault(); stepStart(b); } });
+document.addEventListener("pointerdown", (e) => { const b = e.target.closest("[data-stepper] [data-step]"); if (b && !b.disabled) { e.preventDefault(); stepStart(b); } });   // 11/20: 처음 안내의 data-step(쪽 번호)과 섞이지 않게 수량 단추 안의 것만
 ["pointerup", "pointercancel", "pointerleave"].forEach((t) => document.addEventListener(t, stepStop, true));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
 $("#backdrop").addEventListener("click", closeSheet);
