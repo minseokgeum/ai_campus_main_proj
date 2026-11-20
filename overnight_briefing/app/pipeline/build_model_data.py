@@ -2,8 +2,8 @@
 
 실행 환경: research/overnight_backtest/.venv (pandas 3, 연구 코드와 같은 환경)
 
-    cd ~/4Digit/research/overnight_backtest
-    .venv/bin/python ~/4Digit/src/app/pipeline/build_model_data.py
+    cd <엔진 폴더(OVERNIGHT_RESEARCH)>
+    python <저장소>/overnight_briefing/app/pipeline/build_model_data.py
 
 하는 일
 1. 연구 패널을 한 번 읽고(약 3~4분), 패널 기간의 모든 거래일에 대해 아침 카드
@@ -22,18 +22,19 @@ import sys
 import time
 from pathlib import Path
 
+import paths  # 경로: paths.py(환경변수 OVERNIGHT_RESEARCH·DATA_ROOT, 기본은 저장소 안)
+
 import numpy as np
 import pandas as pd
 
-RESEARCH = Path.home() / "4Digit/research/overnight_backtest"
-sys.path.insert(0, str(RESEARCH))
-sys.path.insert(0, str(RESEARCH / "src"))
+RESEARCH = paths.ENGINE
+sys.path[:0] = [str(RESEARCH), str(RESEARCH / "src")]
 
 from workbench import e62_band as e  # noqa: E402
 from workbench import morning_card as mc  # noqa: E402
 from common import ACCOUNTS  # noqa: E402
 
-OUT = Path(__file__).resolve().parents[1] / "data" / "model"
+OUT = paths.DATA / "model"
 FEATURED = ["20260625"]  # 6/24 밤 마이크론 실적: 뉴스·관계 자료가 함께 있는 날
 
 

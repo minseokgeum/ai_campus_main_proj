@@ -17,7 +17,7 @@ import pandas as pd
 import streamlit as st
 
 DATA = Path(__file__).resolve().parents[1] / "data"
-RESEARCH = Path(os.environ.get("OVERNIGHT_RESEARCH", str(Path.home() / "4Digit/research/overnight_backtest")))   # 다른 위치면 환경변수로
+RESEARCH = Path(os.environ.get("OVERNIGHT_RESEARCH") or Path(__file__).resolve().parents[2] / "model").expanduser()   # 노란띠 엔진 폴더(다른 위치면 환경변수로)
 WEEKDAY = "월화수목금토일"
 
 

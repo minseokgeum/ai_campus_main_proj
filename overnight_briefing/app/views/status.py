@@ -32,5 +32,5 @@ st.markdown(
 m = data.manifest()
 with st.expander("이번 자료를 만든 기록"):
     st.json(m)
-st.caption("다시 만들기: research/overnight_backtest에서 `.venv/bin/python ~/4Digit/src/app/pipeline/build_model_data.py`, "
-           "이어서 `~/4Digit/.venv/bin/python ~/4Digit/src/app/pipeline/build_night_news.py`.")
+st.caption("다시 만들기: overnight_briefing/model에서 `python ../app/pipeline/build_model_data.py`, "
+           "이어서 `python ../app/pipeline/build_night_news.py`.")

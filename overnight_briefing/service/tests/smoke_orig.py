@@ -3,8 +3,8 @@
 날짜마다 첫 계좌에서 종목 창·기사 창·수량 +·띠 누르기·되돌리기를 한 번씩 해 보고, 내 잔고는 종목 검색 → 넣기 → 브리핑 보기까지 해 본다.
 
 실행(서버가 떠 있어야 함):
-  cd overnight_briefing/service && ~/4Digit/.venv/bin/uvicorn api.index:app --port 8520 &
-  ~/4Digit/.venv/bin/python tests/smoke_front.py [http://127.0.0.1:8520]
+  cd overnight_briefing/service && uvicorn api.index:app --port 8520 &
+  python tests/smoke_front.py [http://127.0.0.1:8520]
 """
 import json
 import sys

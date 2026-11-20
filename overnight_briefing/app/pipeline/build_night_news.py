@@ -1,16 +1,16 @@
 """밤사이 차트(야간선물 1분봉)와 뉴스 묶음을 앱용 파일로 옮긴다.
 
-실행: ~/4Digit/.venv/bin/python ~/4Digit/src/app/pipeline/build_night_news.py [T ...]
+실행: python app/pipeline/build_night_news.py [T ...]
       (T를 주지 않으면 data/model/days/ 에 있는 날짜 전부)
 
 - 야간선물: research/overnight_backtest/data/night_minutes*.csv (KIS 과거 1분봉, 시각은 봉 시작 기준)
   + 가장 최근 실제 날짜 자료 폴더(workbench/live/*/data/night_minutes.csv, live_refresh가 매일 이어 받음, 11/10 추가)
   + futures_daily.csv 의 전일 주간 종가(15:45, 연구 자료 + 최근 실제 날짜 폴더). 원자료는 바꾸지 않고 그날 밤만 잘라 저장한다.
-- 뉴스: 단독 검증판(~/4Digit-solo) 재생 실행 결과(runs/<T>T0730KST_base)와 기사 원장(data/night.db).
+- 뉴스(1차 데모 임시, 환경변수 SOLO가 있을 때만): 단독 검증판 재생 실행 결과(runs/<T>T0730KST_base)와 기사 원장(data/night.db).
   사건 묶음·관계 경로·시장 반응·AI 문장(검사 통과분)을 그대로 옮기고 새로 만들지 않는다.
   재생 실행이 없는 날은 뉴스 파일을 만들지 않는다(앱에서 '연결 전'으로 표시).
 - 미국 뉴스 겹치기(11/10 추가, data/news_us/<T>.json): 밤 차트 위에 놓을 것만 옮긴다(새로 판정하지 않음).
-  보도량 = 4Digit-solo night.db의 알파카(벤징가) 기사 등록 시각 15분 묶음(뉴스 창 D 15:30 ~ T 07:30 KST 전체),
+  보도량 = SOLO/data/night.db의 알파카(벤징가) 기사 등록 시각 15분 묶음(뉴스 창 D 15:30 ~ T 07:30 KST 전체),
   연결 기사 = workbench/runs/claude_uslink_r1/us_news_by_stock.csv의 그날 행 중 관계표 규칙 확인·AI 판정(업종 핵심어 판정 전은 뺌).
 """
 from __future__ import annotations
@@ -21,11 +21,13 @@ import sqlite3
 import sys
 from pathlib import Path
 
+import paths  # 경로: paths.py(환경변수 OVERNIGHT_RESEARCH·DATA_ROOT, 기본은 저장소 안)
+
 import pandas as pd
 
-APP = Path(__file__).resolve().parents[1]
-RESEARCH = Path.home() / "4Digit/research/overnight_backtest"
-SOLO = Path.home() / "4Digit-solo"
+APP = paths.DATA.parent        # APP / "data/…" = 화면 자료 폴더(DATA_ROOT)
+RESEARCH = paths.ENGINE
+SOLO = paths.SOLO
 LIVE = RESEARCH / "workbench/live"
 
 
@@ -78,8 +80,8 @@ def utc_to_kst(s: str | None) -> str | None:
 
 
 def news(T: str) -> dict | None:
-    run = SOLO / "runs" / f"{T}T0730KST_base"
-    if not run.exists():
+    run = SOLO / "runs" / f"{T}T0730KST_base" if SOLO else None
+    if run is None or not run.exists():
         return None
     events = json.loads((run / "events.json").read_text())
     cards = json.loads((run / "cards.json").read_text())
@@ -123,7 +125,7 @@ def news(T: str) -> dict | None:
         for al in a.get("alerts", {}).get("alerts", []):
             if al["kind"] == "공시":
                 filings[al["ref"]] = dict(kst=utc_to_kst(al["ts_utc"]), title=al["title"])
-    return dict(T=T, filings=sorted(filings.values(), key=lambda f: f["kst"]), source=f"4Digit-solo runs/{run.name} (engine {cards['engine']})", window=cards["window"],
+    return dict(T=T, filings=sorted(filings.values(), key=lambda f: f["kst"]), source=f"단독 검증판 runs/{run.name} (engine {cards['engine']})", window=cards["window"],
                 market_band=cards["market_band"], topics=topics, accounts=accounts,
                 links=[{k: r[k] for k in ("event_id", "account_id", "kr_code", "relation_type", "confidence")} for r in links])
 
@@ -133,6 +135,8 @@ SEG_TIER = "업종 핵심어(판정 전)"
 
 
 def us_overlay(T: str, D: str) -> dict | None:
+    if SOLO is None or not (SOLO / "data/night.db").exists():
+        return None
     start, end = pd.Timestamp(D + " 15:30", tz="Asia/Seoul"), pd.Timestamp(T + " 07:30", tz="Asia/Seoul")
     con = sqlite3.connect(SOLO / "data/night.db")
     q = "select created_at_utc from news_items where source='alpaca' and created_at_utc >= ? and created_at_utc < ?"

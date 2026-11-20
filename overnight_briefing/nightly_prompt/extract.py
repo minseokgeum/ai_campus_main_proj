@@ -18,7 +18,7 @@ PROMPTS = HERE / 'prompts'
 MODEL = os.environ.get('NIGHTLY_MODEL', 'gpt-6.1-terra')      # 그래프 구축과 같은 모델(nightly_prompt_requirements.md 6장)
 EFFORT = os.environ.get('NIGHTLY_EFFORT', 'medium')
 PRICES = {'gpt-6.1-terra': (1.00, 0.05, 5.00), 'gpt-6.1-sol': (2.00, 0.10, 10.00), 'gpt-6-luna': (0.10, 0.01, 0.50)}  # $/1M (입력, 캐시 입력, 출력)
-ENV_FILE = Path(os.environ.get('NIGHTLY_ENV_FILE', '~/4Digit-solo/.env')).expanduser()
+ENV_FILE = Path(os.environ.get('NIGHTLY_ENV_FILE') or os.environ.get('ENV_FILE') or HERE.parents[1] / '.env').expanduser()   # OPENAI_API_KEY
 
 FORBIDDEN = ['적중', '매수하', '매도하', '사세요', '파세요', '추천합니다', '확실히 오', '확실히 내']
 CAUSAL = ['때문', '로 인해', '으로 인해', '덕분', '탓에', '탓으로']

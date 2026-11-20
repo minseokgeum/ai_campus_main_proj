@@ -7,18 +7,18 @@
 
 ```bash
 cd overnight_briefing/service
-~/4Digit/.venv/bin/uvicorn api.index:app --port 8520      # http://127.0.0.1:8520  (열기.command를 두 번 눌러도 됨)
+uvicorn api.index:app --port 8520      # http://127.0.0.1:8520  (열기.command를 두 번 눌러도 됨)
 ```
 
 - 주소 뒤 `#T=20261116&slot=0811&acct=A&tab=brief`로 날짜·시각·계좌·화면을 고를 수 있습니다. `acct`는 예시 계좌 `A`·`B`·`C` 또는 내 잔고 `U`, `tab`은 `brief`·`news`·`night`·`mine`·`record`입니다. `&f=graph`(뉴스 안 관계 그림), `&dark=1`도 쓸 수 있습니다.
-- 로컬은 **라이브 모드**로 돕니다. 매일 봉인·마감 작업이 갱신하는 `DATA_ROOT`(기본 `~/4Digit/src/app/data`)와 `OVERNIGHT_RESEARCH`를 바로 읽고, 묶음은 60초만 기억합니다.
+- 로컬은 **라이브 모드**로 돕니다. 매일 봉인·마감 작업이 갱신하는 `DATA_ROOT`(기본 `overnight_briefing/app/data`, 컴퓨터마다 다르면 `overnight_briefing/local.conf`)와 `OVERNIGHT_RESEARCH`를 바로 읽고, 묶음은 60초만 기억합니다.
 - `SERVICE_MODE=snapshot`을 주면 배포판과 같은 스냅샷(`data/`)을 읽습니다.
 
 ## 배포(Vercel)
 
 ```bash
 cd overnight_briefing/service
-~/4Digit/.venv/bin/python build_snapshot.py --days 6     # data/*.json (약 2MB) 만들기: 최근 거래일 6개 + 종목 목록 + 지난 40거래일 기록 + 미국 관계 줄
+python build_snapshot.py --days 6     # data/*.json (약 2MB) 만들기: 최근 거래일 6개 + 종목 목록 + 지난 40거래일 기록 + 미국 관계 줄
 vercel deploy                                            # 이 폴더가 Vercel 프로젝트 루트
 ```
 
@@ -55,7 +55,7 @@ AI가 쓴 문장에는 `AI` 표시를 붙이고, 원인 단정·매매 권유는
 ## 점검
 
 ```bash
-~/4Digit/.venv/bin/python tests/smoke_front.py          # 서버(8520)가 떠 있어야 함
+python tests/smoke_front.py          # 서버(8520)가 떠 있어야 함
 ```
 
 

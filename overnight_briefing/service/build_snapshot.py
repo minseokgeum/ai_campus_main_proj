@@ -1,7 +1,7 @@
 """배포용 스냅샷: 라이브 묶음(core/bundle.py)의 결과를 service/data/*.json으로 굳힌다. 계산은 하지 않는다.
 
-실행: cd overnight_briefing/service && ~/4Digit/.venv/bin/python build_snapshot.py [--days 6]
-원천: DATA_ROOT(기본 ~/4Digit/src/app/data, 매일 봉인·마감 작업이 갱신), OVERNIGHT_RESEARCH, overnight_briefing/nightly_prompt/out/<T>/brief.json
+실행: cd overnight_briefing/service && python build_snapshot.py [--days 6]
+원천: DATA_ROOT(기본 overnight_briefing/app/data, 매일 run_day.sh가 갱신), OVERNIGHT_RESEARCH, overnight_briefing/nightly_prompt/out/<T>/brief.json
       (없으면 news_search/source/nightly/<T>의 처리 결과로 만든 스텁)
 분봉·기사 본문 같은 원자료는 넣지 않는다. 최근 거래일 몇 개의 하루 묶음, 유니버스 띠, 지난 40거래일 기록, 미국 관계 줄만 넣는다.
 """

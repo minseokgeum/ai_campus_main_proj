@@ -13,6 +13,7 @@
 | `news_source_tests/` | 뉴스 매체·수집 방식을 정할 때 한 시험(근거 보관). [README](news_source_tests/README.md) |
 | `graph_news_overview.md` | **처음 보는 팀원용 안내**: 그래프 DB, 검색어, 구글 뉴스 수집·처리가 무엇을 만들고 어떻게 도는지, 결과 위치와 첫 실전 결과 |
 | `nightly_prompt_requirements.md` | 밤사이 뉴스 프롬프트를 만드는 팀원에게 전하는 요구사항(입력·출력, 유형 분류, 그래프용 추출 형식, 실행 조건, 시험 방법) |
+| `overnight_briefing/` | 장 전 브리핑(노란띠): 야간선물로 종목별 예상 시작가·80% 예상 범위·믿을 정도를 내고 개장 뒤 채점하는 모델(`model/`, 서버 실행 `run_model.py`·파일 실행 `run_day.sh`·특별한 날 달력), 1차 데모 화면(`service/`), 밤사이 AI 브리핑(`nightly_prompt/`). [README](overnight_briefing/README.md) |
 | `scripts/` | 보조 스크립트: 데이터 묶음 만들기·풀기(`data_bundle.py`) |
 | `market_data/` | 기준 자료: 상장사·WI26 업종(`sector.json`), 토스 테마(`toss_theme.json`), 지수 구성 종목. [README](market_data/README.txt) |
 | `backtest/`, `data_research/`, `stockdata_collection/` | 다른 작업(시세 수집, 백테스트 등) |

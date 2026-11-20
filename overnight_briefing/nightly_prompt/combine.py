@@ -13,7 +13,7 @@ from pathlib import Path
 
 from extract import CAUSAL, FORBIDDEN, HISTORY, LLM, P_COMBINE, P_MARKET
 
-DAYS_DIR = Path(os.environ.get('NIGHTLY_DAYS_DIR', '~/4Digit/src/app/data/model/days')).expanduser()
+DAYS_DIR = Path(os.environ.get('NIGHTLY_DAYS_DIR') or Path(os.environ.get('DATA_ROOT') or Path(__file__).resolve().parents[1] / 'app/data') / 'model/days').expanduser()
 
 
 def pct(v, nd=1):

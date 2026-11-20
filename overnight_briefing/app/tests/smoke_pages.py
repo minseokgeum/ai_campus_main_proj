@@ -1,6 +1,6 @@
 """화면 점검: 6개 화면 × 예시 날짜 × 07:30/08:11에서 오류 없이 그려지는지.
 
-실행: cd ~/4Digit/src/app && ~/4Digit/.venv/bin/python tests/smoke_pages.py
+실행: cd overnight_briefing/app && python tests/smoke_pages.py
 """
 import sys
 from pathlib import Path

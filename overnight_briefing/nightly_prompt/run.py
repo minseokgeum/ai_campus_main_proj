@@ -1,8 +1,8 @@
 """밤사이 처리 결과(prompt_inputs.jsonl) → 추출 → 종목 종합·시장 한 줄 → out/<T>/brief.json.
 
-    ~/4Digit-solo/.venv/bin/python run.py 20261116                 # 1차·2차 모두
-    ~/4Digit-solo/.venv/bin/python run.py 20261116 --max-cost 8    # 비용 상한(달러, 넘으면 새 호출 멈춤)
-    ~/4Digit-solo/.venv/bin/python run.py 20261116 --dry           # 호출 없이 입력 수·예상 비용만
+    python run.py 20261116                 # 1차·2차 모두
+    python run.py 20261116 --max-cost 8    # 비용 상한(달러, 넘으면 새 호출 멈춤)
+    python run.py 20261116 --dry           # 호출 없이 입력 수·예상 비용만
 
 같은 입력은 out/raw/의 원본 응답을 다시 쓴다(다시 돌려도 비용 0). 본문이 없는 묶음은 부르지 않는다.
 """

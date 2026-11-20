@@ -1,6 +1,6 @@
 """화면 캡처 한 번에: 주요 화면을 휴대폰 크기로 찍어 폴더에 모은다(눈으로 확인용).
 
-    ~/4Digit/.venv/bin/python tests/shots.py [http://127.0.0.1:8520] [출력 폴더] [날짜 YYYYMMDD]
+    python tests/shots.py [http://127.0.0.1:8520] [출력 폴더] [날짜 YYYYMMDD]
 """
 import json
 import sys

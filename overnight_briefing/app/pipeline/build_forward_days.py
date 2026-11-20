@@ -2,8 +2,8 @@
 
 실행 환경: research/overnight_backtest/.venv (연구 코드와 같은 환경)
 
-    cd ~/4Digit/research/overnight_backtest
-    .venv/bin/python ~/4Digit/src/app/pipeline/build_forward_days.py --root workbench/live/20261109
+    cd <엔진 폴더(OVERNIGHT_RESEARCH)>
+    python <저장소>/overnight_briefing/app/pipeline/build_forward_days.py --root workbench/live/20261109
 
 - 자료는 live_refresh가 이어 붙인 실제 시세(끝난 장만)다. 규칙·코드는 확정본(e62_band.py b9599c96) 그대로다.
 - 08:11 카드는 E100(workbench/e100_forward.py)이 같은 날 만든 카드와 같은지 대조한 뒤 쓴다.
@@ -16,10 +16,12 @@ import json
 import sys
 from pathlib import Path
 
+import paths  # 경로: paths.py(환경변수 OVERNIGHT_RESEARCH·DATA_ROOT, 기본은 저장소 안)
+
 import numpy as np
 
-RESEARCH = Path.home() / "4Digit/research/overnight_backtest"
-sys.path[:0] = [str(RESEARCH), str(RESEARCH / "src"), str(Path(__file__).resolve().parent)]
+RESEARCH = paths.ENGINE
+sys.path[:0] = [str(RESEARCH), str(RESEARCH / "src")]
 
 from common import ACCOUNTS  # noqa: E402
 from workbench import live_panel as lp  # noqa: E402
@@ -27,7 +29,7 @@ from workbench import morning_card as mc  # noqa: E402
 from build_model_data import as1_for_day  # noqa: E402
 from build_live_day import LIVE, sealed_info  # noqa: E402
 
-OUT = Path(__file__).resolve().parents[1] / "data" / "model" / "days"
+OUT = paths.DATA / "model" / "days"
 FIRST, FREEZE = "20261027", "20261103"
 E100 = RESEARCH / "workbench/runs/claude_forward_r1"
 

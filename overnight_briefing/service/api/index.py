@@ -1,6 +1,6 @@
 """고객 화면 API(FastAPI). Vercel 함수 진입점이자 로컬 서버.
 
-로컬:  cd overnight_briefing/service && ~/4Digit/.venv/bin/uvicorn api.index:app --port 8520   →  http://127.0.0.1:8520
+로컬:  cd overnight_briefing/service && uvicorn api.index:app --port 8520   →  http://127.0.0.1:8520
 배포:  Vercel이 이 파일의 app을 함수로 띄우고, web/은 정적 파일로 내준다(vercel.json).
 
 GET  /api/meta                       날짜 목록(기록 종류·뉴스 여부)과 자료 출처(live|snapshot)

@@ -8,7 +8,7 @@
 ## 열기
 
 ```bash
-cd ~/4Digit/src/app && ~/4Digit/.venv/bin/streamlit run app.py   # http://127.0.0.1:8510
+cd overnight_briefing/app && streamlit run app.py   # http://127.0.0.1:8510
 ```
 
 같은 폴더의 `앱_열기.command`를 두 번 클릭해도 된다. 이 컴퓨터에서만 열린다(127.0.0.1).
@@ -46,15 +46,15 @@ cd ~/4Digit/src/app && ~/4Digit/.venv/bin/streamlit run app.py   # http://127.0.
 ## 화면 점검
 
 ```bash
-cd ~/4Digit/src/app && ~/4Digit/.venv/bin/python tests/smoke_pages.py   # 6개 화면 × 예시 날짜 × 07:30/08:11
+cd overnight_briefing/app && python tests/smoke_pages.py   # 6개 화면 × 예시 날짜 × 07:30/08:11
 ```
 
 ## 자료 만들기 (과거 재생)
 
 ```bash
-cd ~/4Digit/research/overnight_backtest
-.venv/bin/python ~/4Digit/src/app/pipeline/build_model_data.py     # 약 2~4분(패널 읽기)
-~/4Digit/.venv/bin/python ~/4Digit/src/app/pipeline/build_night_news.py
+cd overnight_briefing/model
+.venv/bin/python ../app/pipeline/build_model_data.py     # 약 2~4분(패널 읽기)
+python ../app/pipeline/build_night_news.py
 ```
 
 - `build_model_data.py`가 하는 일:
@@ -68,7 +68,7 @@ cd ~/4Digit/research/overnight_backtest
   - 패널 마지막 날
 - `build_night_news.py`가 하는 일:
   - 야간선물은 KIS 과거 1분봉에서 그날 밤만 잘라 쓴다. 봉 시각은 시작 시각 기준이다.
-  - 뉴스는 단독 검증판(4Digit-solo)의 재생 실행 결과를 옮겨 온다.
+  - 뉴스(1차 데모 임시)는 환경변수 SOLO가 가리키는 단독 검증판의 재생 실행 결과를 옮겨 온다.
   - 6/25 이외의 날은 뉴스가 '연결 전'으로 나온다.
 
 시장 API·실시간 수집·예약은 실행하지 않는다. 연구 data/와 기존 결과는 바꾸지 않는다.

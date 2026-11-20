@@ -14,23 +14,26 @@ prompt_inputs.jsonl ─ extract.py(묶음 1개 = 요청 1건) ─┬─ 종목 �
 ## 실행
 
 ```bash
-~/4Digit-solo/.venv/bin/python run.py 20261116 --dry          # 호출 없이 입력 수·예상 비용
-~/4Digit-solo/.venv/bin/python run.py 20261116 --max-cost 8   # 실행(상한을 넘으면 새 호출을 멈춘다)
+python run.py 20261116 --dry          # 호출 없이 입력 수·예상 비용
+python run.py 20261116 --max-cost 8   # 실행(상한을 넘으면 새 호출을 멈춘다)
 ```
 
 - 모델: `gpt-6.1-terra`, effort medium, Responses API, JSON 스키마 엄격 모드, `store=False`. 그래프 구축 때와 같다(`nightly_prompt_requirements.md` 6장).
-- 키는 `~/4Digit-solo/.env`에서 읽는다(`NIGHTLY_ENV_FILE`로 바꿀 수 있다). 값은 어디에도 쓰지 않는다.
+- 키(`OPENAI_API_KEY`)는 저장소 루트 `.env`에서 읽는다(`NIGHTLY_ENV_FILE` 또는 `ENV_FILE`로 바꿀 수 있다). 값은 어디에도 쓰지 않는다.
 - 같은 입력·지시문·모델이면 `out/raw/`의 원본 응답을 다시 쓴다(다시 돌려도 비용 0). 원본 응답에는 입력·토큰·비용이 함께 남는다.
 - 본문이 없는 묶음(`body_ok: false`, 대부분 기사 아닌 페이지)은 부르지 않는다.
 - 띠 파일 위치는 `NIGHTLY_DAYS_DIR`(기본 `~/4Digit/src/app/data/model/days`).
 
 ## 파일
 
+쓰는 판은 `extract.py`의 `P_EXTRACT`·`P_COMBINE`·`P_MARKET`·`P_VERIFY`. 지난 판은 git 기록에 있다.
+
 | 파일 | 내용 |
 |---|---|
-| `prompts/nightly_extract_v1.md` + `.schema.json` | 묶음 추출: scope·기사 파악·제공 기업·관련 기업·기타 주체·시장 반응·사실·근거(효은 수정3) + 종목별 관련 판단·새 내용 판단(요구사항 3·4장) |
-| `prompts/combine_v1.md` + `.schema.json` | 종목 한 줄: 띠 숫자 그대로, 뉴스는 나란히, 인과 단정·권유 금지 |
-| `prompts/market_v1.md` + `.schema.json` | 시장 한 줄: 야간선물 변화율 + 시장 전체 뉴스 1~2개 |
+| `prompts/nightly_extract_v2.md` + `.schema.json` | 묶음 추출: scope·기사 파악·제공 기업·관련 기업·기타 주체·시장 반응·사실·근거(효은 수정3) + 종목별 관련 판단·새 내용 판단(요구사항 3·4장) |
+| `prompts/combine_v3.md` + `.schema.json` | 종목 한 줄: 띠 숫자 그대로, 뉴스는 나란히, 인과 단정·권유 금지 |
+| `prompts/market_v2.md` + `.schema.json` | 시장 한 줄: 야간선물 변화율 + 시장 전체 뉴스 1~2개 |
+| `prompts/verify_v1.md` + `.schema.json` | 연결 다시 보기: 앞 단계가 '이 기사는 이 종목과 이어진다'고 한 판단을 다른 모델이 중심·일부·스침·무관으로 다시 판정 |
 | `extract.py` | 입력 글 만들기, OpenAI 호출·캐시·비용, 코드 검사(근거 인용이 원문에 그대로 있는지, 종목 목록, 금지어) |
 | `combine.py` | 07:30 카드 띠 읽기(개장 뒤 결과는 읽지 않음), 종목·시장 한 줄, 숫자·인과·금지어 검사. 검사에 걸리면 규칙 문장으로 바꾸고 `checked=false` |
 | `run.py` | 전체 실행, `out/<T>/brief.json`·`extract.jsonl` |

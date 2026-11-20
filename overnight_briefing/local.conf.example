@@ -1,0 +1,20 @@
+# 컴퓨터마다 다른 설정. 이 파일을 같은 폴더에 local.conf로 복사해 고친다(local.conf는 git에 올리지 않는다).
+# 비워 두면 기본값(저장소 안 위치)을 쓴다. model/run_day.sh, service/publish.sh·check.sh, 열기.command가 읽는다.
+
+# 노란띠 엔진 폴더: 날짜별 자료(workbench/live)·카드·채점·기록(workbench/runs)이 쌓이는 곳. 기본 overnight_briefing/model
+OVERNIGHT_RESEARCH=
+# 화면 자료 폴더(app·service가 읽음). 비우면 run_day.sh가 화면 파일을 만들지 않는다. 예: $HOME/ob_app_data
+DATA_ROOT=
+# 키 파일(KIS_APP_KEY, KIS_APP_SECRET, KIS_ENV, DART_API_KEY, OPENAI_API_KEY, FINNHUB_API_KEY). 기본 저장소 루트 .env
+ENV_FILE=
+# 파이썬: 엔진(기본 엔진 폴더 .venv), 화면·서비스(기본 저장소 .venv), 밤사이 AI 브리핑(기본 PY_APP). 없으면 python3
+PY_ENGINE=
+PY_APP=
+PY_PROMPT=
+# 종가 받는 시각(HHMM, 기본 2010: NXT 애프터마켓 20:00 뒤)
+CLOSE_FETCH=
+# 1차 데모 배포: 1이면 단계마다 service/publish.sh(Vercel CLI 로그인 필요), 밤사이 AI 브리핑(nightly_prompt)
+PUBLISH=0
+NIGHTLY=0
+# 1차 데모 임시: 알파카 기사 원장이 있는 폴더(밤 차트 위 미국 기사 겹치기). 2차는 news_search DB를 쓴다
+SOLO=

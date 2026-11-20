@@ -1,6 +1,6 @@
 """당신이 잠든 사이에 — 아침 브리핑 시연 앱.
 
-실행: cd ~/4Digit/src/app && ~/4Digit/.venv/bin/streamlit run app.py
+실행: cd overnight_briefing/app && streamlit run app.py
 """
 from __future__ import annotations
 

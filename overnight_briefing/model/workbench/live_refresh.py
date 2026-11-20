@@ -16,7 +16,7 @@ workbench/live/<name>/data/에 연구 입력 파일을 복사하고, 연구 자�
 - 증분 갱신: --base(기본 auto)로 직전 자료 폴더를 이어받아, 그 폴더의 마지막 날짜 뒤만 받는다. 같은 이름 폴더가 이미 있으면 그 폴더 위에 잇는다.
   --base none이면 예전처럼 연구 data/ 사본에서 시작한다.
 - NXT 분봉은 이미 받은 지난 날짜는 다시 받지 않고, 오늘 날짜는 08:11 뒤에만 받는다.
-사용: PYTHONPATH=.:src .venv/bin/python -m workbench.live_refresh --name 20261103 --env ~/4Digit-solo/.env --until 20261103 --premarket-days 20261027,20261028
+사용: PYTHONPATH=.:src .venv/bin/python -m workbench.live_refresh --name 20261103 --env .env --until 20261103 --premarket-days 20261027,20261028
 """
 from __future__ import annotations
 

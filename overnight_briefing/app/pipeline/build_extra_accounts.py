@@ -8,18 +8,20 @@
 - I 원자재·경기: 정유 1, 화학 1, 철강 1, 해운 1, 건설 1, 항공 여객 1. 각 칸 시가총액 1위.
 - 업종 칸은 KSIC 업종명으로 고른다(통신 = '전기 통신업', 항공 = '항공 여객 운송업'). 앞 계좌에 이미 고른 종목은 다시 고르지 않는다.
 - J 바이오·내수: 바이오·제약 3, 소비재·유통 2, 인터넷·게임 1. 각 칸 시가총액 순.
-실행: ~/4Digit/.venv/bin/python ~/4Digit/src/app/pipeline/build_extra_accounts.py
+실행: python app/pipeline/build_extra_accounts.py
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+import paths  # 경로: paths.py(환경변수 OVERNIGHT_RESEARCH·DATA_ROOT, 기본은 저장소 안)
+
 import numpy as np
 import pandas as pd
 
-RESEARCH = Path.home() / "4Digit/research/overnight_backtest"
-OUT = Path(__file__).resolve().parents[1] / "data/model/extra_accounts.json"
+RESEARCH = paths.ENGINE
+OUT = paths.DATA / "model/extra_accounts.json"
 BASE_T = "20261026"
 EXISTING = {"005930", "000660", "042700", "005380", "105560", "091160", "403870", "058470", "240810", "357780", "095340",
             "267260", "298040", "010120", "007660"}

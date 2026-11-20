@@ -1,8 +1,8 @@
 """라이브 묶음: 모델이 이미 만든 결과 파일을 읽어 화면용 묶음을 만든다. 계산은 하지 않는다.
 
 읽는 곳
-- DATA_ROOT(기본 ~/4Digit/src/app/data): 아침 봉인·장 마감 작업이 매일 갱신하는 날짜 파일(카드·계좌 범위·야간선물 1분봉·미국 기사 연결)
-- OVERNIGHT_RESEARCH(기본 ~/4Digit/research/overnight_backtest): 전방 기록·연결 결과 등
+- DATA_ROOT(기본 overnight_briefing/app/data): 아침·장 마감 작업(model/run_day.sh)이 매일 갱신하는 날짜 파일(카드·계좌 범위·야간선물 1분봉·미국 기사 연결)
+- OVERNIGHT_RESEARCH(기본 overnight_briefing/model): 카드·채점·규칙 확정 뒤 기록
 읽기 함수는 Streamlit 앱(overnight_briefing/app/core/data.py)의 것을 그대로 빌려 쓴다(같은 파일, 같은 숫자).
 pandas가 필요하므로 이 모듈은 로컬(라이브)에서만 쓴다. 배포판은 build_snapshot.py가 이 결과를 JSON으로 굳혀 쓴다.
 """
@@ -24,7 +24,7 @@ from . import news as N
 SERVICE = Path(__file__).resolve().parents[1]
 OB = SERVICE.parent                                     # overnight_briefing/
 REPO = OB.parent                                        # 저장소 루트
-DATA_ROOT = Path(os.environ.get("DATA_ROOT", str(Path.home() / "4Digit/src/app/data"))).expanduser()
+DATA_ROOT = Path(os.environ.get("DATA_ROOT") or OB / "app/data").expanduser()   # 화면 자료 폴더(맥은 local.conf로 지정)
 
 os.environ.setdefault("STREAMLIT_LOGGER_LEVEL", "error")    # 화면 없이 읽기 함수만 빌려 쓰므로 '실행 환경 없음' 안내는 끈다
 _spec = importlib.util.spec_from_file_location("ob_app_data", OB / "app/core/data.py")
@@ -238,7 +238,7 @@ def day(T: str) -> dict:
         news_meta=dict(line=D.news_record_line(T), articles=(rec or {}).get("counts", {}).get("articles"),
                        before_open=(rec or {}).get("before_open"), issued=((rec or {}).get("issued_at") or "")[11:16]),
         macro=[] if macro is None else [dict(time=r.time, headline=r.headline) for r in macro[macro["T"] == T].itertuples()][:40],
-        night=_night(T), events=ev, brief=brief, pipeline=X.pipeline_status(T, brief), special=X.SPECIAL.get(T), us_market=X.us_market(T),
+        night=_night(T), events=ev, brief=brief, pipeline=X.pipeline_status(T, brief), special=X.special(T), us_market=X.us_market(T),
         forward=None if not fw else dict(after=fw[0].get("after_freeze"), prov=fw[0].get("prov_days", []),
                                          per_day=[p for p in fw[0]["per_day"] if p["T"] <= T][-8:]))
 

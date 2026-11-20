@@ -22,7 +22,7 @@ _lock = threading.Lock()
 def _live_ok() -> bool:
     if os.environ.get("SERVICE_MODE") == "snapshot":
         return False
-    root = Path(os.environ.get("DATA_ROOT", str(Path.home() / "4Digit/src/app/data"))).expanduser()
+    root = Path(os.environ.get("DATA_ROOT") or SERVICE.parent / "app/data").expanduser()
     if not (root / "model/days").is_dir():
         return False
     try:

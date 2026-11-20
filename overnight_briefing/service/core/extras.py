@@ -1,6 +1,6 @@
 """하루 묶음에 더하는 것(11/17, 데모 피드백 반영): 거래소 특별일, 이어진 미국 기업 실적 발표일, 밤사이 수집·처리 상태, 방금 들어온 기사.
 
-- 특별일: 수능일처럼 장 시간이 바뀌는 날. 공식 공지로 확인한 것만 손으로 적는다.
+- 특별한 날: model/market_calendar/special_days.csv(정해진 기준으로 뽑은 달력: 휴장, 새해 첫 거래일·수능일 10시 개장, 밤사이 미국장 휴장·조기 마감·여러 번).
 - 미국 실적 발표일: Finnhub 실적 달력(무료). 관계 그림에 이어진 미국 기업(티커가 있는 것)만, 하루 한 번 받아 캐시한다.
   미국 장 마감 뒤(amc)든 장 전(bmo)이든 한국에는 다음 날 아침에 반영되므로 '미국 날짜 + 1일'을 반영일로 쓴다.
 - 수집·처리 상태와 방금 들어온 기사: 민석 수집기(news_search/source/nightly/<보고 날짜>/)의 파일을 읽기만 한다.
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import importlib.util
 import json
 import os
 import urllib.request
@@ -19,15 +20,40 @@ from zoneinfo import ZoneInfo
 KST = ZoneInfo("Asia/Seoul")
 SERVICE = Path(__file__).resolve().parents[1]
 REPO = SERVICE.parents[1]
+OB = SERVICE.parent
 NIGHTLY = REPO / "news_search/source/nightly"
 CACHE = SERVICE / "data_cache"
 WEEK = "월화수목금토일"
 
-# 장 시간이 바뀌는 날(공식 공지 확인분). note는 화면에 그대로 나간다.
-SPECIAL = {
-    "20261119": dict(title="수능일: 정규장 10:00 개장", open="10:00", premarket=False,
-                     note="장전 거래(NXT 프리마켓)가 없어 08:11 등급은 나오지 않아요. 시가는 10:00 기준이에요(정규장 10:00~16:30)."),
-}
+# 특별한 날 달력(model/market_calendar). 화면에 알리는 종류와 제목. note는 달력의 문장을 그대로 쓴다.
+_CAL = None
+
+
+def _cal():
+    """달력 모듈(model/market_calendar/special_days.py)을 처음 쓸 때 불러온다. 없으면 None(평소 날로 본다)."""
+    global _CAL
+    if _CAL is None:
+        p = OB / "model/market_calendar/special_days.py"
+        if not p.exists():
+            return None
+        spec = importlib.util.spec_from_file_location("special_days", p)
+        _CAL = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_CAL)
+    return _CAL
+TITLES = {"first_day": "새해 첫 거래일: 정규장 10:00 개장", "exam_day": "수능일: 정규장 10:00 개장", "krx_closed": "한국 증시 휴장",
+          "us_closed": "밤사이 미국 증시 휴장", "us_early_close": "밤사이 미국 증시 조기 마감", "us_multi": "연휴 뒤 첫 거래일"}
+
+
+def special(T: str) -> dict | None:
+    """T 아침 화면 알림: {title, open, premarket, note}. 평소와 같은 날이면 None."""
+    if _cal() is None:
+        return None
+    r = _cal().day_info(T)
+    kinds = [k for k in r["kinds"].split() if k in TITLES]
+    if not kinds:
+        return None
+    return dict(title=" · ".join(TITLES[k] for k in kinds), open=r["open"] or "09:00", premarket=str(r["premarket"]) == "1",
+                note=r["note"], kinds=kinds)
 # 관계표 미국 노드 id → 티커(실적 달력 조회용)
 TICKERS = {"US:NVDA": "NVDA", "US:AMD": "AMD", "US:MU": "MU", "US:TSM": "TSM", "US:LRCX": "LRCX", "US:AMZN": "AMZN",
            "US:GOOGL": "GOOGL", "US:INTC": "INTC", "US:AAPL": "AAPL", "US:QCOM": "QCOM"}
@@ -38,17 +64,19 @@ def _label(d: dt.date) -> str:
 
 
 def special_events(T: str, days: int = 7) -> list[dict]:
+    """다가오는 일정에 넣을 특별한 날(T부터 days일 안)."""
     start = dt.datetime.strptime(T, "%Y%m%d").date()
     out = []
-    for k, v in SPECIAL.items():
-        d = dt.datetime.strptime(k, "%Y%m%d").date()
-        if start <= d <= start + dt.timedelta(days=days):
-            out.append(dict(dday=(d - start).days, label=_label(d), title=v["title"], note=v["note"], kind="special", codes=[]))
+    for r in (_cal().upcoming(T, days) if _cal() else []):
+        d = dt.datetime.strptime(r["date"], "%Y%m%d").date()
+        kinds = [k for k in r["kinds"].split() if k in TITLES]
+        out.append(dict(dday=(d - start).days, label=_label(d), title=" · ".join(TITLES[k] for k in kinds),
+                        note=r["note"], kind="special", codes=[]))
     return out
 
 
 def _finnhub_key() -> str | None:
-    p = Path(os.environ.get("NIGHTLY_ENV_FILE", str(Path.home() / "4Digit-solo/.env")))
+    p = Path(os.environ.get("ENV_FILE") or os.environ.get("NIGHTLY_ENV_FILE") or str(REPO / ".env")).expanduser()
     if not p.exists():
         return None
     for line in p.read_text().splitlines():
@@ -103,7 +131,7 @@ def earnings_events(T: str, graph: dict, names: dict[str, str], days: int = 7) -
         if k == start and r.get("hour") == "amc" and us_close.hour >= 6:
             # 11/18 추가: 미국 표준시(겨울)에는 장 마감이 한국 06:00이라, 장 마감 뒤 발표는 그날 07:30 예상 범위·밤사이 브리핑(06:00 마감)에 들어가지 않는다.
             # (서머타임엔 마감이 05:00이라 발표가 밤 창 안에 들어오므로 표시하지 않는다.) 시각 사실만 적고, 가격이 그 때문에 움직였다고는 쓰지 않는다.
-            first = "개장 시가예요(이날은 장전 거래 없음)" if T in SPECIAL else "08:00 장전 거래예요(08:11 기준)"
+            first = "개장 시가예요(이날은 장전 거래 없음)" if _cal() and str(_cal().day_info(T)["premarket"]) != "1" else "08:00 장전 거래예요(08:11 기준)"
             out.append(dict(dday=0, label=_label(k), title=f"{who} 실적 발표 · 06:00 마감 뒤",
                             note=f"미국 {us.month}/{us.day} 장 마감 뒤(한국 06:00 이후) 발표라 07:30 예상 범위와 밤사이 브리핑에는 들어가지 않았어요. "
                                  f"발표 뒤 첫 국내 가격은 {first}" + tail,

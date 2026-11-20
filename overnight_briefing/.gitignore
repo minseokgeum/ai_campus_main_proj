@@ -7,13 +7,18 @@
 !model/data/universe.csv
 !model/data/fomc_dates.csv
 !model/data/fred_release_dates.csv
-!model/ref/*.csv
-!model/workbench/runs/claude_graph_v0/*.csv
-!model/workbench/runs/claude_segments_r1/*.csv
+!model/market_calendar/*.csv
 app/data/*
 !app/data/.gitkeep
 model/workbench/live/
-model/workbench/runs/claude_live_r1/*.json
+model/workbench/runs/*
+!model/workbench/runs/claude_band_design_r1/
+!model/workbench/runs/claude_live_r1/
+model/workbench/runs/claude_live_r1/*
+!model/workbench/runs/claude_live_r1/check_open.py
+model/.venv/
+# 컴퓨터마다 다른 설정(local.conf.example 참고)
+local.conf
 
 # 11/19: 데모 화면 시작 파일(팀 .gitignore가 html을 모두 막아 그동안 빠져 있었음). 수연 버전(web/)과 원래 버전(web/orig/)
 !service/web/index.html

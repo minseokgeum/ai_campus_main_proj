@@ -1,7 +1,7 @@
 """아침 카드 하나를 그날 실제 시가로 채점한다(개장 뒤 실행). 카드는 고치지 않고, 결과는 새 파일로 남긴다.
 먼저 카드 해시가 카드와 같이 저장한 .sha256과 같은지 확인한다(카드를 만든 뒤 바뀌지 않았는지).
 시가는 한국투자증권 일봉(FHKST03010100, 시장 J)의 그날 시가. 읽기 전용 시세 조회, 키 값은 출력하지 않는다.
-사용: PYTHONPATH=.:src .venv/bin/python workbench/runs/claude_live_r1/check_open.py --date 20261104 --env ~/4Digit-solo/.env
+사용: PYTHONPATH=.:src .venv/bin/python workbench/runs/claude_live_r1/check_open.py --date 20261104 --env .env
 """
 from __future__ import annotations
 

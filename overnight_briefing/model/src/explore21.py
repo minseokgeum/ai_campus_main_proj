@@ -20,6 +20,7 @@
 ③ 야간선물 기간(2025-10~2026-10, explore 예측의 지수·종목): 같은 비교를 참고로만(아침 수가 적음).
 """
 import json
+import os
 import urllib.parse
 import urllib.request
 
@@ -35,7 +36,7 @@ KINDS = ["CPI", "NFP", "FOMC"]
 rng = np.random.default_rng(31)
 
 
-def fred_key(env="/Users/betterkim/4Digit-solo/.env"):
+def fred_key(env=os.environ.get("ENV_FILE", ".env")):
     for line in open(env, encoding="utf-8"):
         if line.startswith("FRED_API_KEY="):
             return line.split("=", 1)[1].strip().strip('"')
