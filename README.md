@@ -8,7 +8,7 @@
 | 폴더 | 내용 |
 |---|---|
 | `graph_db/` | 그래프 DB 만들기: DART·뉴스 수집과 LLM 추출, 이름 통일, 제품 사전, Neo4j 적재, 검색어 만들기. 노트북과 `graphDB.md`, 지시문(`prompts/`) |
-| `news_search/` | 밤사이 기사 모으기: 검색어로 구글 뉴스 RSS 검색, 거르기, 같은 소식 묶기, 대표 기사 본문 받기, 프롬프트 입력. 24시간 수집 `news_collect.ipynb`, 수집 마감 뒤 처리 `news_process.ipynb`(사용자가 고른 표시 시각 30분 전에 한 번). 결정은 [`news_search.md`](news_search/news_search.md) |
+| `news_search/` | 밤사이 기사 모으기: 검색어로 구글 뉴스 RSS 검색, 거르기, 같은 소식 묶기, 대표 기사 본문 받기, 프롬프트 입력. 24시간 수집 `news_collect.ipynb`(결과는 PostgreSQL DB), 수집 마감 뒤 처리 `news_process.ipynb`(2026-11-18까지의 보고 날짜 폴더를 읽는 방식). 결정은 [`news_search.md`](news_search/news_search.md) |
 | `news_search_tests/` | 구글 뉴스 검색 방식 시험(`search_tests.ipynb`: 매체, OR 묶음, 기간 조건, 거르기, 검색어 모양). 서비스 실행에는 필요 없음 |
 | `news_source_tests/` | 뉴스 매체·수집 방식을 정할 때 한 시험(근거 보관). [README](news_source_tests/README.md) |
 | `graph_news_overview.md` | **처음 보는 팀원용 안내**: 그래프 DB, 검색어, 구글 뉴스 수집·처리가 무엇을 만들고 어떻게 도는지, 결과 위치와 첫 실전 결과 |
@@ -70,7 +70,7 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
 | 15 | `graph_db` | 그래프 표 만들기와 Neo4j 적재 | Neo4j, `NEO4J_*` | `LOAD` | 없음(로컬) |
 | 16 | `search_terms` | 종목 유형, 검색어 후보, 업종·테마·회사 기본 검색어 | Codex | `RUN` | Codex 구독(요청 4건) |
 | 17 | `../news_search_tests/search_tests` | 구글 뉴스 검색 방식 시험(매체, OR 묶음, 거르기, 검색어 시험. 서비스 실행에는 필요 없음) | | `RUN` | 구글 뉴스 RSS(무료, 한 IP에서 시간당 수백 건이면 막힘) |
-| 18 | `../news_search/news_collect` | 24시간 수집(11절): 수집 마감(표시 시각 `SUMMARY_TIME` 30분 전, 기본 07:30)에 맞춘 일정(밤 22시~마감 1시간, 저녁 16~22시 2시간, 낮 마감~16시 4시간 간격), 수집 마감 표시 파일 | 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시험 종목 17개·검색어 169개 기준 하루 약 7,100건) |
+| 18 | `../news_search/news_collect` | 24시간 수집(11절): 회차 없이 검색어별 목표 간격(1·2·3시간)으로 가장 밀린 검색어부터, 요청 간격 15초, 결과는 PostgreSQL DB에 계속 쌓음(`news_search.md` 2.3~2.5) | `GNEWS_DB_URL`, 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시간당 최대 약 240건·하루 최대 약 5,800건) |
 | 19 | `../news_search/news_process` | 수집 마감 뒤 처리(10절 대기하며 돌리기): 취침 시각(`BEDTIME`) 전 기사는 비교용으로 등록, 뒤 기사는 묶기 → 이전 소식 확인 → 종목별 10개 묶음 → 본문 받기 → 프롬프트 입력. 수집과 함께 켜 둔다 | `OPENAI_API_KEY`(임베딩), 알림 키 | `WATCH_RUN`(골라 돌리기는 `PROCESS_RUN`) | OpenAI 임베딩(하룻밤 $0.01~0.03), 원문 주소 복원·원문 페이지(무료) |
 
 - `db_test`는 처리 단계가 아니라 수집 DB를 조회하는 노트북이다.

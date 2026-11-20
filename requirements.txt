@@ -9,6 +9,7 @@ beautifulsoup4==4.15.0
 lxml==6.1.3
 trafilatura==2.3.1         # 기사 본문 추출
 googlenewsdecoder==0.2.2   # 구글 뉴스 링크 → 원문 주소(news_search 본문 받기, news_source_tests)
+num2words==0.5.14          # 숫자 영어 변환(news_search/news_extract 리스트 추출 입력)
 python-dateutil==2.9.0.post0
 jsonschema==4.26.0         # LLM 결과 스키마 점검
 openai==3.49.0             # LLM, 임베딩(news_search 같은 소식 묶기)
@@ -16,6 +17,7 @@ scikit-learn==1.7.2        # 같은 소식 묶기(news_search)
 nltk==3.10.3               # 제품 사전 단수형(WordNet)
 neo4j==6.4.1
 SQLAlchemy==2.0.52         # 뉴스 수집 DB
+psycopg[binary]==3.3.9     # 구글 뉴스 수집 DB(PostgreSQL, news_search/news_collect)
 PyMySQL==1.2.0
 cryptography==46.0.7       # MySQL 접속(caching_sha2_password)
 ipykernel==6.31.0
