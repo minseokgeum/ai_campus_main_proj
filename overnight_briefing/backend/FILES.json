@@ -1,0 +1,222 @@
+[
+ {
+  "src": "~/4Digit/src/app/pipeline/build_model_data.py",
+  "dst": "app_pipeline/build_model_data.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/common.py",
+  "dst": "engine/src/common.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/morning_card.py",
+  "dst": "engine/workbench/morning_card.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/live_panel.py",
+  "dst": "engine/workbench/live_panel.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/i24_panel.py",
+  "dst": "engine/workbench/i24_panel.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/explore21.py",
+  "dst": "engine/src/explore21.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/explore8.py",
+  "dst": "engine/src/explore8.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/backtest.py",
+  "dst": "engine/src/backtest.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/explore12.py",
+  "dst": "engine/src/explore12.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/explore9.py",
+  "dst": "engine/src/explore9.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/explore.py",
+  "dst": "engine/src/explore.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/explore16.py",
+  "dst": "engine/src/explore16.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/core.py",
+  "dst": "engine/workbench/core.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/explore22.py",
+  "dst": "engine/src/explore22.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/after_0600.py",
+  "dst": "engine/src/after_0600.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/e46_leadlag.py",
+  "dst": "engine/workbench/e46_leadlag.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/time_patterns.py",
+  "dst": "engine/workbench/time_patterns.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/e62_band.py",
+  "dst": "engine/workbench/e62_band.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/range_models.py",
+  "dst": "engine/workbench/range_models.py"
+ },
+ {
+  "src": "~/4Digit/src/app/pipeline/build_forward_days.py",
+  "dst": "app_pipeline/build_forward_days.py"
+ },
+ {
+  "src": "~/4Digit/src/app/pipeline/build_live_day.py",
+  "dst": "app_pipeline/build_live_day.py"
+ },
+ {
+  "src": "~/4Digit/src/app/pipeline/build_night_news.py",
+  "dst": "app_pipeline/build_night_news.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/news_snapshot.py",
+  "dst": "engine/workbench/news_snapshot.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/news_days.py",
+  "dst": "engine/workbench/news_days.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/us_news_segment.py",
+  "dst": "engine/workbench/us_news_segment.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/us_news_by_stock.py",
+  "dst": "engine/workbench/us_news_by_stock.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/us_news_sign.py",
+  "dst": "engine/workbench/us_news_sign.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/us_news_judge_openai.py",
+  "dst": "engine/workbench/us_news_judge_openai.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/us_news_judge.py",
+  "dst": "engine/workbench/us_news_judge.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/us_news_judge_cascade.py",
+  "dst": "engine/workbench/us_news_judge_cascade.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/us_news_link.py",
+  "dst": "engine/workbench/us_news_link.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/alpaca_latest.py",
+  "dst": "engine/workbench/alpaca_latest.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/e100_forward.py",
+  "dst": "engine/workbench/e100_forward.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/runs/claude_live_r1/check_open.py",
+  "dst": "engine/workbench/runs/claude_live_r1/check_open.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/src/collect.py",
+  "dst": "engine/src/collect.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/live_refresh.py",
+  "dst": "engine/workbench/live_refresh.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/evening_nxt.py",
+  "dst": "engine/workbench/evening_nxt.py"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/protocol_e62_band.json",
+  "dst": "engine/workbench/protocol_e62_band.json"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/protocol_e100_forward.json",
+  "dst": "engine/workbench/protocol_e100_forward.json"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/protocol_i24_features.json",
+  "dst": "engine/workbench/protocol_i24_features.json"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/auto_early.sh",
+  "dst": "engine/workbench/auto_early.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/early_brief.sh",
+  "dst": "engine/workbench/early_brief.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/auto_seal.sh",
+  "dst": "engine/workbench/auto_seal.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/seal_morning.sh",
+  "dst": "engine/workbench/seal_morning.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/auto_after_close.sh",
+  "dst": "engine/workbench/auto_after_close.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/after_close.sh",
+  "dst": "engine/workbench/after_close.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/news_morning.sh",
+  "dst": "engine/workbench/news_morning.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/disk_guard.sh",
+  "dst": "engine/workbench/disk_guard.sh"
+ },
+ {
+  "src": "~/4Digit/research/overnight_backtest/workbench/__init__.py",
+  "dst": "engine/workbench/__init__.py"
+ },
+ {
+  "src": "~/Library/LaunchAgents/com.4digit.after-close.plist",
+  "dst": "launchd/com.4digit.after-close.plist"
+ },
+ {
+  "src": "~/Library/LaunchAgents/com.4digit.early-brief.plist",
+  "dst": "launchd/com.4digit.early-brief.plist"
+ },
+ {
+  "src": "~/Library/LaunchAgents/com.4digit.news-collect.plist",
+  "dst": "launchd/com.4digit.news-collect.plist"
+ },
+ {
+  "src": "~/Library/LaunchAgents/com.4digit.news-process.plist",
+  "dst": "launchd/com.4digit.news-process.plist"
+ },
+ {
+  "src": "~/Library/LaunchAgents/com.4digit.night-publish.plist",
+  "dst": "launchd/com.4digit.night-publish.plist"
+ },
+ {
+  "src": "~/Library/LaunchAgents/com.4digit.seal-morning.plist",
+  "dst": "launchd/com.4digit.seal-morning.plist"
+ }
+]

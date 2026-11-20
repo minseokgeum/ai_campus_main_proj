@@ -46,6 +46,7 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
 | `news_tests` | 2026-11-17 | 286MB | 뉴스 매체 시험(`news_source_tests`)과 구글 뉴스 검색 방식 시험(`news_search_tests/source`)의 결과와 캐시(파일 4,456개) | 시험 노트북을 요청 없이 다시 볼 때만 |
 | `backtest_data` | 2026-11-17 | 69MB | 백테스트 캐시와 결과(`backtest/data`: KRX API 캐시·분봉 캐시·야후 분봉, `backtest/outputs`, 파일 1,210개) | 백테스트 노트북을 API 요청 없이 다시 돌릴 때 |
 | `creon_1min` | 2026-11-17 | 6.5GB | 크레온 KRX 1분봉(`stockdata_collection/creon_1min`: 전체 종목 스냅샷·반도체 15종목·조회 범위 점검, 파일 6,328개) | 분봉 백테스트. 크레온으로 다시 받으려면 하루 넘게 걸린다 |
+| `service_backend` | 2026-11-20 | 5.7MB | 서비스 백엔드 결과·입력(파일 277개): 날마다 개장 전 고정한 07:30·08:11 카드(+해시)와 `seal_log`, 개장 직후 채점, 미국 뉴스 연결 고정본, 규칙 확정 뒤 기록, DART 공시 목록, 화면 날짜 자료(`backend/app_data`), 지금 배포된 API 스냅샷(`service/data`) | 노란띠·기록·공시 주의를 다른 배포에서 쓰거나 데모 자료를 그대로 띄울 때. 코드와 설명은 `overnight_briefing/backend/`. 풀 때는 zip 경로를 직접 준다 |
 
 ## 실행 순서 (graph_db)
 
