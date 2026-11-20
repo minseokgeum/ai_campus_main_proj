@@ -97,11 +97,3 @@ desktop.ini
 
 intraday_horizon_test.ipynb
 playwright_news_profile/
-# 11/20 서비스 백엔드: 자료는 팀 드라이브 묶음(service_backend_<날짜>.zip)으로, 코드만 git에
-/overnight_briefing/backend/engine/data/
-/overnight_briefing/backend/engine/workbench/live/
-/overnight_briefing/backend/engine/workbench/runs/claude_live_r1/*
-!/overnight_briefing/backend/engine/workbench/runs/claude_live_r1/check_open.py
-/overnight_briefing/backend/engine/workbench/runs/claude_forward_r1/
-/overnight_briefing/backend/engine/workbench/runs/claude_events_r1/
-/overnight_briefing/backend/app_data/
