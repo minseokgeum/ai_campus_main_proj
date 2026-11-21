@@ -19,7 +19,7 @@ export default async function My() {
     <>
       <main className="sheet">
         <div className="shead"><Link href="/" aria-label="뒤로">‹</Link><span className="ttl">마이</span></div>
-        <section className="prof"><span className="pic">{user.username.slice(0, 1).toUpperCase()}</span><div><b>{user.username} 님</b><small>{user.username === "guest" ? "둘러보기 계정" : "아이디 로그인"}</small></div></section>
+        <section className="prof"><span className="pic">{user.username.slice(0, 1).toUpperCase()}</span><div><b>{user.username.startsWith("guest") ? "둘러보기" : user.username} 님</b><small>{user.username.startsWith("guest") ? "둘러보기 계정 · 바꾼 종목은 나에게만 보여요" : "아이디 로그인"}</small></div></section>
         <nav className="menu">
           <h3>내 투자</h3>
           <Link href="/mine">보유·관심 종목 관리<span>보유 {pf.holdings.length} · 관심 {pf.watch.length} ›</span></Link>

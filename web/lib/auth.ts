@@ -40,20 +40,59 @@ export async function signup(username: string, password: string): Promise<"ok" |
   return "ok";
 }
 
-/** 둘러보기: 공용 체험 계정(guest)으로 들어간다. 처음이면 시험 종목을 넣어 만든다 */
-export async function guestLogin(sample: string[]): Promise<void> {
-  const db = appdb();
-  let r = await db.query("select id from app.users where username = 'guest'");
-  if (!r.rows[0]) {
-    r = await db.query("insert into app.users (username, password_hash) values ('guest', $1) on conflict (username) do update set username = excluded.username returning id",
-      [hash(randomBytes(12).toString("hex"))]);
-    for (const [i, code] of sample.entries())
-      await db.query("insert into app.holdings (user_id, code, qty) values ($1, $2, $3) on conflict do nothing", [r.rows[0].id, code, 10 + ((i * 37) % 90)]);
-  }
-  await startSession(r.rows[0].id);
+/** 한국 날짜 6자리(YYMMDD). 체험 계정 이름에 넣어 언제 만든 계정인지 안다 */
+function kstYmd6(d: Date = new Date()): string {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).map((x) => [x.type, x.value]),
+  );
+  return `${String(p.year).slice(2)}${p.month}${p.day}`;
 }
 
-/** 회원 탈퇴: 보유·관심·세션·계정을 지운다(되돌릴 수 없음). 체험 계정(guest)은 계정만 남긴다 */
+/** 이틀 전(한국 날짜)까지 만든 체험 계정(guest_YYMMDD…)과 그 보유·관심·세션을 지운다. 예전 공용 계정 guest는 건드리지 않는다 */
+async function cleanupGuests(): Promise<void> {
+  const cut = kstYmd6(new Date(Date.now() - 86400000));
+  const client = await appdb().connect();
+  try {
+    await client.query("begin");
+    const { rows } = await client.query("select id from app.users where username ~ '^guest_[0-9]{6}' and substring(username from 7 for 6) < $1", [cut]);
+    const ids = rows.map((x: { id: number }) => x.id);
+    if (ids.length) {
+      for (const t of ["app.holdings", "app.watch", "app.sessions"]) await client.query(`delete from ${t} where user_id = any($1)`, [ids]);
+      await client.query("delete from app.users where id = any($1)", [ids]);
+    }
+    await client.query("commit");
+  } catch (e) {
+    await client.query("rollback");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/** 둘러보기(2026-11-22 바꿈): 들어올 때마다 그 사람만의 체험 계정(guest_날짜+무작위, 예 guest_261127a1b2c3)을 새로 만들어 시험 종목을 넣는다.
+ *  발표 때 QR로 여러 명이 함께 들어와도 서로 바꾼 보유·관심 종목이 섞이지 않게 한다(예전엔 공용 계정 guest 하나를 같이 썼다).
+ *  이틀 지난 체험 계정은 이때 정리한다. 정리에 실패해도 들어오는 것은 막지 않는다 */
+export async function guestLogin(sample: string[]): Promise<void> {
+  try {
+    await cleanupGuests();
+  } catch (e) {
+    console.error("체험 계정 정리 실패", e);
+  }
+  const db = appdb();
+  let id: number | undefined;
+  for (let i = 0; i < 3 && id === undefined; i++) {
+    const name = `guest_${kstYmd6()}${randomBytes(3).toString("hex")}`;
+    const r = await db.query("insert into app.users (username, password_hash) values ($1, $2) on conflict (username) do nothing returning id",
+      [name, hash(randomBytes(12).toString("hex"))]);
+    id = r.rows[0]?.id;
+  }
+  if (id === undefined) throw new Error("체험 계정을 만들지 못했어요");
+  for (const [i, code] of sample.entries())
+    await db.query("insert into app.holdings (user_id, code, qty) values ($1, $2, $3) on conflict do nothing", [id, code, 10 + ((i * 37) % 90)]);
+  await startSession(id);
+}
+
+/** 회원 탈퇴: 보유·관심·세션·계정을 지운다(되돌릴 수 없음). 예전 공용 체험 계정(guest)은 계정만 남기고, 사람마다 만든 체험 계정(guest_…)은 모두 지운다 */
 export async function deleteAccount(userId: number): Promise<void> {
   const client = await appdb().connect();
   try {
