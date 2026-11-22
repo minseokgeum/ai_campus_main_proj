@@ -551,3 +551,4 @@ details.bulk .btn-line { width: 100%; }
 /* 11/22 저녁: 내 계좌 카드 — 잠들 때 숫자 → 06:00, 야간선물 1%당 이 계좌 금액 */
 .hero .night-line { display: grid; gap: 2px; margin-top: 8px; font-size: 12.5px; line-height: 1.5; color: var(--ink2); }
 .hero .night-line span:last-child:not(:first-child) { color: var(--sub); }
+.look3 .bd small.late { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line2); color: var(--warn); }

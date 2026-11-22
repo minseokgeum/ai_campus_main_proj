@@ -133,6 +133,29 @@ class PortfolioIn(BaseModel):
         return self
 
 
+def _nxt_hist(T: str, codes: list[str]) -> dict[str, list[int]]:
+    """11/22: 그 종목이 이 날 전 최근 거래일(최대 10일)에 08:10 개장 전 거래 가격이 있었는지 [있던 날, 센 날].
+    '새 숫자가 언제 오나'를 종목별로 말하려고 쓴다(이 날 자료는 보지 않는다). 개장 전 거래가 없던 날(수능 등)은 세지 않는다."""
+    prev = sorted((x["T"] for x in S.meta().get("days", []) if x.get("T", "") < T), reverse=True)[:10]
+    out = {c: [0, 0] for c in codes}
+    for t in prev:
+        try:
+            d = S.day(t)
+        except FileNotFoundError:
+            continue
+        if (d.get("special") or {}).get("premarket") is False:
+            continue
+        st = d.get("stocks") or {}
+        for c in codes:
+            s = st.get(c)
+            if not s:
+                continue
+            out[c][1] += 1
+            if ((s.get("grade") or {}).get("g")) is not None:
+                out[c][0] += 1
+    return out
+
+
 @app.post("/api/portfolio")
 def portfolio(body: PortfolioIn):
     d = _day_or_404(body.T)
@@ -143,7 +166,10 @@ def portfolio(body: PortfolioIn):
         acct = dict(acct, holdings=[dict(code=h["code"], q=h["q"], avg=h.get("avg")) for h in acct["holdings"]])
     else:
         acct = dict(id="U", name=body.name or "내 잔고", holdings=[h.model_dump() for h in body.holdings], sample=False)
-    return JSONResponse(P.build(d, S.track(), S.graph(), _catalog(), acct), headers=NO_STORE)
+    res = P.build(d, S.track(), S.graph(), _catalog(), acct)
+    nh = _nxt_hist(body.T, list(res["stocks"]))
+    res["stocks"] = {c: dict(v, nxt_hist=nh.get(c)) for c, v in res["stocks"].items()}
+    return JSONResponse(res, headers=NO_STORE)
 
 
 # 로컬에서는 같은 서버가 web/도 내준다(Vercel에서는 정적 파일로 따로 나간다).

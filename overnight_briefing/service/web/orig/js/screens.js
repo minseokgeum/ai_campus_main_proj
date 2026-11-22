@@ -672,7 +672,7 @@ export function checks(m, st, d) {
     if (!why && (s.cautions || []).length) { why = s.cautions[0].title; strong = true; }
     if (!why && !act && anyG && w >= 0.1) {
       if (g && g.level === "낮음") { why = "개장 전 거래 믿을 정도 낮음"; info = "grade"; }
-      else if (!g || g.g == null) why = "개장 전 거래가 없어 07:30 예상 그대로예요";
+      else if (!g || g.g == null) why = nxtNone(r) ? "평소 개장 전 거래가 없는 종목 · 새 숫자는 08:50 예상체결가부터" : "개장 전 거래가 없어 07:30 예상 그대로예요";
     }
     if (why) out.push({ r, why, strong, w, info });
   });
@@ -707,6 +707,8 @@ export function topNews(m, d) {
 /** '먼저 확인할 것' 구역. shown = 여기서 보인 기사(아래 '소식 더'에서 뺀다) */
 /* 11/22 저녁: '먼저 확인할 것'을 칸 3개로 되살린다(11/22 아침에 뺀 '오늘 아침 볼 것'의 내·8시·소식 칸).
    단순 요약이 아니라 칸마다 '무엇을, 언제, 어떤 조건이면 다시 볼지'를 말한다. 순서는 개인화 그대로(내 계좌 카드 다음). 권유·원인 단정 없음 */
+/** 최근 거래일에 개장 전 거래가 한 번도 없던 종목(3일 이상 셌을 때만). 이런 종목의 새 숫자는 08:50 거래소 예상체결가부터 */
+const nxtNone = (r) => { const h = r.s.nxt_hist; return !!(h && h[1] >= 3 && h[0] === 0); };
 const jo = (w, a, b) => { const c = w.charCodeAt(w.length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); };
 export function firstLook(m, d, st) {
   const held = m.rows.filter((r) => r.q > 0);
@@ -729,7 +731,14 @@ export function firstLook(m, d, st) {
   }
   // ② 확인할 때: 지금 확인할 표시, 없으면 다음에 무엇을 언제 볼지
   {
-    const ev = (d.events || []).filter((e) => !(e.codes && e.codes.length) || e.codes.some((c) => m.codes.has(c))).find((e) => e.dday <= 1);
+    const isLate = (e) => e.dday === 0 && /06:00 마감 뒤/.test(e.title || "") && (e.codes || []).some((c) => m.codes.has(c));
+    const late = act ? null : (d.events || []).find(isLate);
+    const ev = (d.events || []).filter((e) => !isLate(e) && (!(e.codes && e.codes.length) || e.codes.some((c) => m.codes.has(c)))).find((e) => e.dday <= 1);
+    const lateTxt = late ? (() => {
+      const mine = held.filter((r) => late.codes.includes(r.s.code)).map((r) => r.s.name).join("·");
+      const first = noPre ? `발표 뒤 첫 국내 가격은 ${open} 시작가예요` : "발표 뒤 첫 국내 가격은 08:00 개장 전 거래예요(08:11 화면에 반영)";
+      return `<small class="late">${esc(`07:30 예상에 안 들어간 일정: ${late.title.replace(/\s*·\s*06:00 마감 뒤/, "")}. 06:00 야간선물 마감 뒤 발표라 예상 가격대에 없어요. 이어진 내 종목: ${mine}. ${first}.`)}</small>`;
+    })() : "";
     const evTxt = ev ? ` 일정: ${ev.dday === 0 ? "오늘" : "내일"} ${ev.title}.` : "";
     const ic = act ? "9시" : noPre ? "개장" : "8시";
     let body;
@@ -747,18 +756,24 @@ export function firstLook(m, d, st) {
       const got = held.filter((r) => r.s.y != null).length;
       body = `<b>시작가가 나온 ${got}종목 모두 예상대로 시작했어요</b><small>${esc("아침 예상 가격대 안에서 시작했다는 뜻이에요. 날마다의 결과는 '기록'에 쌓여요." + evTxt)}</small>`;
     } else if (st.slot === "0730" && !noPre) {
-      const top2 = [...held].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt)).slice(0, 2);
-      body = `<b>${esc(`08:11에 다시 볼 것: ${top2.map((r) => r.s.name).join("·")}`)}</b><small>${esc(`예상 금액 변화가 가장 큰 ${top2.length > 1 ? "두 종목" : "종목"}이에요. 08:11 화면에서는 개장 전 거래가 노란 막대 밖인 종목과 거래가 없는 종목을 이 칸 맨 위에 나눠 보여 드려요.` + evTxt)}</small>`;
+      const top2 = [...held].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt)).slice(0, 2), nx2 = top2.filter((r) => !nxtNone(r)), nn = top2.filter(nxtNone);
+      const nm = (rs) => rs.map((r) => r.s.name).join("·");
+      const t = nx2.length ? `08:11에 다시 볼 것: ${nm(nx2)}` : `08:50에 다시 볼 것: ${nm(nn)}`;
+      const sub = (nn.length && nx2.length ? "예상 금액 변화가 가장 큰 두 종목 가운데 개장 전 거래가 있는 종목이에요." : `예상 금액 변화가 가장 큰 ${top2.length > 1 ? "두 종목" : "종목"}이에요.`)
+        + (nx2.length ? " 08:11 화면에서는 개장 전 거래가 노란 막대 밖인 종목과 거래가 없는 종목을 이 칸 맨 위에 나눠 보여 드려요." : "")
+        + (nn.length ? ` ${jo(nm(nn), "은", "는")} 최근 ${nn[0].s.nxt_hist[1]}거래일 동안 개장 전 거래가 없었던 종목이라, 새 숫자는 08:50 거래소 예상체결가부터 나와요.` : "");
+      body = `<b>${esc(t)}</b><small>${esc(sub + evTxt)}</small>`;
     } else if (noPre) {
       body = `<b>오늘은 개장 전 거래가 없어요</b><small>${esc(`개장은 ${open}이에요. 07:30 예상이 개장 전 마지막 숫자예요.` + evTxt)}</small>`;
     } else {
       const gr = held.filter((r) => r.s.grade && r.s.grade.g != null), lv = (k) => gr.filter((r) => r.s.grade.level === k).length;
       const mix = ["높음", "보통", "낮음"].map((k) => (lv(k) ? `${k} ${lv(k)}` : "")).filter(Boolean).join(" · ");
-      const none = held.length - gr.length;
-      body = gr.length ? `<b>개장 전 거래가 있던 ${gr.length}종목 모두 예상대로예요</b><small>${esc(`아침 예상 가격대 안에서 거래되고 있어요. 시작가 방향 믿을 정도: ${mix}.${none ? ` 개장 전 거래가 없던 ${none}종목은 07:30 예상 그대로예요.` : ""}` + evTxt)}</small>`
+      const noneR = held.filter((r) => !(r.s.grade && r.s.grade.g != null)), none = noneR.length;
+      const noneTxt = !none ? "" : noneR.every(nxtNone) ? ` ${jo(noneR.map((r) => r.s.name).join("·"), "은", "는")} 평소에도 개장 전 거래가 없는 종목이라 새 숫자는 08:50 거래소 예상체결가부터예요.` : ` 개장 전 거래가 없던 ${none}종목은 07:30 예상 그대로예요.`;
+      body = gr.length ? `<b>개장 전 거래가 있던 ${gr.length}종목 모두 예상대로예요</b><small>${esc(`아침 예상 가격대 안에서 거래되고 있어요. 시작가 방향 믿을 정도: ${mix}.${noneTxt}` + evTxt)}</small>`
         : `<b>개장 전 거래가 있었던 종목이 없어요</b><small>${esc("07:30 예상 그대로예요." + evTxt)}</small>`;
     }
-    boxes.push(row(ic, ck.length ? "w" : "", body, "", "check"));
+    boxes.push(row(ic, ck.length || late ? "w" : "", body + lateTxt, "", "check"));
   }
   // ③ 이어진 소식: 회사 자체 → 직접 확인 → 거래 관계 순, 금액 줄과 떼어서
   const shown = new Set(tn.map((x) => x.key));
