@@ -2,6 +2,7 @@
 
 사용: python run_model.py <단계> [YYYYMMDD]
   단계: bootstrap(처음 자료 받기) · bootstrap_rest(NXT·시장·공시만 다시) · save_boot(처음 자료를 DB에) · morning0730 · morning0811 · open · close
+        · night_live · us_market · intraday(장중 1분봉, 1분마다) · intraday_backfill(지난 거래일 1분봉, 손으로 한 번)
 노트북에서 'run-skip' 표시가 붙은 칸(손으로 돌리는 예시)은 건너뛴다.
 """
 import json
