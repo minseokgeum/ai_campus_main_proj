@@ -59,6 +59,19 @@ function stockRow(r, m, st, d) {
   </article>`;
 }
 
+/** 11/22 저녁: 계산을 끝내 준다 — 잠들 때 본 야간선물이 아침에 어떻게 바뀌었는지, 이 계좌는 야간선물 1%에 얼마씩 움직이는지.
+    1%당 금액 = 오늘 예상 합 ÷ 야간선물 변화(모델이 쓴 같은 비율). 밤이 작으면(1% 미만) 나눗셈이 흔들려 생략한다 */
+function nightLine(m, d, st) {
+  const n = d.night, x = d.market && d.market.x;
+  if (m.showAct || !n || !n.pts || !n.pts.length || x == null || !m.rows.some((r) => r.q > 0)) return "";
+  const bed = st.bed || "00:00", [bh, bm] = bed.split(":").map(Number), t0 = Number(n.t0.slice(11, 13)) * 60 + Number(n.t0.slice(14, 16));
+  const mi = ((bh * 60 + bm - t0) % 1440 + 1440) % 1440;
+  const p = n.pts.find((q) => q[0] >= mi) || n.pts[n.pts.length - 1], xb = p[1] / n.day_close - 1;
+  const k = Math.abs(x) >= 0.01 ? m.Hsum / (x * 100) : null;
+  const a = `잠들 때(${bed}) 야간선물 ${pct2(xb)}${k ? `(이 계좌로 약 ${man(k * xb * 100)})` : ""} → 06:00 마감 ${pct2(x)}`;
+  const b = k ? `이 계좌는 야간선물 1%에 약 ${man(Math.abs(k)).replace(/^[+−-]/, "")}씩 움직이는 구성이에요.` : "";
+  return `<div class="night-line"><span>${esc(a)}</span>${b ? `<span>${esc(b)}</span>` : ""}</div>`;
+}
 export function heroHtml(m, d, st) {
   const sv = m.stockValue, act = m.showAct && m.actSum != null, hypo = m.pinned;
   const main = act ? m.actSum : hypo ? m.hypoSum : m.Hsum;
@@ -68,7 +81,7 @@ export function heroHtml(m, d, st) {
   let h = `<div class="when"><span>${d.label}</span><span class="live${pillOpen ? " open" : ""}"><i></i>${st.slot === "0730" ? "07:30 기준 · 장 전" : st.slot === "0811" ? "08:11 기준 · 장 전" : pillOpen ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전"}</span></div>
     <div class="label">${label}<button class="eye" data-act="hideamt" aria-label="${st.hideAmt ? "금액 보기" : "금액 가리기"}" aria-pressed="${st.hideAmt ? "true" : "false"}">${st.hideAmt ? I.eyeOff : I.eye}</button></div>
     <div class="big num ${tone(main)}">${won(main)}<small>${pct2(sv ? main / sv : null)}</small></div>
-    ${shareHtml(m)}
+    ${shareHtml(m)}${nightLine(m, d, st)}
     <div class="flow"><div><span>어제 종가 기준</span><b class="num">${won(sv, false)}</b></div>${I.arrow}<div><span>${act ? "9시 시작가 기준" : hypo ? "정한 시작가 기준" : "예상 시작가 기준"}</span><b class="num">${won(sv + main, false)}</b></div></div>`;
   // 11/22: 종목별 막대는 위 3종목 + 그 외. 금액 옆에 같은 방향 안 몫(%)을 붙이고, 줄을 누르면 그 종목으로 간다
   const cs = m.rows.filter((r) => r.q > 0).map((r) => ({ n: r.s.name, code: r.s.code, v: amtOf(m, r) })).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
@@ -725,7 +738,10 @@ export function firstLook(m, d, st) {
         const g = x.r.s.grade, nxo = x.info === "nxtout" && g && g.g != null;   // 개장 전 거래가 막대 밖이면 금액 대신 그 거래 가격(%)을 보여 준다
         return `<button class="mini" data-act="jump" data-code="${x.r.s.code}"><span><b>${esc(x.r.s.name)}</b> <span class="${x.strong ? "lo" : ""}">${esc(x.why)}</span></span><b class="num ${tone(nxo ? g.g : amtOf(m, x.r))}">${nxo ? `개장 전 ${pct2(g.g)}` : man(amtOf(m, x.r))}</b></button>`;
       }).join("");
-      const why = nx ? "08:10 가격이 이미 예상을 벗어나면, 지난 기록에서는 시작가도 벗어난 날이 더 많았어요." : act ? "예상 가격대 밖에서 시작한 종목이에요." : "믿을 정도가 낮을수록 시작가 방향이 예상과 달라지는 날이 많았어요.";
+      const nxr = ck.filter((x) => x.info === "nxtout").map((x) => x.r), tot = held.reduce((a, r) => a + Math.abs(r.Hamt), 0);
+      const sh = tot ? Math.round((100 * nxr.reduce((a, r) => a + Math.abs(r.Hamt), 0)) / tot) : 0;
+      const why = nx ? `개장 전 거래가 예상 밖인 종목이 아침 예상 금액 변화의 ${sh}%예요. 07:30 계좌 예상(${man(m.Hsum)})은 그대로 참고하기 어려워요. 지난 기록에서도 이런 종목은 시작가가 예상 밖에서 열린 날이 더 많았어요.`
+        : act ? "예상 가격대 밖에서 시작한 종목이에요." : "믿을 정도가 낮을수록 시작가 방향이 예상과 달라지는 날이 많았어요.";
       body = `<b>확인할 표시 ${ck.length}종목</b><small>${esc(why + evTxt)}</small>${mini}${ck.length > 3 ? `<small class="fl-more">${esc(ck.slice(3).map((x) => x.r.s.name).join("·"))} 더</small>` : ""}`;
     } else if (act) {
       const got = held.filter((r) => r.s.y != null).length;
