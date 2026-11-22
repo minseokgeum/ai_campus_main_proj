@@ -3,7 +3,7 @@
   --ink: #192d31;
   --sub: #45555a;
   --muted: #66777a;
-  --faint: #8a9598;
+  --faint: #66777a;   /* 보조 글자(배포용 규칙: #8A9598 → #66777A, 흰 바탕 대비 약 4.6:1). #8A9598은 선·점선·비활성 아이콘에만 */
   --teal: #008c82;
   --teal-soft: rgba(0, 140, 130, 0.12);
   --mint: #eaf7f4;
@@ -31,6 +31,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* 화면 머리 */
 .head { padding: 24px 24px 0; position: relative; }
 .head h1 { font-size: 22px; font-weight: 700; line-height: normal; }
+.head h1 .hq { font: inherit; background: none; padding: 0; display: inline-grid; place-items: center; width: 28px; height: 28px; margin-left: 2px; vertical-align: 2px; }
+.head h1 .hq span { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #45555a; color: #45555a; font-size: 11px; font-weight: 700; display: grid; place-items: center; line-height: 1; }
+/* 뉴스 모으는 시간 창 */
+.ntime { background: #f4f6f7; border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
+.ntime div { display: flex; gap: 14px; font-size: 13px; }
+.ntime dt { color: #66777a; width: 64px; flex: none; }
+.ntime dd { color: var(--ink); font-weight: 500; }
+.ntnote { margin-top: 14px; font-size: 12px; color: #66777a; }
 .head .sub { margin-top: 6px; font-size: 11px; color: var(--sub); }
 .head .my { position: absolute; right: 13px; top: 15px; width: 44px; height: 44px; display: grid; place-items: center; }
 .head .my img { width: 23px; height: 23px; }
@@ -99,10 +107,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .fine { font-size: 11px; line-height: 1.45; color: var(--muted); }
 
 /* 판정 칩(긍정·부정·중립) — AI 처리 결과가 생기면 쓴다 */
-.verdict { align-self: flex-start; padding: 3px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; line-height: 1.2; }
-.verdict.pos { background: var(--pos-bg); color: var(--pos); }
-.verdict.neg { background: var(--neg-bg); color: var(--neg); }
-.verdict.neu { background: var(--neu-bg); color: var(--neu); }
+/* 긍정·부정·중립 판정: 바탕 없이 글자색만(배포용 변경 기록 02·10) */
+.verdict { align-self: flex-start; padding: 0; font-size: 12px; font-weight: 700; line-height: 1.2; background: none; }
+.verdict.pos { color: #15845a; }
+.verdict.neg { color: #b86e12; }
+.verdict.neu { color: #66777a; font-weight: 500; }
 
 /* 상태: 비어 있음 · 불러오지 못함 · 불러오는 중 */
 .state { text-align: center; padding: 40px 16px; color: var(--muted); font-size: 14px; line-height: 1.5; }
@@ -182,7 +191,15 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .found button:disabled { opacity: .5; }
 .dhead { font-size: 13px; font-weight: 700; color: var(--sub); }
 .draft { list-style: none; }
-.draft li { display: flex; align-items: center; gap: 8px; min-height: 57px; border-bottom: 1px solid var(--line); }
+.draft li { border-bottom: 1px solid var(--line); }
+.draft li .dl { display: flex; align-items: center; gap: 8px; min-height: 57px; }
+/* 평단 입력(배포용 변경 기록 04): 수량 아래 '평단 선택 [ ___ 원 ]' */
+.draft .avgin { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 0 12px; }
+.draft .avgin > span:first-child { font-size: 13px; font-weight: 500; color: #45555a; }
+.draft .avgin small { font-size: 12px; color: #66777a; font-weight: 400; margin-left: 4px; }
+.draft .avgin .box { display: flex; align-items: center; gap: 4px; width: 158px; height: 40px; background: #f4f6f7; border-radius: 10px; padding: 0 12px; }
+.draft .avgin input { flex: 1; min-width: 0; border: 0; background: none; text-align: right; font-size: 15px; font-weight: 700; color: var(--ink); outline: none; }
+.draft .avgin .box small { margin: 0; font-size: 14px; color: #45555a; }
 .draft li b { flex: 1; font-size: 15px; }
 .qty { display: flex; align-items: center; gap: 4px; }
 .qty button { width: 30px; height: 30px; border-radius: 15px; background: #eef1f2; font-size: 18px; }
@@ -228,7 +245,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .fut .fh span { font-size: 16px; font-weight: 700; }
 .fut .fh em { font-style: normal; color: var(--faint); }
 .nchart { display: block; height: 62px; }
-.fut.big .nchart { height: 140px; }
+.fut.big .nchart { height: auto; aspect-ratio: 310 / 180; }   /* 그림 비율(NightChart h=180)과 맞춰 가로 눈금 18:00~06:00과 어긋나지 않게(2026-11-22) */
 .axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
 .cmp { display: flex; align-items: center; gap: 8px; background: var(--block); border-radius: 10px; padding: 7px 10px; font-size: 11px; color: var(--muted); }
 .cmp b { font-size: 12px; }
@@ -344,7 +361,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sheet-head .x { width: 44px; height: 44px; margin: -10px -12px 0 0; color: var(--muted); font-size: 18px; }
 .sheet-head .txt { font-size: 14px; color: var(--sub); padding: 4px 0 8px 12px; }
 .sheet-body { display: flex; flex-direction: column; gap: 10px; }
-.sheet-ok { width: 100%; margin-top: 18px; min-height: 52px; border-radius: 14px; background: var(--charcoal); color: #fff; font-size: 16px; font-weight: 700; }
+.sheet-ok { width: 100%; margin-top: 18px; min-height: 52px; border-radius: 14px; background: var(--teal); color: #fff; font-size: 16px; font-weight: 700; }
 .help b { display: block; font-size: 14px; margin-top: 6px; }
 .help p { font-size: 13px; color: var(--sub); line-height: 1.55; }
 .steps { list-style: none; display: flex; justify-content: space-between; position: relative; padding-top: 6px; }
@@ -416,6 +433,16 @@ html[data-mask] .pval .amt::after, html[data-mask] .val .amt::after, html[data-m
 .acct.wait .wb { font-size: 13px; color: var(--sub); line-height: 1.5; }
 .wlink { background: #fff; border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700; display: flex; justify-content: space-between; min-height: 48px; }
 .wlink em { font-style: normal; color: var(--faint); }
+/* 큰 상태 칸(배포 784:2521 · 784:2173): 64px 동그라미 기호 · 18px 제목 · 14px 설명 · 42px 버튼 */
+.statebox { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 56px 16px 40px; }
+.statebox .mk { width: 64px; height: 64px; border-radius: 32px; display: grid; place-items: center; font-size: 26px; font-weight: 700; margin-bottom: 16px; }
+.statebox.teal .mk { background: #eaf7f4; color: #008c82; }
+.statebox.gray .mk { background: #f4f6f7; color: #8a9598; }
+.statebox b { font-size: 18px; color: var(--ink); }
+.statebox p { margin-top: 8px; font-size: 14px; line-height: 20px; color: #66777a; }
+.statebox .sb { margin-top: 20px; height: 42px; padding: 0 22px; border-radius: 12px; display: inline-flex; align-items: center; font-size: 15px; font-weight: 700; color: #fff; }
+.statebox.teal .sb { background: #008c82; }
+.statebox.gray .sb { background: #2f3437; }
 .emptycard { background: var(--mint); border-radius: 18px; padding: 24px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .emptycard .plus { width: 44px; height: 44px; border-radius: 22px; background: #fff; color: var(--teal); font-size: 26px; display: grid; place-items: center; }
 .emptycard b { font-size: 17px; }
@@ -495,10 +522,11 @@ html[data-mask] .pval .amt::after, html[data-mask] .val .amt::after, html[data-m
 
 /* 3분 브리핑 창(피그마 199:121) */
 .bkick { font-size: 12px; font-weight: 700; color: var(--teal); }
-.bkick span { margin-left: 4px; background: var(--block); color: var(--muted); border-radius: 6px; padding: 2px 6px; font-weight: 500; }
-.bpoint { background: var(--block); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
-.bpoint h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
-.bpoint h3 i { width: 22px; height: 22px; border-radius: 11px; background: var(--charcoal); color: #fff; font-style: normal; font-size: 12px; display: grid; place-items: center; }
+.bkick span { margin-left: 4px; background: #eaf7f4; color: #008c82; border-radius: 6px; padding: 2px 6px; font-weight: 500; font-size: 11px; }
+.bcards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.bpoint { background: var(--block); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.bpoint .bk { font-size: 12px; font-weight: 700; color: #008c82; }
+.bpoint h3 { font-size: 16px; font-weight: 700; }
 .bpoint p { font-size: 14px; line-height: 1.6; color: var(--sub); }
 .bpoint .bev { font-size: 11px; color: var(--muted); }
 .bpoint .bev a { color: var(--teal); text-decoration: underline; }
@@ -547,6 +575,7 @@ html[data-mask] .pval .amt::after, html[data-mask] .val .amt::after, html[data-m
 .chip.self { align-self: flex-start; }
 .ntitle { font-size: 22px; line-height: 1.4; }
 .nview { display: flex; gap: 8px; align-items: flex-start; background: #fff; border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5; color: var(--sub); }
+.nview .verdict { flex: none; white-space: nowrap; line-height: 19.5px; }   /* 라벨(긍정·엇갈림 등)은 한 줄로, 옆 글 첫 줄과 같은 높이에(2026-11-22) */
 .follow h2 { font-size: 17px; margin-bottom: 6px; }
 .frow { display: flex; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .frow span { font-size: 12px; color: var(--muted); flex: none; }
@@ -861,9 +890,14 @@ button.ibox { border: 0; cursor: pointer; }
 .pcard.noday .hname { font-weight: 700; color: var(--sub); }
 /* 종목 창 범례·평단 줄(피그마 400:4979 · 400:5083) */
 .blegend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin: -2px 0 8px; }
-.avgline { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--block); border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 10px; }
-.avgline b { font-size: 14px; }
-.avgline span { color: var(--muted); font-size: 12px; }
+.blegend span { display: inline-flex; align-items: center; gap: 5px; }
+.blegend .ldot { width: 8px; height: 8px; border-radius: 50%; background: #2f3437; }
+.blegend .lnxt { width: 2px; height: 11px; background: #d35d66; }
+/* 평단 대비 줄(배포용 변경 기록 05): 연한 청록 바탕, 왼쪽 '평단 n원 대비', 오른쪽 예상 범위를 평단 기준으로 */
+.avgline { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #eaf7f4; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 10px; }
+.avgline > span { color: #45555a; font-size: 13px; }
+.avgline b { font-size: 14px; white-space: nowrap; }
+html[data-mask] .avgwon { display: none; }
 .avgline.ask { background: var(--mint); }
 .avgline.ask span { color: var(--sub); font-size: 13px; }
 .avgline.ask a { color: var(--teal); font-weight: 700; white-space: nowrap; font-size: 13px; }
@@ -875,3 +909,240 @@ button.ibox { border: 0; cursor: pointer; }
 .rrow .rcol small { font-size: 11px; color: var(--muted); }
 .rrow .rpct { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .rrow em { font-style: normal; color: var(--faint); }
+/* 시연 시각(시연 계정만) */
+.demobar { position: sticky; top: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #2f3437; color: #fff; font-size: 12px; padding: 8px 16px; }
+.demobar a { color: #ffd970; font-weight: 700; white-space: nowrap; }
+.demotime { display: flex; flex-direction: column; gap: 6px; background: var(--block); border-radius: 16px; padding: 14px 16px; }
+.demotime h3 { font-size: 13px; color: var(--sub); margin-bottom: 4px; }
+.demotime h3 small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+.demotime a { display: flex; flex-direction: column; gap: 2px; background: #fff; border-radius: 12px; padding: 10px 12px; border: 1.5px solid transparent; }
+.demotime a b { font-size: 14px; }
+.demotime a small { font-size: 11px; color: var(--muted); }
+.demotime a.on { border-color: var(--teal); }
+
+/* 내 종목 연결 그림(components/links.tsx, 디자인 예시 '내 종목 연결 그림'): 왼쪽 칸 42% · 선 · 오른쪽 내 종목 칸 27% */
+.lgraph { position: relative; margin: 12px 0 10px; }
+.lgraph .lglines { position: absolute; left: 0; top: 0; overflow: visible; }
+.lgraph .lgbox { position: absolute; left: 0; width: 42%; height: 52px; box-sizing: border-box; padding: 3px 10px; display: flex; flex-direction: column; justify-content: center; background: #fff; border: 1px solid #d8dfe0; border-radius: 10px; }
+.lgraph .lgbox.hot { border: 1.5px solid #e0a526; }
+.lgraph .lgbox b { font-size: 13px; line-height: 16px; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: keep-all; overflow-wrap: anywhere; }   /* 긴 이름은 두 줄까지, 넘치면 …(2026-11-22) */
+.lgraph .lgbox span { font-size: 11px; color: #66777a; white-space: nowrap; }
+.lgraph .lglbl { position: absolute; left: calc(42% + 6px); width: 25%; font-size: 11px; line-height: 14px; color: #45555a; white-space: nowrap; }
+.lgraph .lgme { position: absolute; right: 0; width: 27%; height: 60px; box-sizing: border-box; padding: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #eaf7f4; border: 1.5px solid #008c82; border-radius: 10px; }
+.lgraph .lgme b { font-size: 12px; line-height: 15px; font-weight: 700; word-break: keep-all; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }   /* 내 종목 칸: 이름만(긴 이름은 세 줄까지) */
+.lgraph .lgme span { font-size: 11px; color: #45555a; }
+.lgraph .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.lgmore { font-size: 12px; color: #66777a; margin: 2px 0 8px; }
+.lgleg { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: #45555a; margin-top: 4px; }
+.lgleg span { display: inline-flex; align-items: center; gap: 6px; }
+.lgleg i { width: 18px; height: 0; border-top: 1.5px solid #b8c0c3; }
+.lgleg i.hot { border-top: 2.5px solid #e0a526; }
+.lgleg i.dash { border-top: 1.5px dashed #b8c0c3; }
+.lgnote { font-size: 11px; line-height: 16px; color: #66777a; margin-top: 6px; }
+.lgcta { display: flex; align-items: center; justify-content: center; margin-top: 16px; }
+.lgrows { list-style: none; }
+.lgrows li { display: flex; align-items: center; gap: 8px; min-height: 48px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.lgrows li b { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lgrows li span { flex: 1; color: #66777a; font-size: 12px; }
+.lgrows li em { font-style: normal; font-size: 12px; font-weight: 700; color: #8a5a00; }
+/* 뉴스 · 내 종목 블록의 연결 카드 */
+.lcard { background: #fff; border-radius: 14px; padding: 12px 14px 10px; margin: 4px 0 10px; }
+.lchead { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #45555a; }
+.lchead b { color: var(--ink); }
+
+/* 터치 영역(배포용 규칙): 보이는 크기는 그대로, 누르는 영역만 44×44 */
+.eye, .qrow button, .head h1 .hq, .qmark, .calhead button, [aria-label="이전 종목"], [aria-label="다음 종목"], [aria-label="이전 날짜"], [aria-label="다음 날짜"] { position: relative; }
+.eye::after, .qrow button::after, .head h1 .hq::after, .qmark::after, .calhead button::after,
+[aria-label="이전 종목"]::after, [aria-label="다음 종목"]::after, [aria-label="이전 날짜"]::after, [aria-label="다음 날짜"]::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%);
+}
+
+/* 홈 3분 브리핑 카드 넘기기(피그마 769:6759): 카드 폭 300, 간격 10, 다음 카드가 오른쪽 끝에 걸쳐 보임, 세 장 높이 같게 */
+.bslide { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -24px; padding: 0 24px 4px; scroll-padding: 0 24px; scrollbar-width: none; }
+.bslide::-webkit-scrollbar { display: none; }
+.bslide .bs { flex: 0 0 300px; scroll-snap-align: start; box-sizing: border-box; }
+.bslide .bshd { display: flex; justify-content: space-between; align-items: center; }
+.bslide .bn { font-size: 11px; font-weight: 500; color: #66777a; }
+.bslide .bs p:not(.bshd):not(.bev) { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; color: var(--ink); }
+.bslide .bsmore { flex-basis: 220px; justify-content: center; gap: 10px; text-decoration: none; color: var(--ink); }
+.bslide .bsmore b { font-size: 16px; line-height: 1.4; }
+.bslide .bsmore span { font-size: 14px; font-weight: 700; color: var(--teal); }
+.aimark { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 13px; font-weight: 700; color: var(--teal); vertical-align: 3px; }
+
+/* 홈 야간선물 카드(피그마 843:1577) · 흐름 창(835:1433) */
+.futcard { position: relative; border: 1px solid var(--line); border-radius: 16px; }
+.futcard .futbody { display: flex; flex-direction: column; gap: 6px; padding: 14px 12px 12px 16px; pointer-events: none; }
+.futcard .futtrig { position: absolute; inset: 0; z-index: 1; border-radius: 16px; background: none; cursor: pointer; }
+.futcard .tq .qmark { pointer-events: auto; z-index: 2; }
+.futcard .fhd { display: flex; align-items: flex-start; gap: 8px; }
+.futcard .nm { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.futcard .nm b { font-size: 13px; }
+.futcard .nm small, .futcard .chg small { font-size: 11px; color: var(--muted); }
+.futcard .chg { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.futcard .chg b { font-size: 15px; }
+.futcard .fhd em { font-style: normal; color: var(--faint); font-size: 16px; }
+.fcap { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.fcap2 { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.fbars { display: flex; align-items: flex-end; gap: 1px; height: 22px; }
+.fbars.big { height: 56px; margin-top: 6px; }
+.fbars i { flex: 1; background: #d8dfe0; border-radius: 1px; }
+.fbars i.top { background: #45555a; }
+.fax { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+.fbig { display: flex; align-items: baseline; gap: 8px; }
+.fbig b { font-size: 28px; font-weight: 700; }
+.fbig span { font-size: 17px; font-weight: 700; }
+
+/* 뉴스 상세 · 같은 소식, 다른 매체(피그마 919:1714) */
+.same h2 { font-size: 17px; font-weight: 700; }
+.same .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.samecard { background: var(--block); border-radius: 16px; padding: 4px 16px; margin-top: 12px; }
+.samerow { display: grid; grid-template-columns: 1fr 16px; gap: 4px 10px; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.samerow:last-of-type { border-bottom: 0; }
+.samerow .sm { grid-column: 1; display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.samerow .sm i { width: 18px; height: 18px; border-radius: 9px; background: #e4ebeb; color: #45555a; font-style: normal; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+.samerow .sm b { font-size: 13px; color: var(--ink); }
+.samerow .st { grid-column: 1; font-size: 14px; font-weight: 500; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.samerow .ext { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: #8a9598; }
+.samemore { width: 100%; min-height: 44px; font-size: 13px; font-weight: 500; color: var(--muted); background: none; border-top: 1px solid var(--line); }
+
+/* 뉴스 목록 한 줄(배포용 변경: 회색 카드 → 흰 바탕 목록 + 구분선, 칩 없음) */
+.nline { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.nline .nl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.nline .ntopic { font-size: 12px; font-weight: 700; color: var(--teal); }
+.nline .title { font-size: 15px; font-weight: 500; line-height: 1.45; color: var(--ink); }
+.nline .nmeta { font-size: 12px; color: var(--muted); }
+.nline .nmeta .verdict { font-size: 12px; }
+.nline .nrel { font-size: 12px; color: var(--sub); }
+.nline .nrel b { font-weight: 400; color: var(--muted); margin-right: 4px; }
+.nline .next { flex: none; width: 44px; height: 44px; margin-right: -12px; display: grid; place-items: center; color: #8a9598; }
+/* 내 종목 기사 줄: 왼쪽 세로 판정 막대(폭 3) */
+.nline.sn .nl { border-left: 3px solid transparent; padding-left: 10px; }
+.nline.sn.neg .nl { border-left-color: #b86e12; }
+.nline.sn.pos .nl { border-left-color: #15845a; }
+.nline.sn.neu .nl { border-left-color: #b8c0c3; }
+/* 종목·업종 블록: 카드 없이 흰 바탕 + 아래 구분선, 머리에 아이콘 · 이름 18 */
+.block { background: none; border-radius: 0; padding: 18px 0 6px; border-bottom: 1px solid var(--line); }
+.block .bh { gap: 8px; }
+.block .bh b { font-size: 18px; }
+.block .bsub { font-size: 12px; color: var(--muted); margin: 2px 0 4px 36px; }
+.av { flex: none; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-weight: 700; line-height: 1; }
+.av.sec { background: #eaf7f4; color: var(--teal); }
+/* 한눈에 카드 */
+.glance { background: var(--block); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.glance h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.glance .grow { display: grid; grid-template-columns: 22px minmax(0, 7fr) minmax(0, 9fr) 40px; align-items: center; gap: 8px; min-height: 36px; color: var(--ink); text-decoration: none; }
+.glance .grow b { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glance .grow i { height: 6px; border-radius: 3px; background: #e4ebeb; overflow: hidden; }
+.glance .grow i em { display: block; height: 100%; background: var(--teal); border-radius: 3px; }
+.glance .grow span { font-size: 12px; color: var(--muted); text-align: right; }
+.nrow .nm .nl3 { font-size: 11px; color: var(--muted); }
+
+/* 판정 개수(밤사이 종목 셋째 줄 · 뉴스 블록 머리): 바탕 없이 라벨만 색, 숫자 #45555A, 11px, 사이 10px */
+.nrow .nm .nl3.vl { display: inline-flex; gap: 10px; color: #45555a; font-weight: 500; }
+.nl3 b.neg, .bsub b.neg { color: #b86e12; font-weight: 500; }
+.nl3 b.pos, .bsub b.pos { color: #15845a; font-weight: 500; }
+/* 보유 종목 소식 한눈에: 판정 비율 막대 */
+.glance.vg h3 { display: flex; justify-content: space-between; align-items: baseline; }
+.glance.vg h3 span { font-size: 12px; font-weight: 400; color: var(--muted); }
+.glance .grow i.vbar { display: flex; background: #e4ebeb; }
+.glance .grow i.vbar em { border-radius: 0; }
+.glance .grow i.vbar em.neg { background: #b86e12; }
+.glance .grow i.vbar em.pos { background: #15845a; }
+.glance .grow i.vbar em.neu { background: #b8c0c3; }
+.vleg { display: flex; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 6px; }
+.vleg span { display: inline-flex; align-items: center; gap: 4px; }
+.vleg i { width: 3px; height: 10px; background: #e4ebeb; }
+.vleg i.neg { background: #b86e12; } .vleg i.pos { background: #15845a; } .vleg i.neu { background: #b8c0c3; }
+/* 종목·업종 아이콘 글자: 목록·블록의 글자색 규칙에 덮이지 않게 */
+.block .bh .av, .glance .grow .av, .av { color: #fff; text-align: center; font-weight: 700; }
+.block .bh .av.sec, .glance .grow .av.sec, .av.sec { color: var(--teal); }
+
+/* ── 2026-11-22 팀원 개선 사항 ── */
+/* 물음표(믿을 정도·야간선물): 둘레 글자 규칙(.schips span의 여백·바탕, .fut .fh span의 16px 굵게)이 안의 '?'에 번져 잘리고 어긋나던 것 */
+.qmark { flex: none; line-height: 1; padding: 0; }
+.qmark > span, .schips .qmark > span, .fut .fh .qmark > span { padding: 0; margin: 0; background: none; border-radius: 0; font-size: 11px; font-weight: 700; line-height: 1; color: inherit; }
+/* 업종별로 보면: 줄여 보인 종목 이름을 누르면(PC는 올리면) 전체 목록 말풍선 */
+.ntip { position: relative; display: block; width: 100%; min-width: 0; }
+.ntip > button { display: block; width: 100%; padding: 2px 0; background: none; border: 0; font: inherit; font-size: 11px; color: var(--muted); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.ntipbox { display: none; position: absolute; left: 0; top: calc(100% + 4px); z-index: 5; width: max-content; max-width: min(280px, 80vw); padding: 8px 10px; border-radius: 8px; background: var(--ink); color: #fff; font-size: 12px; line-height: 1.5; white-space: normal; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+.ntip.on .ntipbox { display: block; }
+@media (hover: hover) { .ntip:hover .ntipbox { display: block; } }
+/* 옆으로 넘치는 버튼 줄: 넘칠 때만 끝을 흐리게 + 화살표 */
+.hscroll { position: relative; margin-top: -6px; }
+.hscroll .chipsx { margin-top: 0; }
+.hscroll .harrow { position: absolute; top: 0; bottom: 0; z-index: 1; width: 44px; display: flex; align-items: center; border: 0; font-size: 22px; color: var(--sub); cursor: pointer; }
+.hscroll .harrow.left { left: 0; justify-content: flex-start; padding-left: 2px; background: linear-gradient(90deg, #fff 50%, rgba(255, 255, 255, 0)); }
+.hscroll .harrow.right { right: 0; justify-content: flex-end; padding-right: 2px; background: linear-gradient(270deg, #fff 50%, rgba(255, 255, 255, 0)); }
+/* 업종별 투자 비중: 금액·비율을 고정 열에 오른쪽 정렬(금액 숨김이어도 같은 자리) */
+.sline > b:first-of-type { flex: none; }
+.sline .sv { flex: none; width: 92px; text-align: right; font-variant-numeric: tabular-nums; }
+.sline > b:last-child { flex: none; width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+html[data-mask] .sline .sv.amt::after { left: auto; right: 0; }
+/* 종목 상세 가격 그림: 평단 글자는 기간 단추 아래 줄 */
+.avgnote { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.avgnote i { width: 16px; border-top: 1.5px dashed #8a9598; }
+.avgnote b { color: var(--sub); font-weight: 600; }
+/* 뉴스 상세: 언론사 주소를 못 찾아 구글 뉴스를 거칠 때 */
+.viagoogle { margin-top: -4px; font-size: 11px; color: var(--muted); text-align: right; }
+/* 종목 상세 지난 소식: 같은 소식 묶음(누르면 펼침) */
+.pastgrp > summary { list-style: none; cursor: pointer; }
+.pastgrp > summary::-webkit-details-marker { display: none; }
+.pastgrp .prel { flex: none; margin-left: auto; padding: 2px 6px; border-radius: 6px; background: var(--teal-soft); color: var(--teal); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.pastgrp .prel::after { content: " ▾"; font-size: 9px; }
+.pastgrp[open] .prel::after { content: " ▴"; }
+.pastsub { list-style: none; margin: -4px 0 8px 46px; padding: 0; border-left: 2px solid var(--line); }
+.pastsub li { display: flex; align-items: center; gap: 8px; padding: 6px 0 6px 10px; }
+.pastsub li > a:first-child { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pastsub .pso { font-size: 11px; color: var(--muted); }
+.pastsub .pst { font-size: 12px; line-height: 1.4; color: var(--sub); }
+.pastsub li > a:last-child { flex: none; font-size: 11px; font-weight: 500; color: var(--teal); padding: 8px 0 8px 6px; }
+/* 화면에는 안 보이고 화면 읽기 프로그램만 읽는 글자(홈 야간선물 카드의 창 여는 단추 등) */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* 종목 상세 1일: 장이 열려 있을 때 시각 앞의 깜빡이는 점 */
+.livedot { display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 3px; background: #d35d66; vertical-align: middle; animation: livedot 1.6s ease-in-out infinite; }
+@keyframes livedot { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .livedot { animation: none; } }
+/* 물음표 자리 통일(2026-11-22): 글자와 물음표를 한 묶음(.tq)으로 — 글자 끝에서 6px, 글자 줄 가운데. 띄어쓰기·물음표 여백에 기대지 않는다 */
+.tq { display: inline-flex; align-items: center; gap: 6px; }
+.tq > .qmark { margin: 0; vertical-align: baseline; }
+.fut .fh b.tq { flex: none; }
+/* 연결 그림 칸·모두 보기 줄: 누르면 한글 이름 ↔ 검색어 원문, 긴 이름은 작은 글자로 두 줄(2026-11-22) */
+.lgraph .lgbtn { display: flex; flex-direction: column; justify-content: center; width: 100%; height: 100%; padding: 0; background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.lgraph .lgbtn:disabled { cursor: default; }
+.lgraph .lgbox.long b, .lgraph .lgbox.en b { font-size: 12px; line-height: 14px; }
+.lgraph .lgbox.en b { font-weight: 600; }
+.lgraph .lgbox.en span { color: #008c82; }
+.lgrows li { padding: 0; }
+.lgrows .lgrowbtn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 0; background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.lgrows .lgrowbtn:disabled { cursor: default; }
+.lgrows li.en .lgrowbtn b { max-width: 60%; white-space: normal; font-size: 12px; font-weight: 600; line-height: 1.35; }
+.lgrows li.en .lgrowbtn span { color: #008c82; }
+.lgraph .lgbox.en b { word-break: normal; overflow-wrap: break-word; }
+.lgraph .lgbox.enlong b { -webkit-line-clamp: 3; }
+.lgraph .lgbox.enlong span { display: none; }
+/* 연결 그림 '가 ⇄ A' 단추: 그림 전체를 한글 이름 ↔ 미국 뉴스 검색어 원문으로(2026-11-22) */
+.lgtoggle { flex: none; position: relative; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 14px; background: #fff; font: inherit; font-size: 12px; color: #8a9598; cursor: pointer; }
+.lgtoggle::after { content: ""; position: absolute; inset: -8px -4px; }
+.lgtoggle i { font-style: normal; font-size: 11px; }
+.lgtoggle .cur { color: var(--ink); font-weight: 700; }
+.lgtoggle.on { border-color: #008c82; }
+.lgtoggle.on .cur { color: #008c82; }
+.lgsub { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lchead .lgtoggle { margin-left: auto; margin-right: 10px; }
+.lgtbar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+/* 야간선물 큰 그래프 비교 선: 누르거나 끌면 세로선이 그래프와 기사 수 막대를 함께 가로지른다(2026-11-22) */
+.scrub { position: relative; touch-action: pan-y; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.scrubline { position: absolute; bottom: 0; width: 0; border-left: 1px solid rgba(69, 85, 90, 0.45); pointer-events: none; }
+.scrubdot { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #192d31; border: 2px solid #fff; box-sizing: content-box; pointer-events: none; }
+.scrub .nchart text { transition: opacity 0.15s; }
+.scrub.on .nchart text { opacity: 0.25; }   /* 비교 선을 띄운 동안 고·저·어제 마감 글자는 흐리게 */
+.scrubaxis { margin-top: 6px; }
+.scrubread { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; min-height: 36px; margin: 8px 0 4px; padding: 6px 10px; border-radius: 10px; background: var(--block); font-size: 12px; color: var(--sub); }
+.scrubread b { font-size: 13px; color: var(--ink); }
+.scrubread span { font-weight: 600; }
+.scrubread small { font-weight: 400; color: var(--muted); }
+.scrubread .hint { font-weight: 400; color: var(--muted); }
+.scrubread button { margin-left: auto; position: relative; padding: 0 2px; background: none; border: 0; font-size: 12px; color: var(--muted); cursor: pointer; }
+.scrubread button::after { content: ""; position: absolute; inset: -12px -10px; }
+/* 뉴스 상세 판정 칸: 근거 한 줄과 판정 기준(2026-11-22) */
+.nview .nbasis { display: block; margin-top: 4px; font-size: 12px; line-height: 1.45; color: var(--muted); }

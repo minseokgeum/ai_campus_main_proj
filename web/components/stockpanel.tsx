@@ -39,6 +39,10 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
 
   const m = Math.max(0.01, Math.abs(s.l90), Math.abs(s.u90), Math.abs(base), Math.abs(s.nxtG ?? 0)) * 1.2;
   const W = 342, pad = 10, X = (v: number) => pad + ((v + m) / (2 * m)) * (W - 2 * pad);
+  const nxt = phase === "pre" ? s.nxtG : null;
+  // 08:10 라벨과 띠 양 끝 %가 겹치면 %를 바깥쪽으로 비킨다
+  const lx = nxt != null && Math.abs(X(s.l80) - X(nxt)) < 34 ? Math.max(18, X(nxt) - 34) : X(s.l80);
+  const ux = nxt != null && Math.abs(X(s.u80) - X(nxt)) < 34 ? Math.min(W - 18, X(nxt) + 34) : X(s.u80);
   const svg = useRef<SVGSVGElement>(null);
   const drag = (clientX: number) => {
     const box = svg.current?.getBoundingClientRect();
@@ -92,19 +96,26 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
           <text x={X(0)} y={10} textAnchor="middle" fontSize={10} fill="#66777a">어제 종가</text>
           <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
           <rect x={X(s.l80)} y={21} width={Math.max(3, X(s.u80) - X(s.l80))} height={12} rx={6} fill="#FFD970" />
-          <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#192d31" strokeWidth={1.4} />
-          {base0 != null && Math.abs(base0) <= m ? <><line x1={X(base0)} x2={X(base0)} y1={17} y2={37} stroke="#008c82" strokeWidth={1.4} strokeDasharray="3 2" /><text x={X(base0)} y={48} textAnchor="middle" fontSize={9} fill="#008c82">평단</text></> : null}
-          {phase === "pre" && s.nxtG != null ? <path d={`M${X(s.nxtG)},20 L${X(s.nxtG) + 6},31 L${X(s.nxtG) - 6},31 Z`} fill="#fff" stroke="#192d31" strokeWidth={1.6} /> : null}
+          {/* 세로선 셋을 색·모양으로 구분(배포용 변경 기록 12·05): 어제 종가 회색 점선, 평단 청록 실선, 08:10 실제 거래 빨간 실선 */}
+          <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
+          {base0 != null && Math.abs(base0) <= m ? <>
+            <rect x={X(base0) - 1} y={15} width={2} height={22} fill="#008c82" />
+            <text x={Math.abs(X(base0) - X(0)) < 44 ? X(base0) + (base0 >= 0 ? 4 : -4) : X(base0)} y={10} textAnchor={Math.abs(X(base0) - X(0)) < 44 ? (base0 >= 0 ? "start" : "end") : "middle"} fontSize={10} fontWeight={700} fill="#008c82">평단</text>
+          </> : base0 != null ? (
+            <text x={base0 < 0 ? pad : W - pad} y={10} textAnchor={base0 < 0 ? "start" : "end"} fontSize={10} fontWeight={700} fill="#008c82">{base0 < 0 ? `◀ 평단 ${pctText(base0)}` : `평단 ${pctText(base0)} ▶`}</text>
+          ) : null}
+          {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={49} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:10</text></> : null}
           {what != null ? <circle cx={X(base)} cy={27} r={4} fill="#b8c0c3" /> : null}
-          <circle cx={X(r)} cy={27} r={what != null ? 9 : 7} fill={what != null ? "rgba(0,140,130,.25)" : "#192d31"} stroke={what != null ? "#008c82" : "none"} strokeWidth={2} />
-          <text x={X(s.l80)} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.l80)}>{pctText(s.l80)}</text>
-          <text x={X(s.u80)} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.u80)}>{pctText(s.u80)}</text>
+          <circle cx={X(r)} cy={27} r={what != null ? 9 : 6} fill={what != null ? "rgba(0,140,130,.25)" : "#2f3437"} stroke={what != null ? "#008c82" : "#fff"} strokeWidth={2} />
+          <text x={lx} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.l80)}>{pctText(s.l80)}</text>
+          <text x={ux} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.u80)}>{pctText(s.u80)}</text>
         </svg>
       </div>
 
-      <p className="blegend"><span>● 모델 예상</span>{phase === "pre" && s.nxtG != null ? <span>△ 08:10 실제 거래</span> : null}</p>
+      <p className="blegend"><span><i className="ldot" />모델 예상</span>{nxt != null ? <span><i className="lnxt" />08:10 실제 거래</span> : null}</p>
       {s.avg ? (
-        <div className="avgline"><b>{pctText(s.pc * (1 + s.l80) / s.avg - 1)} ~ {pctText(s.pc * (1 + s.u80) / s.avg - 1)}</b><span>평단 {wonText(s.avg)} 대비</span></div>
+        <div className="avgline"><span>평단 <span className="avgwon">{wonText(s.avg)} </span>대비</span>
+          <b><span style={{ color: colorOf(s.pc * (1 + s.l80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.l80) / s.avg - 1)}</span> ~ <span style={{ color: colorOf(s.pc * (1 + s.u80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.u80) / s.avg - 1)}</span></b></div>
       ) : s.qty > 0 ? (
         <div className="avgline ask"><span>평단을 넣으면 내 기준선을 함께 볼 수 있어요</span><Link href={`/mine/${s.code}/edit`}>평단 넣기 ›</Link></div>
       ) : null}

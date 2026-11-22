@@ -7,14 +7,17 @@ import { BottomNav } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
 import { db } from "@/lib/db";
+import { LINK } from "@/lib/newsql";
 import { nightNews } from "@/lib/news";
-import { IMPACT_LABEL } from "@/lib/summary";
+import { IMPACT_LABEL, PRICE_KIND } from "@/lib/summary";
 import { dayModel } from "@/lib/model";
 import { kstNow } from "@/lib/calendar";
 import { signColor } from "@/components/model";
 import { pct } from "@/lib/format";
 import { P } from "@/lib/night";
 import { kstTime } from "@/lib/format";
+import { appNow } from "@/lib/clock";
+import { SameNews, type SameRow } from "@/components/samenews";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +29,23 @@ const fullTime = (v: string | Date) => {
 
 const none = { rows: [] as Record<string, unknown>[] };
 
+/** 요약이 없을 때 서버 원문 판정(news.llm_articles.status)에 맞는 안내 */
+function whyNoSummary(status: string | undefined, extracted: boolean): string {
+  if (!status) return "아직 AI가 이 기사를 처리하기 전이에요. 잠시 뒤 다시 열어 주세요.";
+  if (status === "SUCCESS") return extracted ? "AI 요약을 준비하고 있어요. 잠시 뒤 다시 열어 주세요." : "이 기사는 사건 요약이 없는 글이라(분석·의견 글 등) 원문 보기로 확인해 주세요.";
+  if (status === "HTTP_ERROR") return "언론사가 원문을 받지 못하게 막아 요약하지 못했어요. 원문 보기로 확인해 주세요.";
+  if (["NOT_FETCHED", "NOT_RESOLVED", "TIMEOUT", "REQUEST_ERROR"].includes(status)) return "원문 페이지를 받지 못해 아직 요약하지 못했어요. 잠시 뒤 다시 받아 보고, 받으면 요약이 채워져요.";
+  if (["PAYWALL", "PARTIAL_BODY"].includes(status)) return "유료 기사라 본문을 볼 수 없어 요약하지 못했어요. 원문 보기로 확인해 주세요.";
+  if (["BLOCKED", "REDIRECTED_AWAY", "NOT_HTML"].includes(status)) return "매체가 원문을 열어 주지 않아 요약하지 못했어요. 원문 보기로 확인해 주세요.";
+  if (status === "TOO_SHORT") return "본문이 너무 짧아 요약하지 않았어요. 원문 보기로 확인해 주세요.";
+  if (status === "LIVE_BLOG") return "실시간 업데이트 글이라 요약하지 않았어요. 원문 보기로 확인해 주세요.";
+  if (status === "PRESS_RELEASE") return "회사·기관이 낸 보도자료라 요약하지 않았어요.";
+  if (status === "VIDEO_PAGE") return "영상·사진 페이지라 요약하지 않았어요.";
+  if (["EXCLUDED_SECTION", "QUOTE_PAGE", "NOT_ARTICLE"].includes(status)) return "뉴스 기사가 아닌 페이지라 요약하지 않았어요.";
+  if (status === "EXTRACT_FAILED") return "AI 요약 중 문제가 생겨 요약하지 못했어요. 원문 보기로 확인해 주세요.";
+  return "AI가 요약하지 않은 기사예요. 원문 보기로 확인해 주세요.";
+}
+
 export default async function NewsDetail({ params, searchParams }: { params: Promise<{ key: string }>; searchParams: Promise<{ back?: string }> }) {
   const { key } = await params;
   const sp = await searchParams;
@@ -34,28 +54,67 @@ export default async function NewsDetail({ params, searchParams }: { params: Pro
   const pool = db();
   const [pf, it, ai, ko, st, { articles }] = await Promise.all([
     portfolio(user.id),
-    pool.query("select key, title, source, outlet, published_utc, link from items where key = $1", [key]),
-    pool.query("select short_summary, impacts, sectors, coalesce(extraction->>'comparison_summary', '') <> '' as extracted, extraction->'graph'->'entities' as entities from news.llm_articles where key = $1", [key]).catch(() => none),
+    // 원문 보기: 언론사 원문 주소(서버가 구글 뉴스 링크를 풀어 둔 것)가 있으면 그리로 바로, 없으면 구글 뉴스 경유(2026-11-22 팀원 개선 사항)
+    pool.query(`select i.key, i.title, i.source, i.outlet, i.published_utc, ${LINK} as link, l.original_url is not null and l.original_url <> '' as direct
+      from items i left join news.llm_articles l on l.key = i.key where i.key = $1`, [key])
+      .catch(() => pool.query("select key, title, source, outlet, published_utc, link, false as direct from items where key = $1", [key])),
+    pool.query(`select status, short_summary, impacts, sectors, coalesce(extraction->>'comparison_summary', '') <> '' as extracted, extraction->'graph'->'entities' as entities,
+       article_types->>0 as kind, extraction->'company_impact' as ci, extraction->'graph'->'events' as events, extraction->'evidence' as ev from news.llm_articles where key = $1`, [key]).catch(() => none),
     pool.query("select text, impact_note from news.article_ko where key = $1", [key]).catch(() => none),
-    pool.query("select story_id from news.stories where key = $1", [key]).catch(() => none),
+    // 사건 번호와 그 안의 소식 번호(news_id: 같은 소식인지 후속 보도인지 가른다). news_id 칸이 아직 없으면 사건 번호만
+    pool.query("select story_id, news_id from news.stories where key = $1", [key]).catch(() => pool.query("select story_id, null as news_id from news.stories where key = $1", [key])).catch(() => none),
     nightNews(),
   ]);
   const dm = await dayModel().catch(() => null);
   const a = it.rows[0];
   if (!a) notFound();
-  const x = ai.rows[0] as { short_summary?: string; impacts?: { name: string; impact: string }[]; sectors?: string[]; extracted?: boolean;
+  const x = ai.rows[0] as { status?: string; short_summary?: string; impacts?: { name: string; impact: string }[]; sectors?: string[]; extracted?: boolean; kind?: string;
+    ci?: { entity_id?: string; impact?: string }[]; events?: { entities?: string[]; direction?: string; description_ko?: string }[]; ev?: { quote?: string; supports?: { field?: string; item_index?: number | null }[] }[];
     entities?: { name?: string; name_en?: string; type?: string; country?: string; ticker?: string; category?: string; mention?: string }[] } | undefined;
   const k = ko.rows[0] as { text?: string | null; impact_note?: string } | undefined;
   const story = st.rows[0]?.story_id as string | undefined;
-  const follow = story ? (await pool.query(
-    `select i.key, i.title, i.link, i.published_utc, l.short_summary from news.stories s join items i on i.key = s.key left join news.llm_articles l on l.key = s.key
-     where s.story_id = $1 and s.key <> $2 order by i.published_utc desc limit 8`, [story, key]).catch(() => none)).rows : [];
+  const newsId = (st.rows[0]?.news_id as string | null | undefined) ?? null;
+  // 같은 사건의 다른 기사. news_id가 있으면 같은 소식(다른 매체)과 뒤에 나온 다른 소식(후속 보도)으로 나눈다(배포용 '같은 소식, 다른 매체')
+  const others = story && newsId ? (await pool.query(
+    `select i.key, i.title, ${LINK} as link, i.published_utc, coalesce(nullif(i.source, ''), i.outlet) as outlet, s.news_id, l.short_summary
+     from news.stories s join items i on i.key = s.key left join news.llm_articles l on l.key = s.key
+     where s.story_id = $1 and s.key <> $2 and i.first_seen_utc <= $3 order by i.published_utc`, [story, key, await appNow()]).catch(() => none)).rows : [];   // 화면 시각까지 들어온 기사만(시연 시각)
+  const lang = (t: string) => (/[가-힣]/.test(t) ? "한글" : "영문");
+  const same: SameRow[] = others.filter((o) => o.news_id === newsId).map((o) => ({
+    key: String(o.key), outlet: String(o.outlet ?? ""), time: kstTime(new Date(o.published_utc as string).toISOString()), lang: lang(String(o.title)), title: String(o.title), link: String(o.link) }));
+  const seenNews = new Set<string>();
+  const follow = others.filter((o) => o.news_id !== newsId && new Date(o.published_utc as string) > new Date(it.rows[0]?.published_utc as string))
+    .filter((o) => !seenNews.has(String(o.news_id)) && seenNews.add(String(o.news_id))).slice(0, 5);   // 소식마다 처음 나온 기사 하나
+  if (story && !newsId) {   // 소식 번호가 아직 DB에 없으면 예전처럼 같은 사건의 최근 기사(같은 소식 칸은 숨김)
+    follow.push(...(await pool.query(
+      `select i.key, i.title, ${LINK} as link, i.published_utc, l.short_summary from news.stories s join items i on i.key = s.key left join news.llm_articles l on l.key = s.key
+       where s.story_id = $1 and s.key <> $2 and i.first_seen_utc <= $3 order by i.published_utc desc limit 8`, [story, key, await appNow()]).catch(() => none)).rows);
+  }
   const mine = new Set([...pf.holdings.map((h) => h.code), ...pf.watch]);
   const myLinked = (articles.find((y) => y.key === key)?.direct ?? []).filter((c) => mine.has(c));
-  const impact = (x?.impacts ?? []).find((i) => i.impact && i.impact !== "neutral");
+  // 판정: 내 종목 기준 판정(news.stock_impacts)이 있으면 그것, 없으면 기사 속 회사 판정
+  const art = articles.find((y) => y.key === key);
+  const mineV = myLinked.map((c) => art?.stock[c]).find(Boolean);
+  const priceOnly = x?.kind === PRICE_KIND;   // 주가 움직임 기사는 판정하지 않는다(lib/summary.ts)
+  const impact = priceOnly ? undefined : mineV ? { name: uStock(myLinked.find((c) => art?.stock[c])!)?.name ?? "", impact: mineV } : (x?.impacts ?? []).find((i) => i.impact && i.impact !== "neutral");
+  // 판정 근거 한 줄: 판정한 회사의 사건 중 방향이 맞는 것의 한국어 설명(LLM 추출 graph.events), 없으면 그 판정에 연결된 원문 문장(evidence). 새 LLM 호출 없음
+  const imps = x?.impacts ?? [], ents = x?.entities ?? [];
+  const idx = !impact ? -1 : mineV
+    ? (() => { const c = imps.map((m, i) => i).filter((i) => imps[i].impact === mineV);
+        return c.find((i) => ents.find((e) => (e as { id?: string }).id === x?.ci?.[i]?.entity_id)?.mention === "중심") ?? c[0] ?? -1; })()
+    : imps.indexOf(impact as (typeof imps)[number]);
+  const basis = (() => {
+    const eid = idx >= 0 ? x?.ci?.[idx]?.entity_id : undefined;
+    if (!eid || !impact) return null;
+    const dir = (d?: string) => impact.impact === "positive" ? d === "+" : impact.impact === "negative" ? d === "−" || d === "-" : d === "+" || d === "−" || d === "-";
+    const ko = (x?.events ?? []).filter((e) => e.entities?.includes(eid) && dir(e.direction) && e.description_ko).map((e) => e.description_ko!).slice(0, 2);
+    if (ko.length) return { ko: true, text: ko.join(" · ") };
+    const q = (x?.ev ?? []).find((e) => e.supports?.some((s) => s.field === "company_impact" && s.item_index === idx))?.quote;
+    return q ? { ko: false, text: q.length > 160 ? `${q.slice(0, 157)}…` : q } : null;
+  })();
   // 관련 기업(피그마 527:6148): 이 기사에 걸린 국내 종목(내 종목 먼저, 오늘 예상 함께) + 기사에서 뽑은 해외 기업(나라 · 티커)
   const krCodes = articles.find((y) => y.key === key)?.direct ?? [];
-  const fresh = dm?.t === kstNow().ymd && dm?.card?.status === "ok";
+  const fresh = dm?.t === kstNow(await appNow()).ymd && dm?.card?.status === "ok";
   const kr = [...krCodes].sort((p, q) => Number(mine.has(q)) - Number(mine.has(p))).map((c) => ({
     name: uStock(c)?.name ?? c, sub: `${mine.has(c) ? "내 종목" : uStock(c)?.market ?? "국내"} · ${c}`, href: `/mine/${c}`,
     h: fresh ? dm!.stocks.get(c)?.h ?? null : null }));
@@ -71,25 +130,29 @@ export default async function NewsDetail({ params, searchParams }: { params: Pro
         <p className="spath">{["시장", x?.sectors?.[0]].filter(Boolean).join(" · ")} · {kstTime(new Date(a.published_utc).toISOString())}</p>
         {x?.sectors?.[0] ? <span className="chip dark">{x.sectors[0]}</span> : null}
         <h1 className="ntitle">{x?.short_summary ?? a.title}</h1>
-        <div className="foot"><span className="src">{a.source || a.outlet} · {fullTime(a.published_utc)}</span><a className="go" href={a.link} target="_blank" rel="noreferrer noopener">원문 보기 <b>↗</b></a></div>
+        <div className="foot"><span className="src">{a.source || a.outlet} · {fullTime(a.published_utc)}</span><a className="go" href={a.link} target="_blank" rel="noreferrer noopener">{a.direct ? "원문 보기" : "Google 뉴스 경유"} <b>↗</b></a></div>
+        {a.direct ? null : <p className="viagoogle">언론사 주소를 확인하지 못해 Google 뉴스를 거쳐 열려요. 열리지 않으면 제목으로 검색해 주세요.</p>}
         <section className="ai">
           <div className="top"><span className="badge">AI 요약</span></div>
           {k?.text ? <p className="para">{k.text}</p>
-            : <p className="pending">{x?.extracted ? "AI 요약을 준비하고 있어요. 잠시 뒤 다시 열어 주세요."
-              : "AI가 요약하지 않은 기사예요(본문을 받지 못했거나 보도자료·영상인 기사, 또는 아직 처리 전). 원문 보기로 확인해 주세요."}</p>}
+            : <p className="pending">{whyNoSummary(x?.status, !!x?.extracted)}</p>}
           {k?.impact_note || impact || myLinked.length ? (
             <p className="nview">
               {impact && IMPACT_LABEL[impact.impact] ? <span className={`verdict ${IMPACT_LABEL[impact.impact][1]}`}>{IMPACT_LABEL[impact.impact][0]}</span> : null}
-              <span>{k?.impact_note || `${impact?.name ?? ""} 관련 소식`}{myLinked.length ? <><br /><b>내 종목</b> {myLinked.map((c) => <Link key={c} href={`/mine/${c}`} className="stchip">{uStock(c)?.name ?? c} ›</Link>)}</> : null}</span>
+              <span>{priceOnly ? "주가 움직임을 다룬 기사라 좋고 나쁨을 판정하지 않았어요." : k?.impact_note || `${impact?.name ?? ""} 관련 소식`}
+                {basis ? <small className="nbasis">근거{basis.ko ? "" : "(원문)"} · {basis.text}</small> : null}
+                {impact ? <small className="nbasis">판정은 주가가 아니라 기사에 나온 사업 내용 기준이에요.</small> : null}
+                {myLinked.length ? <><br /><b>내 종목</b> {myLinked.map((c) => <Link key={c} href={`/mine/${c}`} className="stchip">{uStock(c)?.name ?? c} ›</Link>)}</> : null}</span>
             </p>
           ) : null}
-          <p className="note">AI가 요약·판정했어요. 원문과 다를 수 있어요.</p>
+          {k?.text || impact ? <p className="note">AI가 요약·판정했어요. 원문과 다를 수 있어요.</p> : null}
         </section>
+        {same.length ? <SameNews rows={same} /> : null}
         {follow.length ? (
           <section className="follow">
             <h2>후속 보도</h2>
             {follow.map((f) => (
-              <a key={String(f.key)} href={String(f.link)} target="_blank" rel="noreferrer noopener" className="frow"><span>{kstTime(new Date(f.published_utc as string).toISOString())}</span><b>{String(f.short_summary ?? f.title)}</b><em>↗</em></a>
+              <Link key={String(f.key)} href={`/news/a/${f.key}`} className="frow"><span>{kstTime(new Date(f.published_utc as string).toISOString())}</span><b>{String(f.short_summary ?? f.title)}</b><em>›</em></Link>
             ))}
           </section>
         ) : null}

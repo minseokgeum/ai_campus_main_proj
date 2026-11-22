@@ -11,16 +11,16 @@ function scale(vals: number[], w: number, pad: number) {
   return (v: number) => pad + ((v + m) / (2 * m)) * (w - 2 * pad);
 }
 
-/** 목록 줄의 64×14 띠: 회색 선, 노란 80% 범위, 0(어제 종가) 눈금, 점(장전: 예상 시가 · 장후: 실제 시가) */
+/** 목록 줄의 64×14 띠: 회색 선, 노란 80% 범위, 어제 종가 회색 점선, 08:10 실제 거래 빨간 세로선(라벨 없음), 점(장전: 예상 시가 · 장후: 실제 시가). 배포용 변경 기록 12 */
 export function BandMini({ l, u, dot, hollow }: { l: number; u: number; dot: number; hollow?: number | null }) {
   const w = 64, h = 14, x = scale([l, u, dot, hollow ?? 0], w, 4);
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="bandmini">
       <line x1={2} x2={w - 2} y1={7} y2={7} stroke="#e4ebeb" strokeWidth={2} strokeLinecap="round" />
       <rect x={x(l)} y={3} width={Math.max(2, x(u) - x(l))} height={8} rx={4} fill={BAND} />
-      <line x1={x(0)} x2={x(0)} y1={1} y2={13} stroke="#192d31" strokeWidth={1.2} />
-      {hollow != null ? <circle cx={x(hollow)} cy={7} r={3} fill="#fff" stroke="#192d31" strokeWidth={1.2} /> : null}
-      <circle cx={x(dot)} cy={7} r={3.5} fill="#192d31" />
+      <line x1={x(0)} x2={x(0)} y1={1} y2={13} stroke="#8a9598" strokeWidth={1.2} strokeDasharray="2 1.5" />
+      {hollow != null ? <line x1={x(hollow)} x2={x(hollow)} y1={1} y2={13} stroke="#d35d66" strokeWidth={1.5} /> : null}
+      <circle cx={x(dot)} cy={7} r={4} fill="#2f3437" stroke="#fff" strokeWidth={1.5} />
     </svg>
   );
 }

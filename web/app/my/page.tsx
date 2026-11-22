@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/ui";
 import { Sheet } from "@/components/sheet";
 import { logout, requireUser } from "@/lib/auth";
 import { portfolio } from "@/lib/portfolio";
+import { demoAt, demoPresets, isDemoUser } from "@/lib/clock";
 
 async function doLogout() {
   "use server";
@@ -15,11 +16,25 @@ async function doLogout() {
 export default async function My() {
   const user = await requireUser();
   const pf = await portfolio(user.id);
+  // 시연 계정만: 피그마의 시간대별 상태를 지난 시각으로 돌려 보기(07:30 전·장 전·장 후·저녁·월요일·주말)
+  const [demo, presets, at] = await Promise.all([isDemoUser(), demoPresets(), demoAt()]);
+  const atStamp = at ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(at).replace(/\D/g, "") : null;
   return (
     <>
       <main className="sheet">
         <div className="shead"><Link href="/" aria-label="뒤로">‹</Link><span className="ttl">마이</span></div>
         <section className="prof"><span className="pic">{user.username.slice(0, 1).toUpperCase()}</span><div><b>{user.username.startsWith("guest") ? "둘러보기" : user.username} 님</b><small>{user.username.startsWith("guest") ? "둘러보기 계정 · 바꾼 종목은 나에게만 보여요" : "아이디 로그인"}</small></div></section>
+        {demo ? (
+          <section className="demotime">
+            <h3>시연 시각 <small>시연 계정만 · 지난 시각으로 화면 보기</small></h3>
+            {presets.map((p) => (
+              <a key={p.key} href={`/demo-time?at=${p.at}&back=/`} className={atStamp === p.at ? "on" : ""}>
+                <b>{p.label}</b><small>{Number(p.at.slice(4, 6))}/{Number(p.at.slice(6, 8))} {p.at.slice(8, 10)}:{p.at.slice(10)} · {p.sub}</small>
+              </a>
+            ))}
+            <a href="/demo-time?at=off&back=/" className={!at ? "on" : ""}><b>지금</b><small>실제 현재 시각</small></a>   {/* 보통 링크: 미리 불러오기가 시각을 바꾸지 않게 */}
+          </section>
+        ) : null}
         <nav className="menu">
           <h3>내 투자</h3>
           <Link href="/mine">보유·관심 종목 관리<span>보유 {pf.holdings.length} · 관심 {pf.watch.length} ›</span></Link>
@@ -38,7 +53,7 @@ export default async function My() {
           <Link href="/my/withdraw" className="muted">회원 탈퇴</Link>
         </nav>
       </main>
-      <BottomNav active="home" />
+      <BottomNav active={null} />
     </>
   );
 }

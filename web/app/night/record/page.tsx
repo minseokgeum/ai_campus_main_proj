@@ -2,6 +2,7 @@
 // 종목별 20일 기록(노란 막대 = 그날 80% 범위, 가로줄 = 예상, 동그라미 = 실제 시가).
 import Link from "next/link";
 import { BottomNav } from "@/components/ui";
+import { HScroll } from "@/components/hscroll";
 import { NightHead } from "@/components/nighthead";
 import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
@@ -60,7 +61,7 @@ export default async function Record({ searchParams }: { searchParams: Promise<{
         <div className="lhead"><b>종목별 보기</b><span className="fine">종목을 고르면 그 종목의 {dates.length}일 기록</span></div>
         {codes.length ? (
           <>
-            <div className="chipsx">{codes.map((c) => <Link key={c} href={`/night/record?c=${c}`} className={c === pick ? "on" : ""}>{uStock(c)?.name ?? c}</Link>)}</div>
+            <HScroll className="chipsx">{codes.map((c) => <Link key={c} href={`/night/record?c=${c}`} className={c === pick ? "on" : ""}>{uStock(c)?.name ?? c}</Link>)}</HScroll>
             {pick ? (
               <section className="pcard">
                 <b className="pt">지난 {dates.length}거래일 · {uStock(pick)?.name ?? pick}</b>

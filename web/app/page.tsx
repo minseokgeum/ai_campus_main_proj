@@ -5,24 +5,29 @@ import { BottomNav } from "@/components/ui";
 import { NightChart, signColor } from "@/components/model";
 import { MaskToggle, Sheet } from "@/components/sheet";
 import { FuturesHelp } from "@/components/helps";
-import { BriefSheet } from "@/components/brief";
+import { BriefCards } from "@/components/brief";
+import { FuturesCard } from "@/components/futcard";
 import { MapLegend, TreeMap } from "@/components/treemap";
 import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
-import { nightNews, byStock } from "@/lib/news";
+import { nightNews, byStock, bySector, newsBuckets } from "@/lib/news";
 import { aiBrief } from "@/lib/summary";
 import { dayModel, isoDay, night as nightOf } from "@/lib/model";
 import { account, buildRows, P } from "@/lib/night";
 import { md, US, usLatest } from "@/lib/market";
 import { lastCloses } from "@/lib/prices";
-import { addDays, isWeekend, kstNow, minutesTo0730, nextWeekday } from "@/lib/calendar";
+import { addDays, kstNow, minutesTo0730 } from "@/lib/calendar";
+import { isWeekend } from "@/lib/calendar";
+import { closedReason, isClosedDay, marketDay, nextOpenDay } from "@/lib/marketdays";
 import { dateLabel, pct, swon } from "@/lib/format";
+import { appNow } from "@/lib/clock";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const user = await requireUser();
-  const now = kstNow();
+  const nowDate = await appNow();   // 시연 계정이 고른 지난 시각이면 그 시각
+  const now = kstNow(nowDate);
   const [acct, { brief, articles }, m, us] = await Promise.all([portfolio(user.id), nightNews(), dayModel().catch(() => null), usLatest()]);
   const ai = await aiBrief(brief.date);
   const before0730 = now.hour < 7 || (now.hour === 7 && now.minute < 30);
@@ -40,14 +45,25 @@ export default async function Home() {
   const nMiss = preRows.filter((r) => r.kind === "nocalc").length;
   const usDate = us.get("^GSPC")?.usDate;
   const D = now.hour >= 18 ? today : addDays(today, -1);
-  const nightLive = !fresh ? await nightOf(isWeekend(today) && m?.card?.d ? m.t : D).catch(() => null) : m?.night ?? null;
-  const night = fresh ? m?.night ?? null : nightLive;
+  // 18:00 뒤에는 오늘 밤 진행 중인 야간선물(아침 카드의 지난밤 흐름이 아니라)
+  const nightLive = !fresh || now.hour >= 18 ? await nightOf(isClosedDay(today) && m?.card?.d ? m.t : D).catch(() => null) : m?.night ?? null;
+  const night = fresh && now.hour < 18 ? m?.night ?? null : nightLive;
   const nx = night?.points.length ? night.points[night.points.length - 1].r : null;
+  // 야간선물 카드 아래 막대: 그 밤(D 18:00부터 12시간) 15분마다 나온 미국 기사 수
+  const buckets = night?.points.length ? await newsBuckets(new Date(`${night.d.slice(0, 4)}-${night.d.slice(4, 6)}-${night.d.slice(6)}T18:00:00+09:00`)) : [];
   const hm = `${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")}`;
-  const off = isWeekend(today) || m?.card?.status === "holiday";
-  const stamp = fresh ? `${m!.card!.slot === "0811" ? "08:11" : "07:30"} 기준` : off ? "장이 열리지 않는 날" : `${hm} · 준비 중`;
-  const mins = minutesTo0730(today);
-  const lastLabel = m ? (isWeekend(today) ? `${dateLabel(isoDay(m.t)).replace(/^.*\((.)\)$/, "$1")}요일` : m.t === addDays(today, -1) ? "어제" : `${md(m.t)}`) : "";
+  const off = isClosedDay(today) || m?.card?.status === "holiday";
+  // 07:30이 지났는데 오늘 카드가 아직 없음(야간 자료가 늦게 들어옴, 배포용 변경 기록 08)
+  const delayed = !before0730 && !isClosedDay(today) && m?.t !== today;
+  const hol = closedReason(today);   // 평일 휴장일이면 '신정이라' 같은 이유
+  const stamp = delayed ? `${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")} · 늦어지는 중` : fresh ? `${m!.card!.slot === "0811" && (marketDay(today)?.premarket ?? true) ? "08:11" : "07:30"} 기준` : off ? "장이 열리지 않는 날" : `${hm} · 준비 중`;
+  const mins = minutesTo0730(today, nowDate);
+  const lastLabel = m ? (hol ? `${Number(m.t.slice(4, 6))}월 ${Number(m.t.slice(6))}일` : isClosedDay(today) ? `${dateLabel(isoDay(m.t)).replace(/^.*\((.)\)$/, "$1")}요일` : m.t === addDays(today, -1) ? "어제" : `${md(m.t)}`) : "";
+  // 3분 브리핑 '산업'·'내 종목' 카드: 내 업종을 밤사이 뉴스가 많은 순으로, 보유 종목은 등록 순으로
+  const mySectors = [...new Set(acct.holdings.map((h) => uStock(h.code)?.sector).filter(Boolean) as string[])];
+  const secNews = bySector(articles, mySectors);
+  const focus = { codes: acct.holdings.map((h) => h.code), names: Object.fromEntries(acct.holdings.map((h) => [h.code, uStock(h.code)?.name ?? h.code])),
+    sectors: [...mySectors].sort((a, b) => (secNews.get(b)?.length ?? 0) - (secNews.get(a)?.length ?? 0)) };
   // 예상 전(07:30 전·주말·휴장일) 지도: 크기만 보유 금액, 칸에는 '07:30 공개'·'쉬는 날'(피그마 465:8339 · 465:8516)
   const idleStocks = acct.holdings.map((h) => { const u = uStock(h.code); return { code: h.code, name: u?.name ?? h.code, sector: u?.sector ?? "기타", value: h.qty * (px.get(h.code)?.close ?? 0), pct: null, grade: null, l80: null, u80: null, news: news.get(h.code)?.length ?? 0 }; });
 
@@ -67,11 +83,15 @@ export default async function Home() {
             <p>매일 아침 오늘 시가에 내 계좌가 얼마나 바뀔지 알려드려요</p>
             <Link href="/mine/add" className="primary">종목 추가하기</Link>
           </div>
-        ) : isWeekend(today) || m?.card?.status === "holiday" ? (
-          <section className="acct wait"><div className="at">{isWeekend(today) ? "주말이라 장이 열리지 않아요" : "휴장일이라 장이 열리지 않아요"}</div>
-            <div className="big"><span>다음 예상 {dateLabel(isoDay(nextWeekday(today)))} 07:30</span></div>
-            {m ? <p className="wb">아래 지도와 소식은 {lastLabel} 기준이에요</p> : null}
+        ) : off ? (
+          <section className="acct wait"><div className="at">{isWeekend(today) ? "주말이라 장이 열리지 않아요" : `${hol ?? "휴장일이라"} 장이 열리지 않아요`}</div>
+            <div className="big"><span>다음 예상 {dateLabel(isoDay(nextOpenDay(today)))} 07:30</span></div>
+            {m ? <p className="wb">아래 지도와 소식은 {hol ? dateLabel(isoDay(m.t)) : lastLabel} 기준이에요</p> : null}
             {m ? <Link href={`/night?d=${m.t}`} className="wlink">{lastLabel} 결과 보기 <em>›</em></Link> : null}</section>
+        ) : delayed ? (
+          <section className="acct wait"><div className="at">오늘 예상이 조금 늦어지고 있어요</div>
+            <div className="big"><span>준비 중</span></div>
+            <p className="wb">야간 거래 데이터가 늦게 들어왔어요 · 준비되면 알림으로 알려드릴게요</p></section>
         ) : !fresh ? (
           <section className="acct wait"><div className="at">오늘 시가 예상을 준비하고 있어요</div>
             <div className="big"><span>{before0730 && mins > 0 ? `${mins >= 60 ? `${Math.floor(mins / 60)}시간 ` : ""}${mins % 60}분 후 공개` : "곧 공개"}</span></div>
@@ -91,15 +111,15 @@ export default async function Home() {
           </section>
         )}
 
-        <div className="hrow"><h2>뉴스 브리핑</h2><Link href="/news">전체 보기</Link></div>
-        <BriefSheet brief={ai} date={brief.date} className="hcard" trigger={
-          <>
+        <div className="hrow"><h2>뉴스 브리핑 <span className="aimark" aria-label="AI 요약"><svg width="14" height="12" viewBox="0 0 14 12" aria-hidden><path d="M1 2h12M1 6h9M1 10h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>AI</span></h2><Link href="/news">전체 보기</Link></div>
+        {/* 장이 열리는 날: 가로로 넘기는 카드(시장 / 산업 / 내 종목). 주말·휴장일과 요약이 없을 때: 예전 카드에서 '3분 브리핑 읽기' 줄만 뺌 */}
+        {!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : (
+          <Link href="/news" className="hcard">
             <span className="k">오늘의 핵심 3가지</span>
-            <span className="hl">{ai.title ?? (articles.length ? `미국 뉴스 ${articles.length}건을 모았어요` : "오늘은 관련 소식이 없습니다")}</span>
+            <span className="hl">{ai.title ?? (articles.length ? `미국 뉴스 ${articles.length}건을 모았어요` : "오늘은 관련 소식이 없어요")}</span>
             <span className="kw">{ai.keywords.length ? ai.keywords.join(" · ") : "AI 요약은 준비 중이에요"}</span>
-            <span className="ft">3분 브리핑 읽기 <span>›</span></span>
-          </>
-        } />
+          </Link>
+        )}
 
         <div className="hrow"><h3>미국 시장</h3><span className="fine">{usDate ? `${md(usDate)} 16:00 마감 (미 동부)` : "자료 준비 중"}</span></div>
         <div className="uschips">
@@ -117,20 +137,15 @@ export default async function Home() {
         {!night?.points.length ? (
           // 연휴처럼 전날 밤 거래가 없으면 회색 띠 + '거래 없음'. 띠는 누를 수 없고 ?는 동작(규칙표 331:1379 야간선물)
           <div className="futbar off">
-            <span className="nm"><b>코스피200 야간선물 <FuturesHelp /></b><small>어젯밤 18:00 ~ 06:00</small></span>
+            <span className="nm"><b className="tq">코스피200 야간선물<FuturesHelp /></b><small>어젯밤 18:00 ~ 06:00</small></span>
             <span className="chg"><b>거래 없음</b></span>
           </div>
-        ) : <div className="futbar">
-          <span className="nm"><b>코스피200 야간선물 <FuturesHelp /></b><small>{fresh || now.hour < 18 ? "어젯밤 18:00 ~ 06:00" : "오늘 밤 18:00부터(진행 중)"}</small></span>
-          <Link href="/night/futures" className="spark">{night ? <NightChart night={night} h={22} /> : null}</Link>
-          <span className="chg"><b style={{ color: signColor(nx ?? 0) }}>{nx != null ? pct(P(nx)) : "—"}</b><small>어제 마감 대비</small></span>
-          <Link href="/night/futures" className="futgo" aria-label="야간선물 상세"><em>›</em></Link>
-        </div>}
+        ) : <FuturesCard night={night} live={now.hour >= 18} buckets={buckets} />}
 
         {fresh && preRows.some((r) => r.value) ? (
           <section className="mapsec">
-            <div className="hrow"><h3>오늘 아침 내 종목 지도 <MapHelp /></h3><Link href="/night" className="linkish teal">밤사이 자세히 ›</Link></div>
-            <p className="fine">{m!.card!.slot === "0811" ? "08:11" : "07:30"} 기준 · 장 전 · 오늘 예상 시가</p>
+            <div className="hrow"><h3 className="tq">오늘 아침 내 종목 지도<MapHelp /></h3><Link href="/night" className="linkish teal">밤사이 자세히 ›</Link></div>
+            <p className="fine">{m!.card!.slot === "0811" && (marketDay(today)?.premarket ?? true) ? "08:11" : "07:30"} 기준 · 장 전 · 오늘 예상 시가</p>
             <TreeMap stocks={preRows.map((r) => ({
               code: r.code, name: r.name, sector: r.sector, value: r.value ?? r.qty * (px.get(r.code)?.close ?? 0),
               pct: r.kind === "notservice" || r.kind === "nocalc" ? null : r.pct, grade: r.s?.grade ?? null,
@@ -139,9 +154,9 @@ export default async function Home() {
           </section>
         ) : !fresh && acct.holdings.length && idleStocks.some((s) => s.value > 0) ? (
           <section className="mapsec">
-            <div className="hrow"><h3>오늘 아침 내 종목 지도 <MapHelp /></h3><Link href="/night" className="linkish teal">밤사이 자세히 ›</Link></div>
-            <p className="fine">보유 비중 · {off ? `다음 예상 ${dateLabel(isoDay(nextWeekday(today)))} 07:30` : "오늘 예상은 07:30에 채워져요"}</p>
-            <TreeMap stocks={idleStocks} idle={off ? "쉬는 날" : "07:30 공개"} />
+            <div className="hrow"><h3 className="tq">오늘 아침 내 종목 지도<MapHelp /></h3><Link href="/night" className="linkish teal">밤사이 자세히 ›</Link></div>
+            <p className="fine">보유 비중 · {off ? `다음 예상 ${dateLabel(isoDay(nextOpenDay(today)))} 07:30` : delayed ? "오늘 예상은 준비되면 채워져요" : "오늘 예상은 07:30에 채워져요"}</p>
+            <TreeMap stocks={idleStocks} idle={off ? "쉬는 날" : delayed ? "준비 중" : "07:30 공개"} />
             <MapLegend idle />
           </section>
         ) : null}

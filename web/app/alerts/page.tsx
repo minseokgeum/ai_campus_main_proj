@@ -9,6 +9,8 @@ import { addDays, kstNow } from "@/lib/calendar";
 import { dateLabel } from "@/lib/format";
 import { isoDay } from "@/lib/model";
 import { pct, swon } from "@/lib/format";
+import { appNow } from "@/lib/clock";
+import { checkTime } from "@/lib/marketdays";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,7 @@ type Note = { at: string; icon: "warn" | "star" | "check"; title: string; body: 
 export default async function Alerts() {
   const user = await requireUser();
   const [pf, dates] = await Promise.all([portfolio(user.id), modelDates(2)]);
-  const today = kstNow().ymd;
+  const today = kstNow(await appNow()).ymd;
   const items = pf.holdings.map((h) => ({ code: h.code, qty: h.qty }));
   const days: { label: string; notes: Note[] }[] = [];
   for (const t of dates) {
@@ -28,7 +30,7 @@ export default async function Alerts() {
     const a = account(pre);
     if (m.check) {
       const post = buildRows(m, items, "post").filter((r) => r.c);
-      notes.push({ at: "09:05", icon: "check", title: "채점 결과가 나왔어요", body: `${post.length}종목 중 ${post.filter((r) => r.c!.in80).length}종목이 예상 범위 안에서 시작했어요`, href: `/night/record`, fresh: t === today });
+      notes.push({ at: m.check.checkedAt ?? checkTime(t)[0], icon: "check", title: "채점 결과가 나왔어요", body: `${post.length}종목 중 ${post.filter((r) => r.c!.in80).length}종목이 예상 범위 안에서 시작했어요`, href: `/night/record`, fresh: t === today });
     }
     const out = pre.filter((r) => r.kind === "out");
     if (m.card.slot === "0811" && out.length)

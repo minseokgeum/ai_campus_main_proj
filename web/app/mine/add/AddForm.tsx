@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer } from "@/components/sheet";
 
 type S = { code: string; name: string; sector?: string };
-type D = S & { qty: number };
+type D = S & { qty: number; avg?: number | null };   // avg: 평단(선택, 원)
 
 export default function AddForm({ universe, initial, save, first, owned = [] }: { universe: S[]; initial: D[]; save: (f: FormData) => Promise<void>; first?: boolean; owned?: string[] }) {
   const [q, setQ] = useState("");
@@ -36,7 +36,8 @@ export default function AddForm({ universe, initial, save, first, owned = [] }: 
       <p className="dhead">추가한 종목 {draft.length}</p>
       <ul className="draft">
         {draft.map((d) => (
-          <li key={d.code}>
+          <li key={d.code} className={d.qty > 0 ? "has" : ""}>
+            <div className="dl">
             <b>{d.name}</b>
             <span className="qty">
               <button type="button" aria-label="1주 줄이기" onClick={() => step(d.code, -1)}>−</button>
@@ -46,12 +47,23 @@ export default function AddForm({ universe, initial, save, first, owned = [] }: 
               <button type="button" aria-label="1주 늘리기" onClick={() => step(d.code, 1)}>+</button>
             </span>
             <button type="button" className="x" aria-label="빼기" onClick={() => setDraft((x) => x.filter((r) => r.code !== d.code))}>×</button>
+            </div>
+            {d.qty > 0 ? (
+              <label className="avgin">
+                <span>평단 <small>선택</small></span>
+                <span className="box">
+                  <input inputMode="numeric" aria-label={`${d.name} 평단(선택)`} value={d.avg ? d.avg.toLocaleString("ko-KR") : ""} placeholder=""
+                    onChange={(e) => { const n = Number(e.target.value.replace(/\D/g, "")) || null; setDraft((x) => x.map((r) => (r.code === d.code ? { ...r, avg: n && n < 100_000_000 ? n : null } : r))); }} />
+                  <small>원</small>
+                </span>
+              </label>
+            ) : null}
           </li>
         ))}
       </ul>
-      <p className="fine">수량을 넣으면 내 계좌 기준 금액으로, 비워 두면 %로만 보여드려요.</p>
+      <p className="fine">수량을 비우면 %로만, 평단을 넣으면 밤사이에서 평단 대비 위치를 함께 보여드려요. 평단은 수수료·세금이 빠진 값이에요.</p>
       <form action={save} className="addsave">
-        <input type="hidden" name="items" value={JSON.stringify(draft.map(({ code, qty }) => ({ code, qty })))} />
+        <input type="hidden" name="items" value={JSON.stringify(draft.map(({ code, qty, avg }) => ({ code, qty, avg: qty > 0 ? avg ?? null : null })))} />
         <button type="submit" className="cta">{first ? `${draft.length}종목으로 시작하기` : `${draft.length}종목 추가하기`}</button>
         {first ? <Link href="/onboard/alerts" className="later">나중에 할게요</Link> : null}
       </form>

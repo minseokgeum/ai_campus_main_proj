@@ -24,8 +24,10 @@ export async function portfolio(userId: number): Promise<Portfolio> {
 }
 
 /** 종목 추가·수정 화면에서 저장: 수량 > 0이면 보유, 0이면 관심. 목록에 없는 종목은 지운다 */
-export async function savePortfolio(userId: number, items: { code: string; qty: number }[]): Promise<void> {
-  const clean = items.filter((x) => BY_CODE.has(x.code)).map((x) => ({ code: x.code, qty: Math.max(0, Math.min(10_000_000, Math.floor(x.qty) || 0)) }));
+/** 보유·관심 목록 저장. avg(평단, 선택)를 넣은 종목만 평단을 바꾸고, 안 넣으면 있던 평단을 그대로 둔다 */
+export async function savePortfolio(userId: number, items: { code: string; qty: number; avg?: number | null }[]): Promise<void> {
+  const clean = items.filter((x) => BY_CODE.has(x.code)).map((x) => ({ code: x.code, qty: Math.max(0, Math.min(10_000_000, Math.floor(x.qty) || 0)),
+    avg: x.avg != null && Number(x.avg) > 0 && Number(x.avg) < 100_000_000 ? Number(x.avg) : null }));
   const client = await appdb().connect();
   try {
     await client.query("begin");
@@ -33,8 +35,9 @@ export async function savePortfolio(userId: number, items: { code: string; qty: 
     await client.query("delete from app.holdings where user_id = $1 and not (code = any($2))", [userId, hold.map((x) => x.code)]);
     await client.query("delete from app.watch where user_id = $1 and not (code = any($2))", [userId, watch.map((x) => x.code)]);
     for (const x of hold)
-      await client.query(`insert into app.holdings (user_id, code, qty) values ($1, $2, $3)
-                          on conflict (user_id, code) do update set qty = excluded.qty, updated_at = now()`, [userId, x.code, x.qty]);
+      await client.query(`insert into app.holdings (user_id, code, qty, avg_price) values ($1, $2, $3, $4)
+                          on conflict (user_id, code) do update set qty = excluded.qty, avg_price = coalesce(excluded.avg_price, app.holdings.avg_price), updated_at = now()`,
+                         [userId, x.code, x.qty, x.avg]);
     for (const x of watch) await client.query("insert into app.watch (user_id, code) values ($1, $2) on conflict do nothing", [userId, x.code]);
     await client.query("commit");
   } catch (e) {

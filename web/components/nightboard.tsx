@@ -12,7 +12,7 @@ import { StockPanel, colorOf, pctText, swonText, wonText } from "@/components/st
 export type BRow = {
   code: string; name: string; sector: string; tier: 1 | 2 | 3; kind: "ok" | "out" | "low" | "nocalc" | "notservice"; side: "up" | "down" | null;
   qty: number; pc: number | null; h: number | null; l80: number | null; u80: number | null; l90: number | null; u90: number | null;
-  grade: "높음" | "보통" | "낮음" | null; nxtG: number | null; earn: boolean; y: number | null; open: number | null; in80: boolean | null; nNews: number;
+  grade: "높음" | "보통" | "낮음" | null; nxtG: number | null; earn: boolean; y: number | null; open: number | null; in80: boolean | null; nNews: number; v?: { neg: number; pos: number; neu: number };   // v: 밤사이 소식의 이 종목 기준 판정 개수
   avg: number | null;   // 평단(보유 종목에 넣었을 때)
 };
 
@@ -75,23 +75,23 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
   const rowView = (r: BRow) => {
     const [bg, fg] = tint(r.sector);
     const q = qtyOf(r), p = pctOf(r);
-    const news = r.nNews ? ` · 소식 ${r.nNews}` : "";
-    let sub = view === "hold" ? `보유 ${q.toLocaleString("ko-KR")}주${news}` : `${r.sector}${news}`;
-    let warn = false;
-    if (q !== r.qty) sub = `${q}주로 계산 중${news}`;
-    else if (r.kind === "out" && phase === "pre") { sub = `장전 거래가 범위보다 ${r.side === "up" ? "위" : "아래"}${news}`; warn = true; }
-    else if (r.kind === "out" && phase === "post") { sub = `예상 ${pctText(r.h ?? 0)} → 범위 ${r.side === "up" ? "위" : "아래"}${news}`; warn = true; }
-    else if (r.kind === "low") { sub = `믿을 정도 낮음${news}`; warn = true; }
+    // 이름 아래 줄은 '보유 n주'만, 그 아래 줄은 소식(배포용 변경 기록 01). 긍정·부정 개수는 아직 정하지 않아 '소식 n건'·'소식 없음'으로 둔다
+    let sub = view === "hold" ? `보유 ${q.toLocaleString("ko-KR")}주` : q > 0 ? `${q}주로 계산 중` : "관심 종목";
+    const warn = r.kind === "out" || r.kind === "low";   // 범위 밖·믿을 정도 낮음은 아이콘 점으로만(문구는 '확인이 필요한 종목' 묶음과 종목 창에)
+    if (q !== r.qty && view === "hold") sub = `${q}주로 계산 중`;
     else if (r.kind === "nocalc") sub = phase === "post" && r.h != null ? "시가 채점 전" : "이 날 계산하지 못했어요(자료 부족)";
+    // 셋째 줄(배포용 변경 기록 01): 부정·긍정 개수(0인 쪽은 숨김) · 중립만 있으면 '중립 소식만 있어요' · 판정 없는 소식만 있으면 '소식 n건' · 없으면 '소식 없음'
+    const newsLine = !r.nNews ? <span className="nl3">소식 없음</span>
+      : r.v && (r.v.neg || r.v.pos) ? <span className="nl3 vl">{r.v.neg ? <span><b className="neg">부정</b> {r.v.neg}</span> : null}{r.v.pos ? <span><b className="pos">긍정</b> {r.v.pos}</span> : null}</span>
+      : r.v?.neu ? <span className="nl3">중립 소식만 있어요</span> : <span className="nl3">소식 {r.nNews}건</span>;
     const amt = r.pc != null && p != null ? q * r.pc * p : null;
     return (
       <button type="button" key={r.code} className="nrow" onClick={() => setOpen(r.code)}>
         <span className="ic" style={{ background: bg, color: fg }}>{r.name.slice(0, 1)}{warn ? <i /> : null}</span>
         <span className="nm">
           <b>{r.name}</b>
-          <span className={q !== r.qty ? "teal" : warn ? "w" : ""}>{sub}</span>
-          {r.tier === 2 && r.kind !== "notservice" ? <span className="t2">모델 설계 밖 종목</span> : null}
-          {r.earn && phase === "pre" ? <span className="t2">어제 실적 공시</span> : null}
+          <span className={q !== r.qty ? "teal" : ""}>{sub}</span>
+          {newsLine}
         </span>
         {r.kind === "notservice" ? (
           <><span className="na">대상 아님</span><span className="val"><b className="g">—</b><small>계산 안 함</small></span></>
@@ -169,13 +169,13 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
                 <StockPanel icon={<span className="ic" style={{ background: tint(cur.sector)[0], color: tint(cur.sector)[1] }}>{cur.name.slice(0, 1)}</span>} phase={phase} qty={qtyOf(cur)} setQty={(q) => setOvr({ ...ovr, [cur.code]: q })} acctAmount={acct.amount} acctValue={acct.value}
                   s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg }} />
                 <div className="schips">
-                  {cur.grade ? <span className="g">믿을 정도 {cur.grade} {DOTS[cur.grade]} <GradeHelp /></span> : <span className="n">믿을 정도는 08:11에 나와요</span>}
+                  {cur.grade ? <span className="g tq">믿을 정도 {cur.grade} {DOTS[cur.grade]}<GradeHelp /></span> : <span className="n">믿을 정도는 08:11에 나와요</span>}
                   {cur.kind === "out" ? <span className="w">범위 밖</span> : null}
                   {phase === "post" && cur.in80 != null ? <span className={cur.in80 ? "g" : "w"}>{cur.in80 ? "범위 안에서 시작" : "범위 밖에서 시작"}</span> : null}
                   <span className="sec">{cur.sector} 업종 · {rows.filter((r) => r.sector === cur.sector).length}종목</span>
                   {cur.earn ? <span className="w">어제 실적 공시</span> : null}
                 </div>
-                <p className="fine">노란 띠는 80% 범위예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{phase === "pre" && cur.nxtG != null ? ` 08:10 장전 거래 가격은 ${pctText(cur.nxtG)}이에요.` : ""}</p>
+                <p className="fine">노란 띠는 80% 범위예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{phase === "pre" && cur.nxtG != null ? <><br />08:10 장전 거래 가격은 {pctText(cur.nxtG)}이에요.</> : null}</p>
               </>
             )}
             <div className="slinks">

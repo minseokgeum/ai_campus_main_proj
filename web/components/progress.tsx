@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Sheet } from "@/components/sheet";
 
-const STEPS = [["06:00", "야간 마감"], ["07:30", "예상 범위 고정"], ["08:11", "믿을 정도 확인"], ["09:05", "시가 채점"]] as const;
+const stepsOf = (chk: string) => [["06:00", "야간 마감"], ["07:30", "예상 범위 고정"], ["08:11", "믿을 정도 확인"], [chk, "시가 채점"]] as const;
 
-export function ProgressSheet({ stage, slotTitle, slotSub, details }: {
+export function ProgressSheet({ stage, slotTitle, slotSub, details, chk = "09:05" }: {
   stage: 0 | 1 | 2 | 3; slotTitle: string; slotSub: string; details: [string, string, boolean][];   // [제목, 설명, 끝남]
+  chk?: string;   // 그날 채점 시각(10시 개장일은 10:05)
 }) {
+  const STEPS = stepsOf(chk);
   const [pick, setPick] = useState<number>(stage);
   const [t, d, done] = details[pick];
   return (

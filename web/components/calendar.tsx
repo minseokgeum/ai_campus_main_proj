@@ -2,12 +2,13 @@
 // 보관 달력 창(피그마 287:491 · 287:654): 월 이동, 날짜마다 채점 점(모두 범위 안 · 1종목 벗어남 · 2종목 이상), 고른 날짜 보기.
 import Link from "next/link";
 import { useState } from "react";
-import { KRX_CLOSED } from "@/lib/calendar";
 import { Layer } from "@/components/sheet";
 
 const WD = ["일", "월", "화", "수", "목", "금", "토"];
 
-export function CalendarSheet({ selected, today, marks, records }: { selected: string; today: string; marks: Record<string, "ok" | "one" | "many">; records: string[] }) {
+export function CalendarSheet({ selected, today, marks, records, closed }: { selected: string; today: string; marks: Record<string, "ok" | "one" | "many">; records: string[];
+  closed: Record<string, [string, string]> }) {   // closed: 평일 휴장일 [공휴일|휴장, 이름](서버가 special_days.csv에서 넘김)
+  const KRX_CLOSED = closed;
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState(selected.slice(0, 6));
   const [pick, setPick] = useState(selected);

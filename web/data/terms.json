@@ -1,0 +1,1274 @@
+[
+{
+"term": "\"SK hynix\"",
+"code": "000660",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"high-bandwidth memory\"",
+"code": "000660",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"semiconductor chips\"",
+"code": "000660",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"random-access memory\"",
+"code": "000660",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"memory chips\"",
+"code": "000660",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Nvidia\"",
+"code": "000660",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Nvidia\" \"memory chips\"",
+"code": "000660",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Kioxia\"",
+"code": "000660",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"semiconductor wafers\"",
+"code": "000660",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"HANMI Semiconductor\"",
+"code": "042700",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"board-on-chip and chip-on-board bonders\"",
+"code": "042700",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"EMI shielding equipment\"",
+"code": "042700",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"semiconductor manufacturing equipment\"",
+"code": "042700",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"semiconductor chips\"",
+"code": "042700",
+"kind": "테마 대표",
+"theme": "반도체"
+},
+{
+"term": "\"high-bandwidth memory\"",
+"code": "042700",
+"kind": "테마 대표",
+"theme": "반도체"
+},
+{
+"term": "\"Celltrion\"",
+"code": "068270",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"daratumumab biosimilars\"",
+"code": "068270",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"ocrelizumab biosimilars\"",
+"code": "068270",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"cardiovascular drugs\"",
+"code": "068270",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Actos\"",
+"code": "068270",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Edarbi\"",
+"code": "068270",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Eli Lilly\"",
+"code": "068270",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Novartis\"",
+"code": "068270",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"COVID-19 vaccine\"",
+"code": "068270",
+"kind": "테마 대표",
+"theme": "바이오"
+},
+{
+"term": "\"influenza vaccine\"",
+"code": "068270",
+"kind": "테마 대표",
+"theme": "바이오"
+},
+{
+"term": "\"GLP-1 receptor agonists\"",
+"code": "068270",
+"kind": "테마 대표",
+"theme": "제약"
+},
+{
+"term": "\"weight-loss drugs\"",
+"code": "068270",
+"kind": "테마 대표",
+"theme": "제약"
+},
+{
+"term": "\"Peptron\"",
+"code": "087010",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"GLP-1 receptor agonists\"",
+"code": "087010",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"generic Sandostatin LAR\"",
+"code": "087010",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"research and development services\"",
+"code": "087010",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Luphere Depot\"",
+"code": "087010",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"PRESENDIN\"",
+"code": "087010",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Novo Nordisk\"",
+"code": "087010",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Novartis\"",
+"code": "087010",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"COVID-19 vaccine\"",
+"code": "087010",
+"kind": "테마 대표",
+"theme": "바이오"
+},
+{
+"term": "\"influenza vaccine\"",
+"code": "087010",
+"kind": "테마 대표",
+"theme": "바이오"
+},
+{
+"term": "\"weight-loss drugs\"",
+"code": "087010",
+"kind": "테마 대표",
+"theme": "제약"
+},
+{
+"term": "\"Nongshim\"",
+"code": "004370",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"dried noodles\"",
+"code": "004370",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"carbonated soft drinks\"",
+"code": "004370",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"snack foods\"",
+"code": "004370",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Capri-Sun\"",
+"code": "004370",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Shin Ramyun\"",
+"code": "004370",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"PET bottles\"",
+"code": "004370",
+"kind": "테마 대표",
+"theme": "음식료"
+},
+{
+"term": "\"Amorepacific\"",
+"code": "090430",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"gel facial masks\"",
+"code": "090430",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"lip tint\"",
+"code": "090430",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"color cosmetics\"",
+"code": "090430",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Laneige Lip Sleeping Mask\"",
+"code": "090430",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Mamonde\"",
+"code": "090430",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"ethanol\"",
+"code": "090430",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"KRAFTON\"",
+"code": "259960",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"Raon-1\"",
+"code": "259960",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"game content\"",
+"code": "259960",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"mobile games\"",
+"code": "259960",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Subnautica\"",
+"code": "259960",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"PUBG: Battlegrounds\"",
+"code": "259960",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Microsoft\"",
+"code": "259960",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"online games\"",
+"code": "259960",
+"kind": "테마 대표",
+"theme": "게임"
+},
+{
+"term": "\"HYBE\"",
+"code": "352820",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"concert footage\"",
+"code": "352820",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"fan club services\"",
+"code": "352820",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"digital music recordings\"",
+"code": "352820",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Weverse\"",
+"code": "352820",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"search advertising\"",
+"code": "352820",
+"kind": "테마 대표",
+"theme": "디지털 콘텐츠"
+},
+{
+"term": "\"Grand Korea Leisure\"",
+"code": "114090",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"casino table games\"",
+"code": "114090",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"currency exchange\"",
+"code": "114090",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"Seven Luck Casino\"",
+"code": "114090",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"HD Korea Shipbuilding & Offshore Engineering\"",
+"code": "009540",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"solar modules\"",
+"code": "009540",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"oil tankers\"",
+"code": "009540",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"exhaust gas treatment systems\"",
+"code": "009540",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"research and development services\"",
+"code": "009540",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"solar modules\"",
+"code": "009540",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"solar cells\"",
+"code": "009540",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"Approved List of Models and Manufacturers\"",
+"code": "009540",
+"kind": "정책",
+"theme": ""
+},
+{
+"term": "\"container ships\"",
+"code": "009540",
+"kind": "테마 대표",
+"theme": "조선"
+},
+{
+"term": "\"Hanwha Aerospace\"",
+"code": "012450",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"crude oil tankers\"",
+"code": "012450",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"LNG carriers\"",
+"code": "012450",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"oil tankers\"",
+"code": "012450",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"IT outsourcing\"",
+"code": "012450",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Cheongeom\"",
+"code": "012450",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Chunmoo\"",
+"code": "012450",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Kongsberg Maritime\"",
+"code": "012450",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Kongsberg Maritime\" \"ship equipment and components\"",
+"code": "012450",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"military communications systems\"",
+"code": "012450",
+"kind": "테마 대표",
+"theme": "방산"
+},
+{
+"term": "\"Woojin\"",
+"code": "105840",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"condition monitoring systems\"",
+"code": "105840",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"CVAP instrumentation\"",
+"code": "105840",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"calibration services\"",
+"code": "105840",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"industrial automation equipment and systems\"",
+"code": "105840",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"POSCO\"",
+"code": "005490",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"hot-rolled steel sheet and coil\"",
+"code": "005490",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"steel wire rod\"",
+"code": "005490",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"natural gas\"",
+"code": "005490",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"General Motors\"",
+"code": "005490",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Mercedes-Benz\"",
+"code": "005490",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"liquefied natural gas\"",
+"code": "005490",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"metal scrap\"",
+"code": "005490",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"China tariff on US LNG\"",
+"code": "005490",
+"kind": "정책",
+"theme": ""
+},
+{
+"term": "\"reinforcing steel bar\"",
+"code": "005490",
+"kind": "테마 대표",
+"theme": "철강"
+},
+{
+"term": "\"Korean Air Lines\"",
+"code": "003490",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"Korean Air\"",
+"code": "003490",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"in-flight item laundry\"",
+"code": "003490",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"inspection drones\"",
+"code": "003490",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"hotel services\"",
+"code": "003490",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"AIOrchestrator\"",
+"code": "003490",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"ModelOps.AI\"",
+"code": "003490",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Shell\"",
+"code": "003490",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Shell\" \"jet fuel\"",
+"code": "003490",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"jet fuel\"",
+"code": "003490",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"KB Financial\"",
+"code": "105560",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"bancassurance\"",
+"code": "105560",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"debit cards\"",
+"code": "105560",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"payment cards\"",
+"code": "105560",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"auto insurance\"",
+"code": "105560",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"options trading\"",
+"code": "105560",
+"kind": "테마 대표",
+"theme": "은행"
+},
+{
+"term": "\"SILICON 2\"",
+"code": "257720",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"B2B wholesale platform\"",
+"code": "257720",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"cross-border e-commerce platform\"",
+"code": "257720",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"third-party logistics\"",
+"code": "257720",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Stylekorean\"",
+"code": "257720",
+"kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"LX Holdings\"",
+"code": "383800",
+"kind": "자기 회사",
+"theme": ""
+},
+{
+"term": "\"polymethyl methacrylate\"",
+"code": "383800",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"acrylic rubber\"",
+"code": "383800",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"third-party logistics\"",
+"code": "383800",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"TSMC\"",
+"code": "383800",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"TSMC\" \"semiconductor wafers\"",
+"code": "383800",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"semiconductor wafers\"",
+"code": "383800",
+"kind": "원자재·지표",
+"theme": ""
+},
+{
+"term": "\"DRAM prices\"",
+"code": "000660",
+"kind": "업종 기본",
+"theme": "반도체"
+},
+{
+"term": "\"HBM demand\"",
+"code": "000660",
+"kind": "업종 기본",
+"theme": "반도체"
+},
+{
+"term": "\"memory prices\"",
+"code": "000660",
+"kind": "테마 기본",
+"theme": "반도체"
+},
+{
+"term": "\"HBM demand\"",
+"code": "000660",
+"kind": "테마 기본",
+"theme": "반도체"
+},
+{
+"term": "\"DRAM prices\"",
+"code": "042700",
+"kind": "업종 기본",
+"theme": "반도체"
+},
+{
+"term": "\"HBM demand\"",
+"code": "042700",
+"kind": "업종 기본",
+"theme": "반도체"
+},
+{
+"term": "\"memory prices\"",
+"code": "042700",
+"kind": "테마 기본",
+"theme": "반도체"
+},
+{
+"term": "\"HBM demand\"",
+"code": "042700",
+"kind": "테마 기본",
+"theme": "반도체"
+},
+{
+"term": "\"drug approvals\"",
+"code": "068270",
+"kind": "업종 기본",
+"theme": "건강관리"
+},
+{
+"term": "\"biosimilar competition\"",
+"code": "068270",
+"kind": "업종 기본",
+"theme": "건강관리"
+},
+{
+"term": "\"biosimilar competition\"",
+"code": "068270",
+"kind": "테마 기본",
+"theme": "바이오"
+},
+{
+"term": "\"biologics manufacturing\"",
+"code": "068270",
+"kind": "테마 기본",
+"theme": "바이오"
+},
+{
+"term": "\"drug licensing\"",
+"code": "068270",
+"kind": "테마 기본",
+"theme": "제약"
+},
+{
+"term": "\"FDA approvals\"",
+"code": "068270",
+"kind": "테마 기본",
+"theme": "제약"
+},
+{
+"term": "\"drug approvals\"",
+"code": "087010",
+"kind": "업종 기본",
+"theme": "건강관리"
+},
+{
+"term": "\"biosimilar competition\"",
+"code": "087010",
+"kind": "업종 기본",
+"theme": "건강관리"
+},
+{
+"term": "\"biosimilar competition\"",
+"code": "087010",
+"kind": "테마 기본",
+"theme": "바이오"
+},
+{
+"term": "\"biologics manufacturing\"",
+"code": "087010",
+"kind": "테마 기본",
+"theme": "바이오"
+},
+{
+"term": "\"drug licensing\"",
+"code": "087010",
+"kind": "테마 기본",
+"theme": "제약"
+},
+{
+"term": "\"FDA approvals\"",
+"code": "087010",
+"kind": "테마 기본",
+"theme": "제약"
+},
+{
+"term": "\"frozen foods\"",
+"code": "004370",
+"kind": "업종 기본",
+"theme": "필수소비재"
+},
+{
+"term": "\"grain prices\"",
+"code": "004370",
+"kind": "업종 기본",
+"theme": "필수소비재"
+},
+{
+"term": "\"Korean food\"",
+"code": "004370",
+"kind": "테마 기본",
+"theme": "음식료"
+},
+{
+"term": "\"grain prices\"",
+"code": "004370",
+"kind": "테마 기본",
+"theme": "음식료"
+},
+{
+"term": "\"K-beauty\"",
+"code": "090430",
+"kind": "업종 기본",
+"theme": "화장품,의류"
+},
+{
+"term": "\"apparel sales\"",
+"code": "090430",
+"kind": "업종 기본",
+"theme": "화장품,의류"
+},
+{
+"term": "\"K-beauty\"",
+"code": "090430",
+"kind": "테마 기본",
+"theme": "화장품"
+},
+{
+"term": "\"skincare demand\"",
+"code": "090430",
+"kind": "테마 기본",
+"theme": "화장품"
+},
+{
+"term": "\"cleaning products\"",
+"code": "090430",
+"kind": "테마 기본",
+"theme": "생활용품"
+},
+{
+"term": "\"palm oil\"",
+"code": "090430",
+"kind": "테마 기본",
+"theme": "생활용품"
+},
+{
+"term": "\"video games\"",
+"code": "259960",
+"kind": "업종 기본",
+"theme": "소프트웨어"
+},
+{
+"term": "\"digital advertising\"",
+"code": "259960",
+"kind": "업종 기본",
+"theme": "소프트웨어"
+},
+{
+"term": "\"mobile games\"",
+"code": "259960",
+"kind": "테마 기본",
+"theme": "게임"
+},
+{
+"term": "\"loot boxes\"",
+"code": "259960",
+"kind": "테마 기본",
+"theme": "게임"
+},
+{
+"term": "\"K-pop\"",
+"code": "352820",
+"kind": "업종 기본",
+"theme": "미디어,교육"
+},
+{
+"term": "\"box office\"",
+"code": "352820",
+"kind": "업종 기본",
+"theme": "미디어,교육"
+},
+{
+"term": "\"K-pop\"",
+"code": "352820",
+"kind": "테마 기본",
+"theme": "엔터테인먼트"
+},
+{
+"term": "\"concert tours\"",
+"code": "352820",
+"kind": "테마 기본",
+"theme": "엔터테인먼트"
+},
+{
+"term": "\"content spending\"",
+"code": "352820",
+"kind": "테마 기본",
+"theme": "디지털 콘텐츠"
+},
+{
+"term": "\"streaming subscriptions\"",
+"code": "352820",
+"kind": "테마 기본",
+"theme": "디지털 콘텐츠"
+},
+{
+"term": "\"international travel\"",
+"code": "114090",
+"kind": "업종 기본",
+"theme": "호텔,레저"
+},
+{
+"term": "\"Chinese tourists\"",
+"code": "114090",
+"kind": "업종 기본",
+"theme": "호텔,레저"
+},
+{
+"term": "\"Macau casinos\"",
+"code": "114090",
+"kind": "테마 기본",
+"theme": "카지노"
+},
+{
+"term": "\"Chinese tourists\"",
+"code": "114090",
+"kind": "테마 기본",
+"theme": "카지노"
+},
+{
+"term": "\"LNG carriers\"",
+"code": "009540",
+"kind": "업종 기본",
+"theme": "조선"
+},
+{
+"term": "\"tanker orders\"",
+"code": "009540",
+"kind": "업종 기본",
+"theme": "조선"
+},
+{
+"term": "\"LNG carriers\"",
+"code": "009540",
+"kind": "테마 기본",
+"theme": "조선"
+},
+{
+"term": "\"oil tankers\"",
+"code": "009540",
+"kind": "테마 기본",
+"theme": "조선"
+},
+{
+"term": "\"Saudi megaprojects\"",
+"code": "009540",
+"kind": "테마 기본",
+"theme": "건설"
+},
+{
+"term": "\"LNG projects\"",
+"code": "009540",
+"kind": "테마 기본",
+"theme": "건설"
+},
+{
+"term": "\"defense spending\"",
+"code": "012450",
+"kind": "테마 기본",
+"theme": "방산"
+},
+{
+"term": "\"artillery shells\"",
+"code": "012450",
+"kind": "테마 기본",
+"theme": "방산"
+},
+{
+"term": "\"aircraft orders\"",
+"code": "012450",
+"kind": "테마 기본",
+"theme": "우주항공"
+},
+{
+"term": "\"satellite launches\"",
+"code": "012450",
+"kind": "테마 기본",
+"theme": "우주항공"
+},
+{
+"term": "\"power transformers\"",
+"code": "105840",
+"kind": "업종 기본",
+"theme": "기계"
+},
+{
+"term": "\"grid investment\"",
+"code": "105840",
+"kind": "업종 기본",
+"theme": "기계"
+},
+{
+"term": "\"nuclear construction\"",
+"code": "105840",
+"kind": "테마 기본",
+"theme": "원자력발전"
+},
+{
+"term": "\"nuclear exports\"",
+"code": "105840",
+"kind": "테마 기본",
+"theme": "원자력발전"
+},
+{
+"term": "\"steel prices\"",
+"code": "005490",
+"kind": "업종 기본",
+"theme": "철강"
+},
+{
+"term": "\"steel tariffs\"",
+"code": "005490",
+"kind": "업종 기본",
+"theme": "철강"
+},
+{
+"term": "\"steel prices\"",
+"code": "005490",
+"kind": "테마 기본",
+"theme": "철강"
+},
+{
+"term": "\"steel tariffs\"",
+"code": "005490",
+"kind": "테마 기본",
+"theme": "철강"
+},
+{
+"term": "\"LNG prices\"",
+"code": "005490",
+"kind": "테마 기본",
+"theme": "화력발전"
+},
+{
+"term": "\"thermal coal\"",
+"code": "005490",
+"kind": "테마 기본",
+"theme": "화력발전"
+},
+{
+"term": "\"freight rates\"",
+"code": "003490",
+"kind": "업종 기본",
+"theme": "운송"
+},
+{
+"term": "\"air travel\"",
+"code": "003490",
+"kind": "업종 기본",
+"theme": "운송"
+},
+{
+"term": "\"jet fuel\"",
+"code": "003490",
+"kind": "테마 기본",
+"theme": "항공사"
+},
+{
+"term": "\"air travel\"",
+"code": "003490",
+"kind": "테마 기본",
+"theme": "항공사"
+},
+{
+"term": "\"aircraft orders\"",
+"code": "003490",
+"kind": "테마 기본",
+"theme": "우주항공"
+},
+{
+"term": "\"satellite launches\"",
+"code": "003490",
+"kind": "테마 기본",
+"theme": "우주항공"
+},
+{
+"term": "\"Treasury yields\"",
+"code": "105560",
+"kind": "업종 기본",
+"theme": "은행"
+},
+{
+"term": "\"dollar funding\"",
+"code": "105560",
+"kind": "업종 기본",
+"theme": "은행"
+},
+{
+"term": "\"Treasury yields\"",
+"code": "105560",
+"kind": "테마 기본",
+"theme": "금융그룹"
+},
+{
+"term": "\"credit spreads\"",
+"code": "105560",
+"kind": "테마 기본",
+"theme": "금융그룹"
+},
+{
+"term": "\"Treasury yields\"",
+"code": "105560",
+"kind": "테마 기본",
+"theme": "은행"
+},
+{
+"term": "\"dollar funding\"",
+"code": "105560",
+"kind": "테마 기본",
+"theme": "은행"
+},
+{
+"term": "\"duty-free sales\"",
+"code": "257720",
+"kind": "업종 기본",
+"theme": "소매(유통)"
+},
+{
+"term": "\"Chinese tourists\"",
+"code": "257720",
+"kind": "업종 기본",
+"theme": "소매(유통)"
+},
+{
+"term": "\"freight rates\"",
+"code": "383800",
+"kind": "회사 기본",
+"theme": ""
+},
+{
+"term": "\"resin prices\"",
+"code": "383800",
+"kind": "회사 기본",
+"theme": ""
+}
+]

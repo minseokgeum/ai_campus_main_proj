@@ -1,8 +1,10 @@
 // 밤사이 기사: 오라클 수집 DB의 items(기사)·hits(검색어–기사 연결)를 읽어 종목·업종·시장으로 나눈다.
 import { db } from "@/lib/db";
 import { briefing, type Briefing } from "@/lib/briefing";
+import { appNow } from "@/lib/clock";
 import { MARKET_KINDS, STOCKS, TERMS } from "@/lib/data";
 import { articleAI } from "@/lib/summary";
+import { LINK, NEWS_OK } from "@/lib/newsql";
 
 export type Article = {
   key: string;
@@ -11,7 +13,7 @@ export type Article = {
   source: string; // 구글이 준 매체 이름(예: Reuters)
   outlet: string; // 우리 수집 매체 11곳 중 하나(예: finance.yahoo.com)
   published: string; // ISO(UTC)
-  link: string; // 구글 뉴스 링크(원문으로 넘어감)
+  link: string; // 원문 주소(언론사 원문 주소가 있으면 그것, 없으면 구글 뉴스 링크)
   codes: string[]; // 걸린 검색어의 종목코드(업종·테마 검색어 포함)
   direct: string[]; // 그 종목 고유 검색어(자기 회사·브랜드·제품·해외 상대 등)로 걸린 종목코드 — 내 종목 뉴스는 이것만
   rank: Record<string, number>; // 종목마다 가장 가까운 검색어 종류의 순위(0 = 자기 회사). 종목 블록에서 가까운 기사 먼저
@@ -19,6 +21,7 @@ export type Article = {
   kinds: string[]; // 걸린 검색어 종류
   market: boolean; // 시장 전체 소식(업종·테마·원자재·정책 검색어로 걸림)
   impacts: { name: string | null; impact: string }[]; // AI가 판정한 회사별 영향(news.llm_articles.impacts)
+  stock: Record<string, string>;                         // 종목코드 → 그 종목 기준 판정(서버 news.stock_impacts: 자기 기사 또는 방향 규칙표의 관계사 기사)
 };
 
 export type Night = { brief: Briefing; articles: Article[] };
@@ -31,9 +34,10 @@ const ALL_TERMS = [...BY_TERM.keys()];
 const RANK: Record<string, number> = { "자기 회사": 0, "브랜드": 1, "회사 기본": 1, "구체 제품": 2, "해외 상대": 3, "넓은 제품": 4 };
 
 const SQL = `
-  select i.key, i.title, i.source, i.outlet, i.published_utc, i.link, array_agg(distinct h.term) as terms
-  from items i join hits h on h.key = i.key
+  select i.key, i.title, i.source, i.outlet, i.published_utc, min(${LINK}) as link, array_agg(distinct h.term) as terms
+  from items i join hits h on h.key = i.key left join news.llm_articles l on l.key = i.key
   where coalesce(i."drop", '') = '' and i.first_seen_utc >= $1 and i.first_seen_utc < $2 and h.term = any($3)   -- 수집 시각 기준(요약과 같은 범위)
+    and ${NEWS_OK}   -- 뉴스가 아닌 글·투자와 관련 없는 글은 빼기(lib/newsql.ts)
   group by i.key
   order by i.published_utc desc
   limit 3000`;
@@ -58,7 +62,7 @@ function label(kind: string, theme: string): string {
 }
 
 export async function nightNews(ymd?: string): Promise<Night> {
-  const brief = briefing(ymd);
+  const brief = briefing(ymd, await appNow());   // 시연 시각이면 그 시각의 브리핑
   const hit = cache.get(brief.date);
   if (hit && Date.now() - hit.at < TTL) return { brief, articles: hit.v };
   const { rows } = await db().query(SQL, [brief.start, brief.end, ALL_TERMS]);
@@ -75,11 +79,11 @@ export async function nightNews(ymd?: string): Promise<Night> {
       rank: own.reduce<Record<string, number>>((m, l) => ({ ...m, [l.code]: Math.min(m[l.code] ?? 9, RANK[l.kind] ?? 5) }), {}),
       themes, kinds: [...new Set(links.map((l) => l.kind))],
       market: links.some((l) => MARKET_KINDS.has(l.kind)),
-      impacts: [],
+      impacts: [], stock: {},
     };
   });
   const ai = await articleAI(articles.map((a) => a.key));
-  for (const a of articles) { a.ko = ai.get(a.key)?.ko ?? null; a.impacts = ai.get(a.key)?.impacts ?? []; }
+  for (const a of articles) { a.ko = ai.get(a.key)?.ko ?? null; a.impacts = ai.get(a.key)?.impacts ?? []; a.stock = ai.get(a.key)?.stock ?? {}; }
   cache.set(brief.date, { at: Date.now(), v: articles });
   return { brief, articles };
 }
@@ -111,33 +115,54 @@ export function topThemes(articles: Article[], n = 3): string[] {
 
 // 기사 영향 판정(회사 이름으로 나옴)을 종목에 잇기: 그 종목의 자기 회사·브랜드 검색어나 종목명과 이름이 겹치면 그 종목의 판정으로 본다.
 // 판정이 종목코드로 오면 이 맞추기는 필요 없다(프롬프트 수정 목록 참고).
-const normName = (s: string) => s.toLowerCase().replace(/"/g, "").replace(/[^a-z0-9가-힣]/g, "");
-const OWN_NAMES = new Map<string, string[]>();
-for (const t of TERMS) if (t.kind === "자기 회사" || t.kind === "회사 기본" || t.kind === "브랜드") OWN_NAMES.set(t.code, [...(OWN_NAMES.get(t.code) ?? []), normName(t.term)]);
+/** 이 기사가 그 종목에 긍정·부정·중립·엇갈림인지(서버가 계산한 news.stock_impacts). 판정이 없으면 null */
 export function impactFor(a: Article, code: string): string | null {
-  const keys = [...(OWN_NAMES.get(code) ?? []), normName(STOCKS[code]?.name ?? "")].filter((k) => k.length >= 2);
-  for (const x of a.impacts) {
-    const n = normName(x.name ?? "");
-    if (n.length >= 3 && keys.some((k) => n.includes(k) || k.includes(n))) return x.impact;
-  }
-  return null;
+  return a.stock[code] ?? null;
 }
 
-/** 한 종목의 지난 며칠 기사(내 종목 상세 '지난 소식', 피그마 147:619). 그 종목 고유 검색어가 제목에 있는 기사만 */
-export async function stockNewsDays(code: string, days = 7): Promise<{ key: string; title: string; ko: string | null; published: string; link: string }[]> {
+export type Verdicts = { total: number; neg: number; pos: number; neu: number };
+/** 한 종목 기사 목록의 판정 개수(엇갈림은 중립으로 셈) */
+export function verdictsOf(list: Article[], code: string): Verdicts {
+  const v = { total: list.length, neg: 0, pos: 0, neu: 0 };
+  for (const a of list) { const i = a.stock[code]; if (i === "negative") v.neg++; else if (i === "positive") v.pos++; else if (i) v.neu++; }
+  return v;
+}
+
+export type PastArticle = { key: string; title: string; ko: string | null; published: string; link: string; outlet: string; group: string };
+
+/** 한 종목의 지난 며칠 기사(내 종목 상세 '지난 소식', 피그마 147:619). 그 종목 고유 검색어가 제목에 있는 기사만.
+ *  group: 같은 소식 묶음 열쇠(서버 news.stories의 사건·소식 번호. 없으면 원문 주소 → 같은 주소는 한 묶음) */
+export async function stockNewsDays(code: string, days = 7): Promise<PastArticle[]> {
   const own = TERMS.filter((t) => t.code === code && !MARKET_KINDS.has(t.kind)).map((t) => t.term);
   if (!own.length) return [];
   try {
+    const end = await appNow();   // 화면 시각까지 들어온 기사(시연 시각이면 그 시각 기준 days일)
     const { rows } = await db().query(
-      `select i.key, i.title, i.link, i.published_utc, array_agg(distinct h.term) as terms
-       from items i join hits h on h.key = i.key
-       where coalesce(i."drop", '') = '' and i.first_seen_utc >= now() - ($2 || ' days')::interval and h.term = any($1)
-       group by i.key order by i.published_utc desc limit 300`, [own, String(days)]);
+      `select i.key, i.title, min(${LINK}) as link, i.published_utc, coalesce(nullif(i.source, ''), i.outlet) as outlet,
+              min(s.story_id) as story_id, min(s.news_id) as news_id, array_agg(distinct h.term) as terms
+       from items i join hits h on h.key = i.key left join news.llm_articles l on l.key = i.key left join news.stories s on s.key = i.key
+       where coalesce(i."drop", '') = '' and i.first_seen_utc >= $2 and i.first_seen_utc < $3 and h.term = any($1) and ${NEWS_OK}
+       group by i.key order by i.published_utc desc limit 300`, [own, new Date(end.getTime() - days * 86400_000), end]);
     const hit = rows.filter((r) => (r.terms as string[]).some((term) => inTitle(r.title, term)));
     const ai = await articleAI(hit.map((r) => r.key));
-    return hit.map((r) => ({ key: r.key, title: r.title, ko: ai.get(r.key)?.ko ?? null, published: new Date(r.published_utc).toISOString(), link: r.link }))
+    return hit.map((r) => ({ key: r.key, title: r.title, ko: ai.get(r.key)?.ko ?? null, published: new Date(r.published_utc).toISOString(), link: r.link,
+      outlet: String(r.outlet ?? ""), group: r.story_id && r.news_id ? `${r.story_id}|${r.news_id}` : r.link }))
       .sort((a, b) => b.published.localeCompare(a.published));
   } catch {
     return [];
   }
+}
+
+/** 야간선물 시간(시작 18:00부터 12시간) 동안 15분마다 발행된 미국 기사 수 48칸(배포용 '야간선물 흐름 창'). 기사는 수집 DB의 거르기를 통과한 것 */
+export async function newsBuckets(start: Date): Promise<number[]> {
+  const out = Array.from({ length: 48 }, () => 0);
+  try {
+    const end = new Date(start.getTime() + 12 * 3600_000);
+    const { rows } = await db().query(
+      `select floor(extract(epoch from (i.published_utc - $1::timestamptz)) / 900)::int as b, count(*)::int as n
+       from items i left join news.llm_articles l on l.key = i.key
+       where coalesce(i."drop", '') = '' and i.published_utc >= $1 and i.published_utc < $2 and ${NEWS_OK} group by 1`, [start, end]);
+    for (const r of rows) if (r.b >= 0 && r.b < 48) out[r.b] = r.n;
+  } catch { /* 표가 없으면 0 */ }
+  return out;
 }

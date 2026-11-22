@@ -10,6 +10,7 @@ import { MaskToggle, Sheet } from "@/components/sheet";
 import { dateLabel } from "@/lib/format";
 import { isoDay } from "@/lib/model";
 import { kstNow } from "@/lib/calendar";
+import { appNow } from "@/lib/clock";
 
 const SECTOR_COLORS = ["#008C82", "#6250D6", "#A8582F", "#2A9FD6"]; // 규칙표(331:1379 업종): 지도와 같이 비중 큰 4개까지 따로, 5번째부터 '그 외' #B8C0C3
 const ICON = [["rgba(241,163,60,0.18)", "#b86e12"], ["rgba(139,111,214,0.18)", "#6a4fb8"], ["rgba(154,164,168,0.18)", "#5e6e72"]];
@@ -45,7 +46,7 @@ export default async function Mine({ searchParams }: { searchParams: Promise<{ v
   const bars = [...top, ...(rest.length ? [["그 외", { names: rest.flatMap((r) => r[1].names), w: rest.reduce((a, r) => a + r[1].w, 0) }]] as [string, { names: string[]; w: number }][] : [])];
   return (
     <>
-      <Head title="내 종목" sub={`${dateLabel(isoDay(kstNow().ymd)).replace(/\((.)\)$/, "$1요일")} · 어제 종가 기준`} />
+      <Head title="내 종목" sub={`${dateLabel(isoDay(kstNow(await appNow()).ymd)).replace(/\((.)\)$/, "$1요일")} · 어제 종가 기준`} />
       <main className="scroll" style={{ gap: 14, paddingTop: 8 }}>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <Link href="/mine/add" className="addlink">＋ 종목 추가</Link>

@@ -1,6 +1,7 @@
 // 밤사이 화면의 창·띠·상태 부품(서버에서 그림). 창은 components/sheet.tsx(움직이는 부분)로 연다.
 import Link from "next/link";
 import { Sheet } from "@/components/sheet";
+import { NamesTip } from "@/components/namestip";
 export { GradeHelp, NotServiceHelp, FuturesHelp } from "@/components/helps";
 import { FuturesHelp as FuturesHelpInline } from "@/components/helps";
 import { NightChart, signColor } from "@/components/model";
@@ -8,14 +9,16 @@ import type { Night } from "@/lib/model";
 import { bySector, P, SORT_LABEL, SORTS, type Phase, type Row } from "@/lib/night";
 import { pct, swon } from "@/lib/format";
 
-/** 오늘 아침 진행 창의 단계별 설명(창은 components/progress.tsx) */
-export function progressDetails(stage: number, grades: { 높음: number; 보통: number; 낮음: number; 대상아님: number }, check: { scored: number; inN: number } | null): [string, string, boolean][] {
+/** 오늘 아침 진행 창의 단계별 설명(창은 components/progress.tsx). day: 그날 개장 시각·채점 시각·개장 전 거래 여부(special_days.csv) */
+export function progressDetails(stage: number, grades: { 높음: number; 보통: number; 낮음: number; 대상아님: number }, check: { scored: number; inN: number } | null,
+  day: { openAt: string; chk: string; next: string; premarket: boolean } = { openAt: "09:00", chk: "09:05", next: "09:00 개장 직후", premarket: true }): [string, string, boolean][] {
   return [
     ["06:00 야간 마감", "야간선물 거래가 06:00에 끝나면 지난밤 움직임으로 종목별 예상 시가를 계산해요.", stage > 0],
     ["07:30 예상 범위 고정", "지난 비슷한 아침의 기록으로 종목마다 예상 범위(노란 띠)를 정해 공개해요.", stage > 1],
-    ["08:11 믿을 정도 확인", stage > 2 ? `장 시작 전 거래(NXT 08:00~08:10)를 보고 높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음}${grades.대상아님 ? ` · 서비스 대상 아님 ${grades.대상아님}` : ""}`
+    !day.premarket ? ["08:11 믿을 정도 확인", `오늘은 개장 전 거래(NXT)가 없는 날이라 08:11 업데이트가 없어요. ${day.openAt} 시가가 나오면 바로 채점해요.`, stage > 2]
+      : ["08:11 믿을 정도 확인", stage > 2 ? `장 시작 전 거래(NXT 08:00~08:10)를 보고 높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음}${grades.대상아님 ? ` · 서비스 대상 아님 ${grades.대상아님}` : ""}`
       : "장 시작 전 거래(NXT 08:00~08:10)를 보고 종목마다 믿을 정도를 정해요.", stage > 2],
-    ["09:05 실제 시가로 채점", check ? `${check.scored}종목 중 ${check.inN}종목이 범위 안에서 시작했어요.` : "09:00 시가가 나오면 예상 범위 안에 들었는지 채점해요.", !!check],
+    [`${check ? day.chk : day.next} 실제 시가로 채점`, check ? `${check.scored}종목 중 ${check.inN}종목이 범위 안에서 시작했어요.` : `${day.openAt} 시가가 나오면 바로 예상 범위 안에 들었는지 채점해요.`, !!check],
   ];
 }
 
@@ -27,11 +30,11 @@ export function SectorSheet({ rows, acct, count, label }: { rows: Row[]; acct: {
   const maxAbs = Math.max(1, ...groups.map((g) => Math.abs(g.amount)));
   const top = groups[0];
   return (
-    <Sheet className="linkish teal" title="업종별로 보면" sub={`보유 ${count}종목 · 오늘 ${label} 금액 변화 큰 순`} trigger={<span>종목별 보기 ›</span>}>
+    <Sheet className="linkish teal" title="업종별로 보면" sub={`보유 ${count}종목 · 오늘 ${label} 금액 변화 큰 순`} trigger={<span>업종별 보기 ›</span>}>
       <p className="sacct">계좌 {label} <b style={{ color: signColor(acct.amount) }}><span className="amt">{swon(acct.amount)}</span> · {pct(P(acct.pct))}</b></p>
       {groups.map((g) => (
         <div key={g.sector} className="sgrp">
-          <div className="sn"><b>{g.sector}</b><span className="cnt">{g.list.length}종목</span><small>{g.list.map((r) => r.name).join(" · ")}</small></div>
+          <div className="sn"><b>{g.sector}</b><span className="cnt">{g.list.length}종목</span><NamesTip names={g.list.map((r) => r.name)} /></div>
           <div className="sbar"><i style={{ left: g.amount < 0 ? `${50 - (Math.abs(g.amount) / maxAbs) * 50}%` : "50%", width: `${(Math.abs(g.amount) / maxAbs) * 50}%`, background: signColor(g.amount) }} /></div>
           <b className="amt" style={{ color: signColor(g.amount) }}>{swon(g.amount)}</b>
         </div>
@@ -53,15 +56,15 @@ export function SortSheet({ current, href }: { current: string; href: (o: string
 }
 
 /** 주의 띠(피그마 563:697 월요일 · 461:7929 연휴 다음 날 · 461:7489 미국 휴장 다음 날 · 449:469 일부 못 받아옴) */
-export function Banner({ kind, n, total }: { kind: "mon" | "hol" | "us" | "nonight" | "earn" | "partial"; n?: number; total?: number }) {
-  const text = {
+export function Banner({ kind, n, total, title, body }: { kind: "mon" | "hol" | "us" | "nonight" | "earn" | "partial" | "day"; n?: number; total?: number; title?: string; body?: string }) {
+  const text = kind === "day" ? [title ?? "", body ?? ""] : {
     mon: ["월요일 아침이에요", "주말 동안 쌓인 소식이 한꺼번에 반영돼서, 과거 월요일엔 시가가 예상 범위를 벗어난 날이 더 많았어요. 다른 요일은 10번 중 2번, 월요일은 10번 중 2.6번꼴이에요."],
     hol: ["연휴 다음 날 아침이에요", "며칠 동안 쌓인 소식이 한꺼번에 반영돼서, 과거 연휴 다음 날엔 시가가 예상 범위를 벗어난 날이 더 많았어요."],
     us: ["어젯밤 미국 증시가 쉬었어요", "미국 소식이 없어서 오늘 예상은 야간선물과 지난 흐름만으로 계산했어요. 믿을 정도가 평소보다 낮아요."],
     nonight: ["어젯밤 야간 거래가 없었어요", "야간선물 없이 미국 시장 흐름만으로 계산해서 예상 범위가 평소보다 넓어요."],   // 컴포넌트 563:17
     earn: [`어제 실적 공시가 나온 종목이 ${n}개 있어요`, "과거 이런 아침엔 시가가 범위 밖으로 더 자주 나갔어요. 종목에 '어제 실적 공시' 표시를 붙였어요."],
     partial: [`${n}종목의 예상을 불러오지 못했어요`, `계좌 예상은 나머지 ${total}종목으로만 계산했어요.`],
-  }[kind];
+  }[kind];   // day: 특별한 날 달력(special_days.csv)의 그날 안내(10시 개장 · 미국 조기 마감)
   return (
     <div className="banner">
       <span className="warn" aria-hidden>!</span>
@@ -101,7 +104,7 @@ export function WaitState({ kicker, title, body, link, night, nightNote, seg, af
       </section>
       {night ? (
         <div className="fut">
-          <div className="fh"><b>코스피200 야간선물</b><FuturesHelpInline /><Link href={`/night/futures?d=${night.d}`} className="futgo"><span style={{ color: signColor(last ?? 0) }}>{last != null ? pct(P(last)) : "—"}</span><em>›</em></Link></div>
+          <div className="fh"><b className="tq">코스피200 야간선물<FuturesHelpInline /></b><Link href={`/night/futures?d=${night.d}`} className="futgo"><span style={{ color: signColor(last ?? 0) }}>{last != null ? pct(P(last)) : "—"}</span><em>›</em></Link></div>
           <p className="fine">{nightNote}</p>
           <Link href={`/night/futures?d=${night.d}`}><NightChart night={night} /></Link>
           <div className="axis"><span>18:00</span><span>23:30 미국 개장</span><span>06:00 마감</span></div>

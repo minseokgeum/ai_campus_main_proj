@@ -10,8 +10,10 @@ import { portfolio } from "@/lib/portfolio";
 import { dayModel, isoDay, modelDates, myChecks } from "@/lib/model";
 import { buildRows, P } from "@/lib/night";
 import { aiBrief } from "@/lib/summary";
-import { addDays, isWeekend, KRX_CLOSED, kstNow, weekday } from "@/lib/calendar";
+import { addDays, isWeekend, kstNow, weekday } from "@/lib/calendar";
+import { closedDays, closedName, marketDay } from "@/lib/marketdays";
 import { dateLabel, pct } from "@/lib/format";
+import { appNow } from "@/lib/clock";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
   const user = await requireUser();
   const [pf, dates] = await Promise.all([portfolio(user.id), modelDates(120)]);
   const codes = pf.holdings.map((h) => h.code);
-  const today = kstNow().ymd;
+  const today = kstNow(await appNow()).ymd;
   const t = sp.d && /^\d{8}$/.test(sp.d) ? sp.d : dates[0];
   const has = t ? dates.includes(t) : false;
   const i = t ? dates.indexOf(t) : -1;
@@ -60,7 +62,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
                 <b>{t ? dateLabel(isoDay(t)) : ""}</b>
                 {next ? <Link href={`/saved?d=${next}`} aria-label="다음 날짜">›</Link> : <span className="off">›</span>}
               </div>
-              <CalendarSheet selected={t ?? dates[0]} today={today} marks={marks} records={dates} />
+              <CalendarSheet selected={t ?? dates[0]} today={today} marks={marks} records={dates} closed={closedDays()} />
             </div>
             <div className="dstrip">
               {strip.map((d) => d <= today ? (
@@ -73,10 +75,10 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
 
             {!has ? (
               <section className="pcard noday">
-                <span className="moon" aria-hidden>{t && (isWeekend(t) || KRX_CLOSED[t]) ? "☾" : "–"}</span>
-                <b>{t && (isWeekend(t) || KRX_CLOSED[t]) ? "이날은 장이 열리지 않았어요" : "이날은 기록이 없어요"}</b>
-                {t && KRX_CLOSED[t] ? <p className="hname">{KRX_CLOSED[t][0] === "공휴일" ? "공휴일" : "증시 휴장"} · {KRX_CLOSED[t][1]}</p> : null}
-                <p>{t && (isWeekend(t) || KRX_CLOSED[t]) ? "주말과 휴장일에는 아침 정리와 채점 기록이 없어요." : "서비스를 쓰기 전이거나 예상을 내지 않은 날이에요."}</p>
+                <span className="moon" aria-hidden>{t && (isWeekend(t) || closedName(t)) ? "☾" : "–"}</span>
+                <b>{t && (isWeekend(t) || closedName(t)) ? "이날은 장이 열리지 않았어요" : "이날은 기록이 없어요"}</b>
+                {t && closedName(t) ? <p className="hname">{closedName(t)![0] === "공휴일" ? "공휴일" : "증시 휴장"} · {closedName(t)![1]}</p> : null}
+                <p>{t && (isWeekend(t) || closedName(t)) ? "주말과 휴장일에는 아침 정리와 채점 기록이 없어요." : "서비스를 쓰기 전이거나 예상을 내지 않은 날이에요."}</p>
                 {near ? <Link href={`/saved?d=${near}`} className="nearlink">가장 가까운 거래일 · {dateLabel(isoDay(near))} ›</Link> : null}
               </section>
             ) : (
@@ -94,7 +96,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
 
                 <section className="pcard">
                   <div className="rowh"><b>그날의 채점</b><span>{m?.check ? "09:00 시가 기준" : "채점 전"}</span></div>
-                  {!m?.check ? <p className="sline2">{t === today ? "오늘은 09:05에 실제 시가로 채점해요." : "이 날은 채점 기록이 없어요."}</p> : !rows.length ? <p className="sline2">내 보유 종목 중 채점된 종목이 없어요.</p> : (
+                  {!m?.check ? <p className="sline2">{t === today ? `오늘은 ${marketDay(today)?.openAt || "09:00"} 시가가 나오면 바로 채점해요.` : "이 날은 채점 기록이 없어요."}</p> : !rows.length ? <p className="sline2">내 보유 종목 중 채점된 종목이 없어요.</p> : (
                     <>
                       <p className="score"><b>{inN} / {rows.length}</b> 종목이 예상 범위 안에서 열렸어요</p>
                       <table className="ctab">

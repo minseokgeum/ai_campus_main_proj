@@ -10,9 +10,10 @@ export function Layer({ children }: { children: ReactNode }) {
   return ready ? createPortal(children, document.body) : null;
 }
 
-export function Sheet({ trigger, title, sub, kicker, children, confirm, className, close = "x", center, cancel }: {
+export function Sheet({ trigger, title, sub, kicker, children, confirm, className, close = "x", center, cancel, xToo }: {
   trigger: ReactNode; title: string; sub?: string; kicker?: ReactNode; children: ReactNode; confirm?: string; className?: string;
   close?: "x" | "text" | "none";
+  xToo?: boolean;   // 확인 단추가 있어도 ✕를 함께 둔다(피그마 812:1824)
   center?: boolean; cancel?: string;   // 가운데 작은 확인 창(피그마 539:6276 로그아웃 확인): 취소 단추 + children(실행 단추)   // 닫기 모양: ✕ · '닫기' 글자 · 없음(바깥을 누르면 닫힘)
 }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +41,7 @@ export function Sheet({ trigger, title, sub, kicker, children, confirm, classNam
             <i className="grab" />
             <div className="sheet-head">
               <div>{kicker}<h2>{title}</h2>{sub ? <p>{sub}</p> : null}</div>
-              {confirm || close === "none" ? null : close === "text" ? <button type="button" className="txt" onClick={() => setOpen(false)}>닫기</button>
+              {(confirm && !xToo) || close === "none" ? null : close === "text" ? <button type="button" className="txt" onClick={() => setOpen(false)}>닫기</button>
                 : <button type="button" className="x" aria-label="닫기" onClick={() => setOpen(false)}>✕</button>}
             </div>
             <div className="sheet-body">{children}</div>

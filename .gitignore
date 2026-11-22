@@ -60,6 +60,14 @@ __pycache__/
 *.png
 *.html
 
+# 고객 화면(web) 빌드에 필요한 설정과 기준 자료는 올린다(2026-11-22)
+!web/package.json
+!web/package-lock.json
+!web/tsconfig.json
+!web/vercel.json
+!web/data/*.json
+!web/data/special_days.csv
+
 # 팀에서 공유할 SQL 파일이 있다면 필요한 파일만 예외 처리
 # !schema.sql
 

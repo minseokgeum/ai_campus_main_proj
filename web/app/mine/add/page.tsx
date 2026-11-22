@@ -7,11 +7,11 @@ import { portfolio, savePortfolio, UNIVERSE } from "@/lib/portfolio";
 async function save(form: FormData) {
   "use server";
   const user = await requireUser();
-  const items = JSON.parse(String(form.get("items") ?? "[]")) as { code: string; qty: number }[];
+  const items = JSON.parse(String(form.get("items") ?? "[]")) as { code: string; qty: number; avg?: number | null }[];
   const pf = await portfolio(user.id);
-  const merged = new Map<string, number>([...pf.holdings.map((h) => [h.code, h.qty] as [string, number]), ...pf.watch.map((c) => [c, 0] as [string, number])]);
-  for (const x of Array.isArray(items) ? items.slice(0, 50) : []) merged.set(x.code, x.qty);
-  await savePortfolio(user.id, [...merged.entries()].map(([code, qty]) => ({ code, qty })));
+  const merged = new Map<string, { qty: number; avg?: number | null }>([...pf.holdings.map((h) => [h.code, { qty: h.qty }] as [string, { qty: number }]), ...pf.watch.map((c) => [c, { qty: 0 }] as [string, { qty: number }])]);
+  for (const x of Array.isArray(items) ? items.slice(0, 50) : []) merged.set(x.code, { qty: x.qty, avg: x.avg ?? null });
+  await savePortfolio(user.id, [...merged.entries()].map(([code, v]) => ({ code, ...v })));
   redirect("/mine");
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
+import { DemoBar } from "@/components/demobar";
 
 const kr = Noto_Sans_KR({ weight: ["400", "500", "700"], subsets: ["latin"], variable: "--font-kr", display: "swap" });
 
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" className={kr.variable}>
       <body>
-        <div className="app">{children}</div>
+        <div className="app"><DemoBar />{children}</div>
       </body>
     </html>
   );

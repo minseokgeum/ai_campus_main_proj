@@ -1,0 +1,87 @@
+{
+ "114090": {
+  "name": "GKL",
+  "sector": "호텔,레저",
+  "market": "KOSPI"
+ },
+ "009540": {
+  "name": "HD한국조선해양",
+  "sector": "조선",
+  "market": "KOSPI"
+ },
+ "105560": {
+  "name": "KB금융",
+  "sector": "은행",
+  "market": "KOSPI"
+ },
+ "383800": {
+  "name": "LX홀딩스",
+  "sector": "상사,자본재",
+  "market": "KOSPI"
+ },
+ "005490": {
+  "name": "POSCO홀딩스",
+  "sector": "철강",
+  "market": "KOSPI"
+ },
+ "000660": {
+  "name": "SK하이닉스",
+  "sector": "반도체",
+  "market": "KOSPI"
+ },
+ "004370": {
+  "name": "농심",
+  "sector": "필수소비재",
+  "market": "KOSPI"
+ },
+ "003490": {
+  "name": "대한항공",
+  "sector": "운송",
+  "market": "KOSPI"
+ },
+ "068270": {
+  "name": "셀트리온",
+  "sector": "건강관리",
+  "market": "KOSPI"
+ },
+ "257720": {
+  "name": "실리콘투",
+  "sector": "소매(유통)",
+  "market": "KOSDAQ"
+ },
+ "090430": {
+  "name": "아모레퍼시픽",
+  "sector": "화장품,의류",
+  "market": "KOSPI"
+ },
+ "105840": {
+  "name": "우진",
+  "sector": "기계",
+  "market": "KOSPI"
+ },
+ "259960": {
+  "name": "크래프톤",
+  "sector": "소프트웨어",
+  "market": "KOSPI"
+ },
+ "087010": {
+  "name": "펩트론",
+  "sector": "건강관리",
+  "market": "KOSDAQ"
+ },
+ "352820": {
+  "name": "하이브",
+  "sector": "미디어,교육",
+  "market": "KOSPI"
+ },
+ "042700": {
+  "name": "한미반도체",
+  "sector": "반도체",
+  "market": "KOSPI"
+ },
+ "012450": {
+  "name": "한화에어로스페이스",
+  "sector": "상사,자본재",
+  "market": "KOSPI"
+ }
+}
