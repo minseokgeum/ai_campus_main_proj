@@ -113,14 +113,15 @@ export function TreeMap({ stocks, idle }: { stocks: MapStock[]; idle?: string })
   const groups = bySec.length > RULES.maxSectors
     ? [...bySec.slice(0, RULES.maxSectors - 1), { sector: "그 외 업종", list: bySec.slice(RULES.maxSectors - 1).flatMap((g) => g.list), value: bySec.slice(RULES.maxSectors - 1).reduce((a, g) => a + g.value, 0), others: bySec.length - RULES.maxSectors + 1 }]
     : bySec;
-  const secBoxes = layout(groups, { x: 0, y: 0, w: W, h: H });
+  // 간격 G는 칸과 칸 사이에만: 폭·높이에 G를 더한 판에 나눈 뒤 칸마다 G를 빼면 오른쪽·아래 끝도 지도 끝에 딱 맞는다(2026-11-22, 예전엔 끝에도 G가 남아 좌우 여백이 달랐다)
+  const secBoxes = layout(groups, { x: 0, y: 0, w: W + G, h: H + G });
   const pct = (v: number, t: number) => `${(v / t) * 100}%`;
 
   return (
     <>
       <div className="tmap" style={{ aspectRatio: `${W} / ${H}` }}>
         {secBoxes.map((g) => {
-          const inner: Box = { x: 0, y: L, w: g.w - G, h: g.h - G - L };
+          const inner: Box = { x: 0, y: L, w: g.w, h: g.h - L };   // 종목 칸도 같은 방식(칸마다 G를 빼서 업종 칸 끝에 맞춤)
           const isRestSec = g.sector === "그 외 업종";
           const cells: Cell[] = isRestSec
             ? [{ ...inner, kind: "sector", stocks: g.list, value: g.value, label: `${(g as { others?: number }).others ?? 0}개 업종 · ${g.list.length}종목` }]
@@ -194,7 +195,7 @@ export function MapLegend({ idle }: { idle?: boolean }) {
   return (
     <>
       <div className="tleg"><span>−2%</span><span className="sw">{SCALE.map((c) => <i key={c} style={{ background: c }} />)}</span><span>+2%</span><i className="sep" /><span>크기 = 보유 금액</span></div>
-      <div className="tleg"><i className="dash" /><span>흐릴수록 방향이 불확실해요</span><i className="sep" /><em>소식</em><span>밤사이 소식 수</span><i className="sep" /><i className="hatch" /><span>범위 없음</span></div>
+      <div className="tleg"><span className="ti"><i className="dash" />흐릴수록 방향이 불확실해요</span><i className="sep" /><span className="ti"><em>소식</em>밤사이 소식 수</span><i className="sep" /><span className="ti"><i className="hatch" />범위 없음</span></div>
     </>
   );
 }

@@ -66,3 +66,28 @@ export async function demoPresets(): Promise<{ key: string; label: string; sub: 
   if (isWeekend(s)) out.push({ key: "wkd", label: "주말", sub: "장이 열리지 않는 날(토 10:00)", at: `${s}1000` });
   return out;
 }
+
+export type DemoDay = { t: string; label: string; news: boolean; ai: boolean };
+/** 시연 시각 고르기의 날짜 목록(2026-11-22): 아침 카드가 있는 거래일(최근 limit일, 지금보다 앞) + 그날 뉴스·AI 요약이 있는지.
+ *  뉴스는 수집을 시작한 다음 날 아침부터(밤사이 기사), AI 요약은 news.hot_macro에 그날 줄이 있을 때 */
+export async function demoDays(limit = 60): Promise<DemoDay[]> {
+  const real = kstNow();
+  try {
+    const pool = db();
+    const [c, n, a] = await Promise.all([
+      pool.query("select t from model.cards where status = 'ok' and t <= $2 group by t order by t desc limit $1", [limit, real.ymd]),
+      pool.query("select to_char(min((first_seen_utc at time zone 'Asia/Seoul')::date), 'YYYYMMDD') as d from items").catch(() => ({ rows: [] as { d: string }[] })),
+      pool.query("select replace(date, '-', '') as d from news.hot_macro").catch(() => ({ rows: [] as { d: string }[] })),
+    ]);
+    const newsFrom = n.rows[0]?.d as string | undefined;
+    const ai = new Set(a.rows.map((r) => String(r.d)));
+    const fmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "long", day: "numeric", weekday: "short" });
+    return c.rows.map((r) => {
+      const t = String(r.t);
+      const parts = Object.fromEntries(fmt.formatToParts(new Date(`${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6)}T12:00:00+09:00`)).map((x) => [x.type, x.value]));
+      return { t, label: `${parts.month} ${parts.day}일 (${parts.weekday})`, news: !!newsFrom && t > newsFrom, ai: ai.has(t) };
+    });
+  } catch {
+    return [];
+  }
+}

@@ -1,6 +1,9 @@
 // 홈(피그마 '홈 v2' 464:8207, 보유 없음 465:8693, 07:30 전 465:8339, 주말·휴장 465:8516, 일부 못 받아옴 465:8869).
 // 내 주식 변화·지도는 아침 모델, 뉴스 브리핑은 LLM 요약, 미국 시장은 us_market, 야간선물은 야간 1분봉(모두 서버 DB).
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { ViewToggle } from "@/components/viewtoggle";
+import { AllView } from "@/components/allview";
 import { BottomNav } from "@/components/ui";
 import { NightChart, signColor } from "@/components/model";
 import { MaskToggle, Sheet } from "@/components/sheet";
@@ -11,14 +14,14 @@ import { MapLegend, TreeMap } from "@/components/treemap";
 import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
 import { nightNews, byStock, bySector, newsBuckets } from "@/lib/news";
-import { aiBrief } from "@/lib/summary";
-import { dayModel, isoDay, night as nightOf } from "@/lib/model";
+import { aiBrief, companyReasons } from "@/lib/summary";
+import { dayModel, isoDay, night as nightOf, recordData } from "@/lib/model";
 import { account, buildRows, P } from "@/lib/night";
 import { md, US, usLatest } from "@/lib/market";
 import { lastCloses } from "@/lib/prices";
 import { addDays, kstNow, minutesTo0730 } from "@/lib/calendar";
 import { isWeekend } from "@/lib/calendar";
-import { closedReason, isClosedDay, marketDay, nextOpenDay } from "@/lib/marketdays";
+import { checkTime, closedReason, isClosedDay, marketDay, nextOpenDay } from "@/lib/marketdays";
 import { dateLabel, pct, swon } from "@/lib/format";
 import { appNow } from "@/lib/clock";
 
@@ -65,6 +68,14 @@ export default async function Home() {
   const focus = { codes: acct.holdings.map((h) => h.code), names: Object.fromEntries(acct.holdings.map((h) => [h.code, uStock(h.code)?.name ?? h.code])),
     sectors: [...mySectors].sort((a, b) => (secNews.get(b)?.length ?? 0) - (secNews.get(a)?.length ?? 0)) };
   // 예상 전(07:30 전·주말·휴장일) 지도: 크기만 보유 금액, 칸에는 '07:30 공개'·'쉬는 날'(피그마 465:8339 · 465:8516)
+  // '한 화면에 보기'(원래 버전처럼 밤사이 정보를 한 화면에): 쿠키로 기억. 오늘 예상이 나온 때만 그 화면, 그 밖의 상태(07:30 전·휴장·지연)는 나눠 보기와 같다
+  const allMode = (await cookies()).get("home_view")?.value === "all";
+  const allOn = allMode && fresh && acct.holdings.length > 0;
+  const [reasons, rec] = allOn ? await Promise.all([companyReasons(brief.date), recordData(acct.holdings.map((h) => h.code), 20)]) : [new Map(), null];
+  const recN = rec ? [...rec.cells.values()].flatMap((m) => [...m.values()]).filter((c) => c.in80 != null) : [];
+  const slot0811 = m?.card?.slot === "0811" && (marketDay(today)?.premarket ?? true);
+  const steps = [{ t: "06:00", label: "야간장 마감", done: true }, { t: "07:30", label: "예상", done: true },
+    { t: "08:11", label: "장전 거래", done: slot0811 }, { t: m?.check?.checkedAt ?? checkTime(today)[0], label: "채점", done: !!m?.check }];
   const idleStocks = acct.holdings.map((h) => { const u = uStock(h.code); return { code: h.code, name: u?.name ?? h.code, sector: u?.sector ?? "기타", value: h.qty * (px.get(h.code)?.close ?? 0), pct: null, grade: null, l80: null, u80: null, news: news.get(h.code)?.length ?? 0 }; });
 
   return (
@@ -76,6 +87,13 @@ export default async function Home() {
         <Link href="/alerts" className="bell" aria-label="알림"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15L6 17Zm4 3h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>{fresh && nWatch ? <i /> : null}</Link>
       </header>
       <main className="scroll home">
+        {acct.holdings.length ? <ViewToggle all={allMode} /> : null}
+        {allOn ? (
+          <AllView rows={rows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons}
+            lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
+            us={us} night={night} buckets={buckets} nightLive={now.hour >= 18}
+            briefSlot={!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : null} />
+        ) : <>
         {!acct.holdings.length ? (
           <div className="emptycard">
             <span className="plus">+</span>
@@ -161,6 +179,7 @@ export default async function Home() {
           </section>
         ) : null}
         <p className="fine">모델 추정이며 투자 권유가 아니에요.</p>
+        </>}
       </main>
       <BottomNav active="home" />
     </>

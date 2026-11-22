@@ -5,7 +5,9 @@ import { BottomNav } from "@/components/ui";
 import { Sheet } from "@/components/sheet";
 import { logout, requireUser } from "@/lib/auth";
 import { portfolio } from "@/lib/portfolio";
-import { demoAt, demoPresets, isDemoUser } from "@/lib/clock";
+import { demoAt, demoDays, demoPresets, isDemoUser } from "@/lib/clock";
+import { kstNow } from "@/lib/calendar";
+import { DemoPicker } from "@/components/demopicker";
 
 async function doLogout() {
   "use server";
@@ -18,6 +20,8 @@ export default async function My() {
   const pf = await portfolio(user.id);
   // 시연 계정만: 피그마의 시간대별 상태를 지난 시각으로 돌려 보기(07:30 전·장 전·장 후·저녁·월요일·주말)
   const [demo, presets, at] = await Promise.all([isDemoUser(), demoPresets(), demoAt()]);
+  const days = demo ? await demoDays() : [];
+  const real = kstNow();
   const atStamp = at ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(at).replace(/\D/g, "") : null;
   return (
     <>
@@ -32,7 +36,9 @@ export default async function My() {
                 <b>{p.label}</b><small>{Number(p.at.slice(4, 6))}/{Number(p.at.slice(6, 8))} {p.at.slice(8, 10)}:{p.at.slice(10)} · {p.sub}</small>
               </a>
             ))}
-            <a href="/demo-time?at=off&back=/" className={!at ? "on" : ""}><b>지금</b><small>실제 현재 시각</small></a>   {/* 보통 링크: 미리 불러오기가 시각을 바꾸지 않게 */}
+            <a href="/demo-time?at=off&back=/" className={!at ? "on" : ""}><b>지금</b><small>실제 현재 시각</small></a>
+            <DemoPicker days={days} current={atStamp} today={real.ymd} nowHm={`${String(real.hour).padStart(2, "0")}${String(real.minute).padStart(2, "0")}`}
+              className="dpk-open" trigger={<><b>날짜·시각 직접 고르기 ›</b><small>지난 거래일의 아침을 그대로 다시 보기</small></>} />   {/* 보통 링크: 미리 불러오기가 시각을 바꾸지 않게 */}
           </section>
         ) : null}
         <nav className="menu">

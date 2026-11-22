@@ -83,3 +83,14 @@ export async function aiBrief(date: string): Promise<Brief> {
 }
 
 export { IMPACT_LABEL } from "@/lib/format";
+
+/** 종목 이유 한 문장(news.company_reason, news_company_reason.ipynb가 매일 07:00 만듦): 종목코드 → 문장·관계사 문장·근거 기사.
+ *  홈 '한 화면에 보기'의 "예상과 밤사이 소식, 같이 읽기" 자리. 표가 없거나 그날 줄이 없으면 빈 값 */
+export async function companyReasons(date: string): Promise<Map<string, { line: string; relation: string | null; key: string | null }>> {
+  const out = new Map<string, { line: string; relation: string | null; key: string | null }>();
+  try {
+    const { rows } = await db().query("select company_code, line, relation_line, key from news.company_reason where date = $1 and coalesce(line, '') <> ''", [date]);
+    for (const r of rows) out.set(r.company_code, { line: r.line, relation: r.relation_line ?? null, key: r.key ?? null });
+  } catch { /* 표가 아직 없으면 빈 값 */ }
+  return out;
+}
