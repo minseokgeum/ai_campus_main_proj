@@ -1150,3 +1150,5 @@ html[data-mask] .sline .sv.amt::after { left: auto; right: 0; }
 .tleg span, .tleg em { white-space: nowrap; }
 .tleg i { flex: none; }
 .tleg .ti { display: inline-flex; align-items: center; gap: 6px; }   /* 아이콘과 글자를 한 묶음으로 넘긴다 */
+/* 밤사이 종목 줄 셋째 줄의 '부정·긍정' 라벨: 종목 이름 규칙(.nrow .nm b, 14px)이 번져 커지던 것 — 옆 숫자와 같은 11px로(2026-11-22) */
+.nrow .nm .nl3 b { font-size: inherit; overflow: visible; }
