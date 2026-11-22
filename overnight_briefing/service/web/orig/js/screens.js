@@ -711,7 +711,7 @@ export function firstLook(m, d, st) {
     const dir = done ? "" : dn === n ? `${n}종목 모두 어제보다 낮게 시작할 것으로 보여요.` : dn === 0 ? `${n}종목 모두 어제보다 높게 시작할 것으로 보여요.` : `${n}종목 중 ${dn}종목은 낮게, ${n - dn}종목은 높게 보여요.`;
     const t = done ? `${jo(top.s.name, "이", "가")} 가장 크게 움직였어요 · ${man(top.yAmt)}` : `${jo(top.s.name, "이", "가")} 가장 크게 움직여요 · 예상 ${man(amtOf(m, top))}`;
     const sub = done ? `07:30 예상 ${man(top.Hamt)}, 노란 막대(${man(top.lo)} ~ ${man(top.hi)}) ${top.s.inb ? "안에서" : "밖에서"} 시작했어요.`
-      : `이 종목 금액은 노란 막대 안이면 ${man(top.lo)} ~ ${man(top.hi)}이에요. ${dir}`;
+      : `노란 막대 안에서 시작하면 이 종목 금액 변화는 ${man(top.lo)} ~ ${man(top.hi)}이에요. ${dir}`;
     boxes.push(row("내", "a", `<b>${esc(t)}</b><small>${esc(sub)}</small>`, `data-act="jump" data-code="${top.s.code}"`, "money"));
   }
   // ② 확인할 때: 지금 확인할 표시, 없으면 다음에 무엇을 언제 볼지
@@ -729,17 +729,17 @@ export function firstLook(m, d, st) {
       body = `<b>확인할 표시 ${ck.length}종목</b><small>${esc(why + evTxt)}</small>${mini}${ck.length > 3 ? `<small class="fl-more">${esc(ck.slice(3).map((x) => x.r.s.name).join("·"))} 더</small>` : ""}`;
     } else if (act) {
       const got = held.filter((r) => r.s.y != null).length;
-      body = `<b>${got}종목 모두 예상대로 시작했어요</b><small>${esc("시작가를 받은 종목 기준이에요. 날마다의 결과는 '기록'에 쌓여요." + evTxt)}</small>`;
+      body = `<b>시작가가 나온 ${got}종목 모두 예상대로 시작했어요</b><small>${esc("아침 예상 가격대 안에서 시작했다는 뜻이에요. 날마다의 결과는 '기록'에 쌓여요." + evTxt)}</small>`;
     } else if (st.slot === "0730" && !noPre) {
-      const top2 = [...held].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt)).slice(0, 2), tot = held.reduce((a, r) => a + Math.abs(r.Hamt), 0);
-      const sh = tot ? Math.round((100 * top2.reduce((a, r) => a + Math.abs(r.Hamt), 0)) / tot) : 0;
-      body = `<b>${esc(`08:11에 다시 볼 것: ${top2.map((r) => r.s.name).join("·")}`)}</b><small>${esc(`내 종목 금액 변화의 ${sh}%가 걸린 종목이에요. 8시 개장 전 거래가 노란 막대 밖으로 나오면 여기 맨 위에 알려 드려요.` + evTxt)}</small>`;
+      const top2 = [...held].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt)).slice(0, 2);
+      body = `<b>${esc(`08:11에 다시 볼 것: ${top2.map((r) => r.s.name).join("·")}`)}</b><small>${esc(`예상 금액 변화가 가장 큰 ${top2.length > 1 ? "두 종목" : "종목"}이에요. 08:11 화면에서는 개장 전 거래가 노란 막대 밖인 종목과 거래가 없는 종목을 이 칸 맨 위에 나눠 보여 드려요.` + evTxt)}</small>`;
     } else if (noPre) {
       body = `<b>오늘은 개장 전 거래가 없어요</b><small>${esc(`개장은 ${open}이에요. 07:30 예상이 개장 전 마지막 숫자예요.` + evTxt)}</small>`;
     } else {
       const gr = held.filter((r) => r.s.grade && r.s.grade.g != null), lv = (k) => gr.filter((r) => r.s.grade.level === k).length;
       const mix = ["높음", "보통", "낮음"].map((k) => (lv(k) ? `${k} ${lv(k)}` : "")).filter(Boolean).join(" · ");
-      body = gr.length ? `<b>개장 전 거래는 ${gr.length}종목 모두 예상대로예요</b><small>${esc(`믿을 정도 ${mix}. 9시 시작가가 나오면 예상과 나란히 보여 드려요.` + evTxt)}</small>`
+      const none = held.length - gr.length;
+      body = gr.length ? `<b>개장 전 거래가 있던 ${gr.length}종목 모두 예상대로예요</b><small>${esc(`아침 예상 가격대 안에서 거래되고 있어요. 시작가 방향 믿을 정도: ${mix}.${none ? ` 개장 전 거래가 없던 ${none}종목은 07:30 예상 그대로예요.` : ""}` + evTxt)}</small>`
         : `<b>개장 전 거래가 있었던 종목이 없어요</b><small>${esc("07:30 예상 그대로예요." + evTxt)}</small>`;
     }
     boxes.push(row(ic, ck.length ? "w" : "", body, "", "check"));
