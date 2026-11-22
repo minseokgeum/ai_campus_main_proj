@@ -6,7 +6,10 @@
   summaries: 지금 볼 브리핑 범위(전날 23:00 ~ 그날 05:45에 수집된 기사, 한국)로 시장 요약·제목·업종·종목 요약 → news_to_db
   ko       : news_ko_summary 실시간 처리(WATCH_RUN). 추출된 기사마다 뉴스 상세용 한국어 번역(comparison_summary를 줄글 한 단락으로)을 미리 만든다
   sync     : news_to_db만(기사 한국어 한 줄·요약을 DB로)
-extract·track·ko는 서버 systemd가 계속 켜 두고(꺼지면 다시 켬), summaries·sync는 cron이 부른다.
+  collect  : news_collect 연속 수집(구글 뉴스 RSS 검색 → DB). 멈출 때까지 돈다(2026-11-21 맥에서 서버로 옮김)
+  relation : news_company_relation(종목–해외 상대 관계 한 문장). 검색어 연결표(news.term_links)가 바뀐 짝만 새로 만든다 → news_to_db. 연결표를 다시 올렸을 때 손으로
+  reason   : news_company_reason(종목마다 밤사이 기사 한 문장, 관계사 기사면 관계 문장) 지금 브리핑 범위로 → news_to_db. cron 07:00(06:20 아침 카드 뒤)
+extract·track·ko·collect는 서버 systemd가 계속 켜 두고(꺼지면 다시 켬), summaries·sync는 cron이 부른다.
 """
 import datetime as dt
 import json
@@ -29,6 +32,20 @@ def run(name, patch, stop_at=None):
             break
         exec(c, g)
     print(f'=== {name} {time.time() - t0:.0f}초', flush=True)
+
+
+COLLECT_SKIP = ['# ── 시험:', '# ── 최근 24시간에 쌓인 것', '# ── 검색 문자열 예', '# ── 24시간 수집']   # 수집 노트북에서 손으로 돌리는 시험 칸
+
+
+def collect():
+    """news_collect 칸을 (시험 칸만 빼고) 실행한 뒤 회차 없는 연속 수집을 멈출 때까지 돌린다. 막힘 알림은 노트북이 텔레그램으로 보낸다."""
+    nb = json.load(open('news_collect.ipynb', encoding='utf-8'))
+    g = {'display': lambda *a, **k: None, '__name__': 'nb'}
+    for c in nb['cells']:
+        src = ''.join(c['source'])
+        if c['cell_type'] == 'code' and not any(k in src for k in COLLECT_SKIP):
+            exec(src, g)
+    g['run_collect'](g['TERMS'], until=None)
 
 
 BRIEF_START = dt.time(23, 0)    # 브리핑 범위 시작: 전날 23:00(한국, 수집 시각 기준)
@@ -64,6 +81,16 @@ if __name__ == '__main__':
                 print(f'!!! {nb} 실패: {type(err).__name__}: {str(err)[:300]}', flush=True)
         run('news_to_db', {})
     elif step == 'sync':
+        run('news_to_db', {})
+    elif step == 'collect':
+        collect()
+    elif step == 'relation':
+        run('news_company_relation', dict(RUN_LLM=True))
+        run('news_to_db', {})
+    elif step == 'reason':
+        s, e = brief_window()
+        print('브리핑 범위', s, '~', e, flush=True)
+        run('news_company_reason', dict(RUN_LLM=True, START_KST=s, END_KST=e, TIME_COLUMN=TIME_COLUMN))
         run('news_to_db', {})
     else:
         raise SystemExit(f'모르는 단계: {step}')
