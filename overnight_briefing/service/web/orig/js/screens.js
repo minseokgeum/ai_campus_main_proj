@@ -684,7 +684,7 @@ export function topNews(m, d) {
   d.news.forEach((n) => n.stocks.filter((s) => s.code in val).forEach((s) => {
     const rank = n.tier === "규칙 확인" ? 3 : TRADE.test(n.relation || "") ? 2 : 4;
     c.push({ key: "r" + n.id, code: s.code, name: s.name, rank, v: val[s.code], act: `data-act="news" data-id="${n.id}"`,
-      who: `${short(n.us)}(${n.relation})`, title: gist(n) || n.headline, ai: false, meta: hhmm(n, d.T) });
+      who: /\(/.test(n.relation || "") ? `${short(n.us)} · ${n.relation}` : `${short(n.us)}(${n.relation})`, title: gist(n) || n.headline, ai: false, meta: hhmm(n, d.T) });
   }));
   const seen = new Set(), keys = new Set(), out = [];
   c.sort((a, b) => a.rank - b.rank || b.v - a.v).forEach((x) => { if (out.length < 2 && !seen.has(x.code) && !keys.has(x.key)) { seen.add(x.code); keys.add(x.key); out.push(x); } });
