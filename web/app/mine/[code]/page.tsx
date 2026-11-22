@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
 import { tierOf } from "@/lib/model";
 import { bandHistory, closes, filings, intraday, lastCloses } from "@/lib/prices";
-import { DayChart } from "@/components/daychart";
+import { avgPlace, DayChart } from "@/components/daychart";
 import { AutoRefresh } from "@/components/autorefresh";
 import { Sheet } from "@/components/sheet";
 import { stockNewsDays } from "@/lib/news";
@@ -58,8 +58,10 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
   ].sort((a, b) => b.t.localeCompare(a.t));
   const totalVal = pf.holdings.reduce((a, x) => a + x.qty * (lc.get(x.code)?.close ?? 0), 0);
   const last = px[px.length - 1], first = px[0];
-  const value = h && last ? h.qty * last.c : null;
-  const pnl = h?.avg && last ? h.qty * (last.c - h.avg) : null;
+  // 평가 금액·손익은 기간 단추와 상관없이 최근 종가로(2026-11-22: '1일'은 하루치 종가만 읽어 주말·장 전엔 비어서 "—"가 나왔음). 비중 계산과 같은 값
+  const cur = lc.get(code)?.close ?? last?.c ?? null;
+  const value = h && cur != null ? h.qty * cur : null;
+  const pnl = h?.avg && cur != null ? h.qty * (cur - h.avg) : null;
   const scored = hist.filter((x) => x.in80 != null);
   const inN = scored.filter((x) => x.in80).length;
   const ratios = hist.filter((x) => x.x != null && Math.abs(x.x) >= 0.003).map((x) => x.h / x.x!).sort((a, b) => a - b);
@@ -83,7 +85,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
           <section className="pcard">
             <div className="vrow">
               <div><span>평가 금액</span><b className="amt tot">{value != null ? won(value) : "—"}</b></div>
-              <div className="r"><span>평가 손익</span>{pnl != null ? <b style={{ color: signColor(pnl) }}><span className="amt">{swon(pnl)}</span> ({pct(((last!.c / h.avg! - 1) * 100))})</b> : <b className="muted">평단을 넣으면 계산해요</b>}</div>
+              <div className="r"><span>평가 손익</span>{pnl != null ? <b style={{ color: signColor(pnl) }}><span className="amt">{swon(pnl)}</span> ({pct(((cur! / h.avg! - 1) * 100))})</b> : <b className="muted">평단을 넣으면 계산해요</b>}</div>
             </div>
             <div className="vlinks"><Link href={`/mine/${code}/edit`}>수량·평단 수정 ›</Link><Link href={`/mine/${code}/edit?watch=1`}>관심으로 옮기기 ›</Link></div>
           </section>
@@ -120,7 +122,11 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
           {px.length > 1 ? <div className="paxis"><span>{md(first!.d)}</span><span>{md(last!.d)}</span></div> : null}
           </>}
           <div className="ranges">{RANGES.map((x) => <Link key={x[0]} href={`/mine/${code}?r=${x[0]}`} className={x[0] === range[0] ? "on" : ""}>{x[1]}</Link>)}</div>
-          {h?.avg && (range[0] === "1d" ? day?.points.length : px.length > 1) ? <p className="avgnote"><i aria-hidden />내 평단 <b>{won(h.avg)}</b></p> : null}   {/* 차트 안 글자가 잘려서 기간 단추 아래 줄로(2026-11-22 팀원 개선 사항). 점선은 차트에 그대로 */}
+          {h?.avg && (range[0] === "1d" ? day?.points.length : px.length > 1) ? (() => {
+            // 1일에서 평단이 그날 가격과 멀면 선을 그리지 않고 글로만(점선 표시 빼고 '그래프보다 위·아래')
+            const place = range[0] === "1d" && day ? avgPlace(day, h.avg) : "in";
+            return <p className="avgnote">{place === "in" ? <i aria-hidden /> : null}내 평단 <b>{won(h.avg)}</b>{place === "top" ? " · 그래프보다 위" : place === "bottom" ? " · 그래프보다 아래" : ""}</p>;
+          })() : null}   {/* 차트 안 글자가 잘려서 기간 단추 아래 줄로(2026-11-22 팀원 개선 사항). 점선은 차트에 그대로 */}
         </section>
 
         <section className="pcard">

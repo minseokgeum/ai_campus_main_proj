@@ -35,8 +35,10 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
   const mark = (d: string) => {
     const c = checks.get(d);
     if (!c?.length) return undefined;
-    const out = c.filter((x) => !x.in80).length;
-    return out === 0 ? "ok" : out === 1 ? "one" : "many";
+    // 점 색은 그날 채점한 종목 중 예상 범위 안에 든 비율로(2026-11-22: 예전엔 벗어난 종목 수 0·1·2개 이상이라 보유 종목이 많을수록 주황이 잦았음).
+    // 노란 띠가 10번 중 8번을 담는 범위라 80% 이상이면 예상대로, 60% 미만이면 주황
+    const r = c.filter((x) => x.in80).length / c.length;
+    return r >= 0.8 ? "ok" : r >= 0.6 ? "one" : "many";
   };
   const marks = Object.fromEntries(dates.map((d) => [d, mark(d)]).filter(([, v]) => v)) as Record<string, "ok" | "one" | "many">;
   const m = has ? await dayModel(t!) : null;
@@ -71,7 +73,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
                 </Link>
               ) : <span key={d} className="off"><span>{wd(d)}</span><b>{Number(d.slice(6))}</b><i className="none" /></span>)}
             </div>
-            <div className="legend"><span><i className="ok" />모두 범위 안</span><span><i className="one" />1종목 벗어남</span><span><i className="many" />2종목 이상</span></div>
+            <div className="legend"><span><i className="ok" />80% 이상 범위 안</span><span><i className="one" />60~80%</span><span><i className="many" />60% 미만</span></div>
 
             {!has ? (
               <section className="pcard noday">

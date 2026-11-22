@@ -1,5 +1,5 @@
 "use client";
-// 보관 달력 창(피그마 287:491 · 287:654): 월 이동, 날짜마다 채점 점(모두 범위 안 · 1종목 벗어남 · 2종목 이상), 고른 날짜 보기.
+// 보관 달력 창(피그마 287:491 · 287:654): 월 이동, 날짜마다 채점 점(범위 안 비율 80% 이상 · 60~80% · 60% 미만, 2026-11-22 비율 기준으로 바꿈), 고른 날짜 보기.
 import Link from "next/link";
 import { useState } from "react";
 import { Layer } from "@/components/sheet";
@@ -43,7 +43,7 @@ export function CalendarSheet({ selected, today, marks, records, closed }: { sel
                 ) : <button key={d} type="button" disabled><span className="n">{Number(d.slice(6))}</span>{KRX_CLOSED[d] ? <small>{KRX_CLOSED[d][0]}</small> : <i className="none" />}</button>
               ))}
             </div>
-            <div className="legend"><span><i className="ok" />모두 범위 안</span><span><i className="one" />1종목 벗어남</span><span><i className="many" />2종목 이상</span></div>
+            <div className="legend"><span><i className="ok" />80% 이상 범위 안</span><span><i className="one" />60~80%</span><span><i className="many" />60% 미만</span></div>
             <p className="fine">주말과 휴장일, 아직 오지 않은 날은 기록이 없어요. 오늘({Number(today.slice(4, 6))}/{Number(today.slice(6))})은 테두리로 표시해요.</p>
             <Link href={`/saved?d=${pick}`} className="cta bmore" onClick={() => setOpen(false)}>{label(pick)} 보기</Link>
           </section>

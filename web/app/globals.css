@@ -1242,3 +1242,10 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 .dpk-go { width: 100%; border: 0; background: var(--charcoal); cursor: pointer; }
 .dpk-go:disabled { opacity: 0.4; }
 .dpk-off { min-height: 44px; background: none; border: 0; font: inherit; font-size: 13px; font-weight: 600; color: var(--teal); cursor: pointer; }
+/* 연결 그림 칸(2026-11-22 모양 바꿈): 관계는 칸 둘째 줄, 오른쪽 노란 숫자 = 소식 수, 소식이 난 칸은 연한 노란 바탕. 선 위 글자는 없앰 */
+.lgraph .lgbox { width: 54%; padding: 3px 12px; border-radius: 14px; }
+.lgraph .lgbox.hot { background: #fff4d6; border: 1.5px solid #e0a526; }
+.lgraph .lgbox.hot .lgbtn { padding-right: 34px; }
+.lgraph .lgbox span { color: #66777a; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.lgraph .lgcnt { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); min-width: 26px; height: 24px; padding: 0 7px; box-sizing: border-box; display: grid; place-items: center; border-radius: 12px; background: #f6d36b; color: #4a3800; font-style: normal; font-size: 13px; font-weight: 700; pointer-events: none; }
+.lgraph .lglbl { display: none; }

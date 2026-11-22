@@ -1,12 +1,12 @@
 // 내 종목 연결 그림(디자인 예시 '내 종목 연결 그림' ①②③, 피그마 미국 연결 기업 794:2 · 794:157 · 794:527의 모양): 왼쪽 칸들이 오른쪽 내 종목 칸으로 모인다.
-// 주황 = 밤사이 소식이 난 연결, 회색 = 소식 없음 · 실선 = 직접 관계, 점선 = 업종·테마로 넓게 이어진 것. 자료는 lib/links.ts.
+// 칸 = 이름 · 관계(둘째 줄) · 오른쪽 노란 숫자(밤사이 소식 수), 소식이 난 칸은 연한 노란 바탕. 선: 주황 = 소식이 난 연결, 회색 = 소식 없음 · 실선 = 직접 관계, 점선 = 업종·테마로 넓게 이어진 것. 자료는 lib/links.ts.
 import Link from "next/link";
 import { Sheet } from "@/components/sheet";
 import type { LinkNode } from "@/lib/links";
 import { LangToggle, LinkBox, LinkLang, LinkRow } from "@/components/linkbox";
 
 const ROW = 64, BOX = 52;          // 칸 높이 52px, 칸 사이 12px
-const L = 42, R = 73;              // 선이 시작하는 x(왼쪽 칸 오른쪽 끝)·끝나는 x(내 종목 칸 왼쪽 끝), 너비 %
+const L = 54, R = 73;              // 선이 시작하는 x(왼쪽 칸 오른쪽 끝)·끝나는 x(내 종목 칸 왼쪽 끝), 너비 %. 선 위 글자를 칸 안으로 옮겨 칸을 넓힘(2026-11-22)
 
 /** 연결 그림: 칸 n개(위에서부터) → 내 종목 칸 하나 */
 export function LinkGraph({ name, nodes }: { name: string; nodes: LinkNode[] }) {
@@ -19,15 +19,7 @@ export function LinkGraph({ name, nodes }: { name: string; nodes: LinkNode[] }) 
             stroke={x.n ? "#e0a526" : "#b8c0c3"} strokeWidth={x.n ? 2.5 : 1.5} strokeDasharray={x.direct ? undefined : "5 5"} strokeLinecap="round" />
         ))}
       </svg>
-      {nodes.map((x, i) => {
-        const cy = i * ROW + BOX / 2;
-        return (
-          <div key={x.key}>
-            <LinkBox name={x.name} sub={`${x.kind}${x.n ? ` · 소식 ${x.n}` : ""}`} hot={x.n > 0} terms={x.terms} top={i * ROW} />
-            <span className="lglbl" style={{ top: cy < mid - 1 ? cy - 18 : cy > mid + 1 ? cy + 4 : cy - 18 }}>{x.rel}</span>
-          </div>
-        );
-      })}
+      {nodes.map((x, i) => <LinkBox key={x.key} name={x.name} sub={x.rel} kind={x.kind} n={x.n} terms={x.terms} top={i * ROW} />)}
       <div className="lgme" style={{ top: mid - 30 }} title={name}><b>{name}</b></div>
       <p className="sr">{nodes.map((x) => `${x.name}(${x.kind}, ${x.rel}${x.n ? `, 소식 ${x.n}건` : ""})`).join(", ")}이 {name}과 이어져 있어요.</p>
     </div>
@@ -43,7 +35,7 @@ export function LinkLegend() {
         <span><i />직접 관계</span>
         <span><i className="dash" />업종·테마로 이어짐</span>
       </p>
-      <p className="lgnote">연결은 공시·기사에서 모았어요. 소식 수는 밤사이 그 연결로 들어온 미국 뉴스 수예요. 가 ⇄ A나 칸을 누르면 미국 뉴스 검색어 원문으로 바뀌어요.</p>
+      <p className="lgnote">연결은 공시·기사에서 모았어요. 칸 오른쪽 숫자는 밤사이 그 연결로 들어온 미국 뉴스 수예요. 가 ⇄ A나 칸을 누르면 미국 뉴스 검색어 원문으로 바뀌어요.</p>
     </>
   );
 }

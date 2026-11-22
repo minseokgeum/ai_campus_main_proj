@@ -29,16 +29,19 @@ function useLang(): [boolean, (v: boolean) => void] {
   return [en, setEn];
 }
 
-export function LinkBox({ name, sub, hot, terms, top }: { name: string; sub: string; hot: boolean; terms: string[]; top: number }) {
+/** 칸 하나(2026-11-22 모양 바꿈): 첫 줄 이름, 둘째 줄 관계(고객사·주요 사업 등, 예전엔 선 위 글자), 오른쪽 노란 숫자 = 밤사이 소식 수. 소식이 난 칸은 연한 노란 바탕 */
+export function LinkBox({ name, sub, kind, n, terms, top }: { name: string; sub: string; kind: string; n: number; terms: string[]; top: number }) {
+  const hot = n > 0;
   const [lang, setEn] = useLang();
   const can = terms.length > 0, en = lang && can;
   const text = en ? terms.join(" · ") : name;
   return (
     <div className={`lgbox ${hot ? "hot" : ""} ${en ? `en ${text.length > 22 ? "enlong" : ""}` : text.length > 9 ? "long" : ""}`} style={{ top }}>
       <button type="button" className="lgbtn" disabled={!can} aria-pressed={en}
-        aria-label={en ? `${text}, 미국 뉴스 검색어. 누르면 한글 이름으로` : `${name}, ${sub}. 누르면 검색어 원문으로`} onClick={() => setEn(!en)}>
+        aria-label={`${en ? `${text}, 미국 뉴스 검색어` : `${name}, ${kind}, ${sub}`}${hot ? `, 밤사이 소식 ${n}건` : ""}. 누르면 ${en ? "한글 이름으로" : "검색어 원문으로"}`} onClick={() => setEn(!en)}>
         <b>{text}</b><span>{en ? "미국 뉴스 검색어" : sub}</span>
       </button>
+      {hot ? <em className="lgcnt" aria-hidden>{n}</em> : null}
     </div>
   );
 }
