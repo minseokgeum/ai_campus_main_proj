@@ -531,3 +531,19 @@ details.bulk .btn-line { width: 100%; }
 .fl-news small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--mute); }
 .fl-none { padding: 8px 0 4px; font-size: 13px; color: var(--sub); }
 .hh-card .hh-share { display: block; margin-top: 4px; font-size: 12.5px; font-weight: 600; color: var(--ink2); line-height: 1.45; }
+
+/* 11/22 저녁: 먼저 확인할 것 — 칸 3개(내 돈 · 확인할 때 · 이어진 소식) */
+.look3 { display: grid; gap: 8px; margin-top: 2px; }
+.look3 .l3 { display: grid; grid-template-columns: 32px 1fr 16px; gap: 10px; align-items: start; width: 100%; text-align: left; padding: 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); color: var(--ink); }
+.look3 button.l3 { cursor: pointer; font-size: 13px; }
+.look3 .ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--chip); color: var(--ink2); font-size: 11px; font-weight: 700; }
+.look3 .ic.a { background: var(--accent-soft); color: var(--accent); } .look3 .ic.y { background: var(--band-soft); color: var(--band-ink); } .look3 .ic.w { background: var(--warn-soft); color: var(--warn); }
+.look3 .bd { min-width: 0; display: block; }
+.look3 .bd > b, .look3 .nw0 > b, .look3 .mini.nw > b { display: block; font-size: 14.5px; font-weight: 650; line-height: 1.45; letter-spacing: -.02em; color: var(--ink); }
+.look3 .bd small { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.55; color: var(--sub); }
+.look3 .who { display: block; font-size: 12px; font-weight: 650; color: var(--band-ink); margin-bottom: 2px; }
+.look3 .nw0 { display: block; width: 100%; text-align: left; font-size: 13px; color: inherit; }
+.look3 .mini { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; width: 100%; text-align: left; padding: 8px 0 0; margin-top: 8px; border-top: 1px solid var(--line2); font-size: 13px; color: var(--ink2); }
+.look3 .mini b { font-weight: 650; color: var(--ink); } .look3 .mini .lo { color: var(--warn); }
+.look3 .mini.nw { display: block; } .look3 .mini.nw > b { font-size: 13.5px; }
+.look3 > .l3 > svg { margin-top: 8px; color: var(--mute); }

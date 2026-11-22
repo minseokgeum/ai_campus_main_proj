@@ -91,7 +91,9 @@ with sync_playwright() as p:
     errs.clear()
     pg.evaluate(f"location.hash = 'T={T}&slot=0811&acct=A&tab=brief'")
     wait(pg, T, "0811", "A", "brief")
-    if not pg.locator("#firstlook .fl-state").count(): errs.append("먼저 확인할 것 구역이 없음")
+    if pg.locator("#firstlook .look3 .l3").count() != 3: errs.append("먼저 확인할 것 칸이 3개가 아님")
+    for k in ("money", "check", "news"):
+        if not pg.locator(f"#firstlook .l3[data-k={k}]").count(): errs.append(f"먼저 확인할 것 칸 없음: {k}")
     if not pg.locator("#hero .share").count(): errs.append("몫 헤드라인이 없음")
     # 11/22: 첫 화면 순서 — 내 계좌 카드 → 먼저 확인할 것 → 내 종목 → 밤사이 시장(시장 이야기가 내 계좌보다 앞에 오면 안 됨)
     order = pg.evaluate("""() => { const y = (q) => { const e = document.querySelector(q); return e ? e.getBoundingClientRect().top + scrollY : null; };
