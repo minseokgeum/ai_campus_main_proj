@@ -1,4 +1,4 @@
-// 화면의 "지금" 시각. 시연 계정(user1~10, guest)은 피그마의 시간대별 상태(07:30 전·장 전·장 후·주말·야간 진행 중·월요일)를
+// 화면의 "지금" 시각. 시연 계정(user1~10, guest, 사람마다 만드는 체험 계정 guest_…)은 피그마의 시간대별 상태(07:30 전·장 전·장 후·주말·야간 진행 중·월요일)를
 // 지난 시각으로 돌려 볼 수 있다(쿠키 demo_at, /demo-time에서 고름). 지금보다 뒤 시각은 받지 않는다(공개 전 예상이 보이지 않게).
 import "server-only";
 import { cache } from "react";
@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { addDays, isWeekend, kstNow } from "@/lib/calendar";
 
 export const DEMO_USERS = new Set(["user1", "user2", "user3", "user4", "user5", "user6", "user7", "user8", "user9", "user10", "guest"]);
+/** 시연 계정인지. 둘러보기는 2026-11-22부터 사람마다 체험 계정(guest_날짜+무작위, lib/auth.ts guestLogin)을 만들어서 그 이름도 시연 계정으로 본다 */
+export const isDemoName = (name: string) => DEMO_USERS.has(name) || name.startsWith("guest_");
 export const DEMO_COOKIE = "demo_at";
 
 /** 'YYYYMMDDHHmm'(한국 시각) → Date */
@@ -25,7 +27,7 @@ export const appNow = cache(async (): Promise<Date> => {
   const at = fromStamp(stamp);
   if (!at || at.getTime() > real.getTime()) return real;
   const user = await currentUser().catch(() => null);
-  return user && DEMO_USERS.has(user.username) ? at : real;
+  return user && isDemoName(user.username) ? at : real;
 });
 
 /** 시연 시각을 쓰는 중이면 그 시각, 아니면 null(화면 위 안내 띠용) */
@@ -36,7 +38,7 @@ export const demoAt = cache(async (): Promise<Date | null> => {
 
 export const isDemoUser = cache(async (): Promise<boolean> => {
   const user = await currentUser().catch(() => null);
-  return !!user && DEMO_USERS.has(user.username);
+  return !!user && isDemoName(user.username);
 });
 
 /** 피그마 상태별 시연 시각(모두 지금보다 앞). 카드가 있는 거래일을 기준으로 고른다 */
