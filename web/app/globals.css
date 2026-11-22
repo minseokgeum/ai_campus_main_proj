@@ -34,10 +34,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .head h1 .hq { font: inherit; background: none; padding: 0; display: inline-grid; place-items: center; width: 28px; height: 28px; margin-left: 2px; vertical-align: 2px; }
 .head h1 .hq span { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #45555a; color: #45555a; font-size: 11px; font-weight: 700; display: grid; place-items: center; line-height: 1; }
 /* 뉴스 모으는 시간 창 */
-.ntime { background: #f4f6f7; border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
-.ntime div { display: flex; gap: 14px; font-size: 13px; }
-.ntime dt { color: #66777a; width: 64px; flex: none; }
-.ntime dd { color: var(--ink); font-weight: 500; }
+/* 뉴스 수집 시간 안내 창의 표(dl). 밤사이 날짜 아래 상태 줄(p.ntime)과 이름이 같아 dl로 한정한다(2026-11-22) */
+dl.ntime { background: #f4f6f7; border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
+dl.ntime div { display: flex; gap: 14px; font-size: 13px; }
+dl.ntime dt { color: #66777a; width: 64px; flex: none; }
+dl.ntime dd { color: var(--ink); font-weight: 500; }
 .ntnote { margin-top: 14px; font-size: 12px; color: #66777a; }
 .head .sub { margin-top: 6px; font-size: 11px; color: var(--sub); }
 .head .my { position: absolute; right: 13px; top: 15px; width: 44px; height: 44px; display: grid; place-items: center; }
@@ -77,7 +78,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .chip.k { background: var(--teal-soft); color: var(--teal); }
 .foot { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .foot .src { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.foot .go { color: var(--teal); font-weight: 500; padding: 4px 0 4px 6px; min-height: 44px; display: flex; align-items: center; gap: 2px; margin: -12px 0; }
+.foot .go { color: var(--muted); font-weight: 500; padding: 4px 0 4px 12px; min-height: 44px; display: flex; align-items: center; gap: 2px; margin: -12px 0; }   /* 원문 링크는 피그마처럼 회색 아이콘만(2026-11-22) */
 .foot .go b { font-weight: 700; }
 
 /* 보유 · 관심 전환 */
@@ -504,7 +505,7 @@ html[data-mask] .pval .amt::after, html[data-mask] .val .amt::after, html[data-m
 .futbar .chg b { font-size: 15px; }
 .futbar em { font-style: normal; color: var(--faint); }
 .mapsec { display: flex; flex-direction: column; gap: 8px; }
-.tmap { position: relative; width: 100%; max-width: 342px; }
+.tmap { position: relative; width: 100%; }
 .tsec { position: absolute; }
 .tlab { display: flex; justify-content: space-between; font-size: 12px; height: 20px; align-items: center; }
 .tlab span { font-size: 11px; color: var(--muted); }
@@ -772,7 +773,7 @@ button.ibox { border: 0; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .sheet, .addpage, .login, .scroll, .sheet-box { animation: none; } }
 
 /* 내 종목 지도 규칙(팀원 규칙표 RULES) */
-.tmap { position: relative; width: 100%; max-width: 342px; height: auto; }
+.tmap { position: relative; width: 100%; height: auto; }   /* 화면 폭을 다 쓴다(예전 342px 제한 때문에 넓은 화면에서 오른쪽이 비었다) */
 .tsec { position: absolute; }
 .tlab { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 12px; overflow: hidden; white-space: nowrap; }
 .tlab b { overflow: hidden; text-overflow: ellipsis; }
@@ -1082,8 +1083,6 @@ html[data-mask] .sline .sv.amt::after { left: auto; right: 0; }
 .avgnote { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--muted); }
 .avgnote i { width: 16px; border-top: 1.5px dashed #8a9598; }
 .avgnote b { color: var(--sub); font-weight: 600; }
-/* 뉴스 상세: 언론사 주소를 못 찾아 구글 뉴스를 거칠 때 */
-.viagoogle { margin-top: -4px; font-size: 11px; color: var(--muted); text-align: right; }
 /* 종목 상세 지난 소식: 같은 소식 묶음(누르면 펼침) */
 .pastgrp > summary { list-style: none; cursor: pointer; }
 .pastgrp > summary::-webkit-details-marker { display: none; }
@@ -1146,3 +1145,8 @@ html[data-mask] .sline .sv.amt::after { left: auto; right: 0; }
 .scrubread button::after { content: ""; position: absolute; inset: -12px -10px; }
 /* 뉴스 상세 판정 칸: 근거 한 줄과 판정 기준(2026-11-22) */
 .nview .nbasis { display: block; margin-top: 4px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+/* 지도 범례: 좁은 화면(360px)에서 "소/식", "범위 없/음"처럼 쪼개지지 않게 — 글자는 한 덩어리로, 넘치면 다음 줄로(2026-11-22) */
+.tleg { flex-wrap: wrap; row-gap: 4px; }
+.tleg span, .tleg em { white-space: nowrap; }
+.tleg i { flex: none; }
+.tleg .ti { display: inline-flex; align-items: center; gap: 6px; }   /* 아이콘과 글자를 한 묶음으로 넘긴다 */

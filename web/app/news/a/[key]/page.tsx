@@ -54,10 +54,10 @@ export default async function NewsDetail({ params, searchParams }: { params: Pro
   const pool = db();
   const [pf, it, ai, ko, st, { articles }] = await Promise.all([
     portfolio(user.id),
-    // 원문 보기: 언론사 원문 주소(서버가 구글 뉴스 링크를 풀어 둔 것)가 있으면 그리로 바로, 없으면 구글 뉴스 경유(2026-11-22 팀원 개선 사항)
-    pool.query(`select i.key, i.title, i.source, i.outlet, i.published_utc, ${LINK} as link, l.original_url is not null and l.original_url <> '' as direct
+    // 원문 보기(피그마처럼 아이콘만): 언론사 원문 주소(서버가 구글 뉴스 링크를 풀어 둔 것)가 있으면 그리로 바로, 없으면 구글 뉴스 링크(따로 표시하지 않음, 2026-11-22)
+    pool.query(`select i.key, i.title, i.source, i.outlet, i.published_utc, ${LINK} as link
       from items i left join news.llm_articles l on l.key = i.key where i.key = $1`, [key])
-      .catch(() => pool.query("select key, title, source, outlet, published_utc, link, false as direct from items where key = $1", [key])),
+      .catch(() => pool.query("select key, title, source, outlet, published_utc, link from items where key = $1", [key])),
     pool.query(`select status, short_summary, impacts, sectors, coalesce(extraction->>'comparison_summary', '') <> '' as extracted, extraction->'graph'->'entities' as entities,
        article_types->>0 as kind, extraction->'company_impact' as ci, extraction->'graph'->'events' as events, extraction->'evidence' as ev from news.llm_articles where key = $1`, [key]).catch(() => none),
     pool.query("select text, impact_note from news.article_ko where key = $1", [key]).catch(() => none),
@@ -130,8 +130,7 @@ export default async function NewsDetail({ params, searchParams }: { params: Pro
         <p className="spath">{["시장", x?.sectors?.[0]].filter(Boolean).join(" · ")} · {kstTime(new Date(a.published_utc).toISOString())}</p>
         {x?.sectors?.[0] ? <span className="chip dark">{x.sectors[0]}</span> : null}
         <h1 className="ntitle">{x?.short_summary ?? a.title}</h1>
-        <div className="foot"><span className="src">{a.source || a.outlet} · {fullTime(a.published_utc)}</span><a className="go" href={a.link} target="_blank" rel="noreferrer noopener">{a.direct ? "원문 보기" : "Google 뉴스 경유"} <b>↗</b></a></div>
-        {a.direct ? null : <p className="viagoogle">언론사 주소를 확인하지 못해 Google 뉴스를 거쳐 열려요. 열리지 않으면 제목으로 검색해 주세요.</p>}
+        <div className="foot"><span className="src">{a.source || a.outlet} · {fullTime(a.published_utc)}</span><a className="go" href={a.link} target="_blank" rel="noreferrer noopener" aria-label="원문 보기"><ExtLink /></a></div>
         <section className="ai">
           <div className="top"><span className="badge">AI 요약</span></div>
           {k?.text ? <p className="para">{k.text}</p>
@@ -170,3 +169,5 @@ export default async function NewsDetail({ params, searchParams }: { params: Pro
     </>
   );
 }
+
+const ExtLink = () => <svg aria-hidden width="16" height="16" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V13H3V5h3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;

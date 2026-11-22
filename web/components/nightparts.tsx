@@ -75,14 +75,14 @@ export function Banner({ kind, n, total, title, body }: { kind: "mon" | "hol" | 
 }
 
 /** 07:30 전 목록 자리(피그마 449:2): 종목 줄 대신 회색 막대 */
-export function SkeletonList({ title, n }: { title: string; n: number }) {
+export function SkeletonList({ title, n, late }: { title: string; n: number; late?: boolean }) {   // late: 07:30이 지났는데 아직 예상이 없음(피그마 784:1573)
   return (
     <>
       <div className="lhead"><b>{title}</b><span className="linkish dis">금액 변화 큰 순 ▾</span></div>
       {Array.from({ length: Math.min(3, Math.max(1, n)) }, (_, k) => (
         <div key={k} className="skrow" aria-hidden><i className="c" /><span><i /><i /></span><i className="r" /></div>
       ))}
-      <p className="fine skfine">07:30에 종목별 예상 범위가 채워져요</p>
+      <p className="fine skfine">{late ? "준비되면" : "07:30에"} 종목별 예상 범위가 채워져요</p>
     </>
   );
 }

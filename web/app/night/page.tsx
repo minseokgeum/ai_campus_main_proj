@@ -125,7 +125,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
               body={late ? "야간 거래 데이터가 늦게 들어와 07:30에 공개하지 못했어요. 준비되면 알림으로 알려드릴게요." : "야간 거래가 06:00에 끝나서 내 종목의 오늘 예상 시가 범위를 계산하고 있어요."} link={last ? { href: `/night?d=${last}`, label: `${last === addDays(today, -1) ? "어제" : "지난 거래일"}(${Number(last.slice(4, 6))}/${Number(last.slice(6))}) 기록 보기` } : undefined}
               night={nightNow} nightNote={closed ? "어젯밤 18:00 ~ 오늘 06:00 · 어제 마감 대비" : `어젯밤 18:00부터 · ${hm} 현재(진행 중)`}
               seg={<><Link href="/night" className={sp.v !== "watch" ? "on" : ""}>보유 {pf.holdings.length}</Link><Link href="/night?v=watch" className={sp.v === "watch" ? "on" : ""}>관심 {pf.watch.length}</Link></>}
-              after={<SkeletonList title={sp.v === "watch" ? `관심 ${pf.watch.length}종목` : `보유 ${pf.holdings.length}종목`} n={sp.v === "watch" ? pf.watch.length : pf.holdings.length} />} />
+              after={<SkeletonList title={sp.v === "watch" ? `관심 ${pf.watch.length}종목` : `보유 ${pf.holdings.length}종목`} n={sp.v === "watch" ? pf.watch.length : pf.holdings.length} late={late} />} />
           ) : <NoHoldings night={nightNow} />}
         </Shell>
       );
