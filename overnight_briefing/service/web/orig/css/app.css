@@ -505,3 +505,29 @@ details.bulk .btn-line { width: 100%; }
 .coach span { flex: 1; } .coach button { flex: none; height: 28px; padding: 0 10px; border-radius: 8px; background: rgba(127, 127, 127, .28); color: inherit; font-size: 12px; font-weight: 700; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .stock-foot .range b[data-f="range"] { display: block; white-space: nowrap; }   /* 11/20: '노란 막대 안이면' 아래 줄에 금액 */
+
+/* 11/22 개인화 첫 화면: 몫 헤드라인 · 먼저 확인할 것(상태·소식) */
+.hero .share { margin: 8px 0 0; font-size: 14px; font-weight: 650; line-height: 1.45; letter-spacing: -.02em; color: var(--ink); }
+.contrib button.cr { width: 100%; text-align: left; padding: 0; font-family: inherit; font-size: 12px; color: inherit; background: none; cursor: pointer; }
+.contrib button.cr:active { opacity: .7; }
+.contrib .cr { grid-template-columns: 76px 1fr auto; } .contrib .cr > b { white-space: nowrap; min-width: 78px; }
+.contrib b small { margin-left: 4px; font-size: 11px; font-weight: 600; color: var(--sub); }
+.fl-state { display: grid; }
+.fl-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 10px 0; border-top: 1px solid var(--line2); }
+.fl-row:first-child { border-top: 0; padding-top: 2px; }
+.fl-row .avatar { width: 32px; height: 32px; }
+.fl-row .nm { min-width: 0; } .fl-row .nm b { display: block; font-size: 14.5px; font-weight: 650; letter-spacing: -.02em; }
+.fl-row .nm span { display: flex; align-items: center; gap: 3px; margin-top: 1px; font-size: 12.5px; color: var(--sub); font-weight: 500; }
+.fl-row .nm span.lo { color: var(--warn); font-weight: 650; }
+.fl-row > b { font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.fl-more { margin-top: 2px; }
+.fl-ok { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; padding: 12px 14px; border-radius: 12px; background: var(--ok-soft); color: var(--ok); }
+.fl-ok b { display: block; font-size: 14px; font-weight: 650; color: var(--ink); letter-spacing: -.02em; } .fl-ok small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ink2); line-height: 1.5; }
+.fl-h { margin: 16px 0 4px; font-size: 12.5px; font-weight: 700; color: var(--sub); }
+.fl-news { display: block; width: 100%; text-align: left; padding: 10px 0; border-top: 1px solid var(--line2); }
+.fl-h + .fl-news { border-top: 0; padding-top: 4px; }
+.fl-news .who { display: block; font-size: 12px; font-weight: 650; color: var(--band-ink); }
+.fl-news b { display: block; margin-top: 3px; font-size: 14px; font-weight: 600; line-height: 1.45; letter-spacing: -.02em; color: var(--ink); }
+.fl-news small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--mute); }
+.fl-none { padding: 8px 0 4px; font-size: 13px; color: var(--sub); }
+.hh-card .hh-share { display: block; margin-top: 4px; font-size: 12.5px; font-weight: 600; color: var(--ink2); line-height: 1.45; }

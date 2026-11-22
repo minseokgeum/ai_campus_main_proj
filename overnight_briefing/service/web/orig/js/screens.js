@@ -2,7 +2,7 @@
 import { esc, tone, pct, pct2, won, num, man, tick, dlabel, avatar, priceShort, I, kst, AI } from "./fmt.js";
 import { bandHtml, domain } from "./band.js";
 import { spark, nightChart, recordBars, histChart, relGraph, acctMap } from "./charts.js";
-import { summary, stockNote, nightCaption, glance } from "./llm.js";
+import { summary, stockNote, nightCaption } from "./llm.js";
 
 const GRADE = { "높음": ["hi", 3], "보통": ["", 2], "낮음": ["lo", 1] };
 const meter = (n) => `<span class="meter">${[1, 2, 3].map((i) => `<i class="${i <= n ? "f" : ""}"></i>`).join("")}</span>`;
@@ -68,14 +68,18 @@ export function heroHtml(m, d, st) {
   let h = `<div class="when"><span>${d.label}</span><span class="live${pillOpen ? " open" : ""}"><i></i>${st.slot === "0730" ? "07:30 기준 · 장 전" : st.slot === "0811" ? "08:11 기준 · 장 전" : pillOpen ? `${(d.special && d.special.open) || "09:00"} 개장` : "개장 전"}</span></div>
     <div class="label">${label}<button class="eye" data-act="hideamt" aria-label="${st.hideAmt ? "금액 보기" : "금액 가리기"}" aria-pressed="${st.hideAmt ? "true" : "false"}">${st.hideAmt ? I.eyeOff : I.eye}</button></div>
     <div class="big num ${tone(main)}">${won(main)}<small>${pct2(sv ? main / sv : null)}</small></div>
-    <div class="flow"><div><span>어제 종가 기준</span><b class="num">${won(sv, false)}</b></div>${I.arrow}<div><span>${act ? "9시 시작가 기준" : hypo ? "정한 시작가 기준" : "예상 시작가 기준"}</span><b class="num">${won(sv + main, false)}</b></div></div>` + needLine(m, st);
-  const basis = (r) => (act ? r.yAmt || 0 : r.pin != null ? r.value * r.pin : r.Hamt);
-  const cs = m.rows.filter((r) => r.q > 0).map((r) => ({ n: r.s.name, v: basis(r) })).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+    ${shareHtml(m)}
+    <div class="flow"><div><span>어제 종가 기준</span><b class="num">${won(sv, false)}</b></div>${I.arrow}<div><span>${act ? "9시 시작가 기준" : hypo ? "정한 시작가 기준" : "예상 시작가 기준"}</span><b class="num">${won(sv + main, false)}</b></div></div>`;
+  // 11/22: 종목별 막대는 위 3종목 + 그 외. 금액 옆에 같은 방향 안 몫(%)을 붙이고, 줄을 누르면 그 종목으로 간다
+  const cs = m.rows.filter((r) => r.q > 0).map((r) => ({ n: r.s.name, code: r.s.code, v: amtOf(m, r) })).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
   if (cs.length > 1) {
-    const top = cs.slice(0, 5), rest = cs.slice(5), all = rest.length ? [...top, { n: `그 외 ${rest.length}종목`, v: rest.reduce((a, c) => a + c.v, 0) }] : top;
-    const mx = Math.max(...all.map((c) => Math.abs(c.v)), 1);
-    h += `<div class="contrib"><div class="ch"><span>종목별로 보면</span><span>가운데 = 어제 종가</span></div>${all.map((c) => `<div class="cr"><span class="cn">${esc(c.n)}</span><span class="cb"><i class="${c.v < 0 ? "neg" : "pos"}" style="width:${((Math.abs(c.v) / mx) * 50).toFixed(1)}%"></i></span><b class="num ${tone(c.v)}">${won(c.v)}</b></div>`).join("")}</div>`;
+    const top = cs.slice(0, 3), rest = cs.slice(3), all = rest.length ? [...top, { n: `그 외 ${rest.length}종목`, v: rest.reduce((a, c) => a + c.v, 0) }] : top;
+    const mx = Math.max(...all.map((c) => Math.abs(c.v)), 1), sh = sides(m);
+    const share = (c) => { const tot = c.v < 0 ? sh.dec : sh.inc; return c.code && tot && c.v ? `<small>${Math.round((Math.abs(c.v) / Math.abs(tot)) * 100)}%</small>` : ""; };
+    h += `<div class="contrib"><div class="ch"><span>종목별로 보면</span><span>가운데 = 어제 종가</span></div>${all.map((c) => `<${c.code ? `button class="cr" data-act="jump" data-code="${c.code}"` : 'div class="cr"'}><span class="cn">${esc(c.n)}</span><span class="cb"><i class="${c.v < 0 ? "neg" : "pos"}" style="width:${((Math.abs(c.v) / mx) * 50).toFixed(1)}%"></i></span><b class="num ${tone(c.v)}">${won(c.v)}${share(c)}</b></${c.code ? "button" : "div"}>`).join("")}</div>`;
   }
+  const ex = m.account.excluded;
+  if (ex.length) h += `<div class="tiny" style="margin-top:8px">${esc(ex.slice(0, 3).map((x) => x.name).join("·"))}${ex.length > 3 ? ` 외 ${ex.length - 3}종목` : ""}은 예상 가격대가 없어 금액 계산에서 빠졌어요.</div>`;
   // 11/19: 개장 전 거래가 없는 날(수능일 등, core/extras.py SPECIAL)엔 08:11도 07:30과 같은 값이다. 개장 시각도 그날 값을 쓴다
   const noPre = !!(d.special && d.special.premarket === false), openAt = (d.special && d.special.open) || "09:00";
   const sealed = d.record && d.record.sealed, no730 = !!(sealed && Object.keys(sealed).length && !sealed["0730"]);
@@ -106,15 +110,14 @@ export function brief(m, d, st) {
   const mine = d.news.filter((n) => n.stocks.some((s) => m.codes.has(s.code)));
   const x = d.market.x;
   const evs = d.events.filter((e) => !(e.codes && e.codes.length) || e.codes.some((c) => m.codes.has(c) || m.account.excluded.some((x) => x.code === c)));
-  let h = statusHtml(d, st) + `<section class="sec"><div class="hero hero-card" id="hero">${heroHtml(m, d, st)}</div></section>` + marketHtml(d);
+  // 11/22 개인화 첫 화면: 내 계좌 → (시장 전체 주의) → 먼저 확인할 것 → 내 종목 → 소식 더 → 밤사이 시장 → 일정. 시장 이야기는 내 계좌 뒤로
+  let h = statusHtml(d, st) + `<section class="sec"><div class="hero hero-card" id="hero">${heroHtml(m, d, st)}</div></section>`;
   if (d.market.cautions.length) h += `<section class="sec" style="padding-top:14px;padding-bottom:14px">${d.market.cautions.map((c) => `<div class="notice">${I.warn}<div><b>${esc(c.title)}</b>${esc(c.body)}</div></div>`).join("")}</section>`;
-  h += `<section class="sec"><div class="sec-h"><h2>오늘 아침 볼 것</h2><button class="more" data-act="tab" data-tab="night">밤 흐름 ${I.chev}</button></div>
-    <button class="night-card" data-act="tab" data-tab="night"><div><div class="sub">코스피200 야간선물 · 06:00 마감</div><div class="v num ${tone(x)}">${pct2(x)}</div>
-      <div class="tiny">${d.night ? `어제 낮 종가 ${d.night.day_close.toFixed(2)} ${"→"} ${d.night.last.toFixed(2)}${d.night.lo_at && x < 0 ? ` · 가장 낮았던 때 ${d.night.lo_at}(${pct(d.night.lo_ret)})` : d.night.hi_at && x > 0 ? ` · 가장 높았던 때 ${d.night.hi_at}(${pct(d.night.hi_ret)})` : ""}` : "어제 낮 종가와 비교한 값"}</div></div>${spark(d.night)}</button>
-    <div class="look">${glance(m, d, st.slot, evs).map((g) => `<${g.act ? "button " + g.act : 'div class="lk"'}><span class="ic ${g.cls}">${esc(g.ic)}</span><span><b>${esc(g.t)}</b><small>${esc(g.s)}</small></span>${g.act ? I.chev : "<span></span>"}</${g.act ? "button" : "div"}>`).join("")}</div></section>`;
+  const fl = firstLook(m, d, st);
+  h += fl.html;
   const nw = m.rows.filter((r) => r.h.q === 0).length, own = m.rows.length - nw;
   const hf = nw && own ? st.hold || "all" : "all";                      // 11/17: 보유 | 관심을 나눠 보기(둘 다 있을 때만 단추가 나온다)
-  const shown = sortRows(m.rows.filter((r) => hf === "all" || (hf === "watch") === (r.h.q === 0)), m, st);
+  const shown = sortRows(m.rows.filter((r) => hf === "all" || (hf === "watch") === (r.h.q === 0)), m, st, d);
   const fa = d.forward && d.forward.after;
   h += `<section class="sec"><div class="sec-h"><h2>${nw && own ? "내 종목" : nw ? `관심 종목 ${nw}` : `보유 종목 ${own}`}</h2><button class="more" data-act="info" data-info="band">읽는 법 ${I.chev}</button></div>
     <div class="ordrow"><div class="ord" role="group" aria-label="종목 순서"><button class="${(st.ord || "need") === "need" ? "on" : ""}" data-act="ord" data-v="need">먼저 볼 순</button><button class="${st.ord === "value" ? "on" : ""}" data-act="ord" data-v="value">보유 금액 순</button></div></div>
@@ -124,7 +127,10 @@ export function brief(m, d, st) {
     ${shown.map((r) => stockRow(r, m, st, d)).join("")}${m.rows.length ? "" : `<div class="empty">예상 가격대를 볼 수 있는 종목이 없어요.</div>`}
     ${excludedHtml(m, d)}
     <div class="tiny" style="margin-top:10px">노란 막대를 누르거나 끌면 그 가격에 시작했을 때 내 금액을 볼 수 있어요. 수량을 바꿔도 실제 주문은 나가지 않아요.${d.brief && m.rows.some((r) => !(d.brief.stocks || {})[r.s.code]) ? " 밤사이 소식 한 줄(AI)은 지금 시험 종목 18개부터 나와요." : ""}</div></section>`;
-  h += briefTop(m, d, mine);
+  h += briefTop(m, d, mine, fl.shown);
+  h += `<section class="sec"><div class="sec-h"><h2>밤사이 시장</h2><button class="more" data-act="tab" data-tab="night">밤 흐름 ${I.chev}</button></div>
+    <button class="night-card" data-act="tab" data-tab="night"><div><div class="sub">코스피200 야간선물 · 06:00 마감</div><div class="v num ${tone(x)}">${pct2(x)}</div>
+      <div class="tiny">${d.night ? `어제 낮 종가 ${d.night.day_close.toFixed(2)} ${"→"} ${d.night.last.toFixed(2)}${d.night.lo_at && x < 0 ? ` · 가장 낮았던 때 ${d.night.lo_at}(${pct(d.night.lo_ret)})` : d.night.hi_at && x > 0 ? ` · 가장 높았던 때 ${d.night.hi_at}(${pct(d.night.hi_ret)})` : ""}` : "어제 낮 종가와 비교한 값"}</div></div>${spark(d.night)}</button></section>` + marketHtml(d);
   if (evs.length) h += `<section class="sec"><div class="sec-h"><h2>다가오는 일정</h2><span class="more">7일 안</span></div><div class="rows">${evs.slice(0, 5).map((e) => `<div class="rowline"><div><b style="text-align:left;display:block">${e.kind === "earnings" ? '<span class="chip" style="height:20px;margin-right:4px">내 종목과 이어짐</span>' : e.kind === "special" ? '<span class="chip lo" style="height:20px;margin-right:4px">장 시간 변경</span>' : ""}${esc(e.title)}</b><small>${esc(e.note)}</small></div><span class="chip ${e.dday <= 1 ? "accent" : ""}">${e.label} · ${e.dday ? "D-" + e.dday : "오늘"}</span></div>`).join("")}</div></section>`;
   return h + pipeHtml(d) + foot(d);
 }
@@ -133,6 +139,7 @@ export const foot = (d) => `<div class="foot">예상 가격대는 지난 비슷�
 export function recordLine(d) {
   const r = d.record, s = r.sealed["0811"] || r.sealed["0730"];
   if (r.kind === "live") return s && s.before_open ? `이 예상은 ${s.issued}(개장 전)에 고정해 둔 기록이에요.` : `이 예상은 ${s ? s.issued : ""}에 발행돼 장 전에 고정한 기록은 아니에요.`;
+  if (r.kind === "forward" && s && s.before_open) return r.same_as_sealed ? `이 예상은 ${s.issued}(개장 전)에 고정해 둔 기록과 같은 숫자예요.` : `이 예상은 ${s.issued}(개장 전)에 발행했고, 화면 숫자는 장 마감 뒤 확정된 자료로 같은 규칙을 다시 계산한 값이에요.`;
   if (r.kind === "forward" && s) return `이 예상은 ${s.issued}에 발행돼 장 전에 고정한 기록은 아니에요.${r.same_as_sealed ? " 장 마감 뒤 다시 계산해도 같았어요." : ""}`;
   if (r.kind === "forward") return "이 날 예상은 11/2에 고정한 규칙으로, 그날 이전 자료만 써서 나중에 다시 계산한 값이에요.";
   return "이 날은 과거 자료를 그날 이전 것만 써서 다시 재생한 화면이에요.";
@@ -253,17 +260,16 @@ export function briefSection(d, code) {
   return `<h4>밤사이 이어진 기사 ${v.news.length}</h4>${v.news.slice(0, 5).map((n) => briefItem(n, code)).join("")}`;
 }
 
-function briefTop(m, d, mine) {
+/** 내 종목과 이어진 소식 더: '먼저 확인할 것'에서 이미 보인 기사(shown = id 모음)는 뺀다(11/22) */
+function briefTop(m, d, mine, shown = new Set()) {
   const bl = briefList(m, d), all = bl.flatMap((g) => g.items.map((n) => ({ n, code: g.code })));
-  const top = [...all].sort((a, b) => (b.n.media_count || 0) - (a.n.media_count || 0) || (a.n.story === "새 소식" ? -1 : 1)).slice(0, 3);
-  if (d.brief) {
-    return `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식</h2>${all.length ? `<button class="more" data-act="tab" data-tab="news">전체 ${all.length}건 ${I.chev}</button>` : ""}</div>
-      ${top.length ? top.map((x) => briefItem(x.n, x.code)).join("") : `<div class="empty">${emptyMine(d)}</div>`}
-      <div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계로 검색어가 걸렸다는 뜻이에요. 이 기사 때문에 주가가 움직였다는 뜻은 아니에요.</div></section>`;
-  }
-  return `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식</h2>${mine.length ? `<button class="more" data-act="tab" data-tab="news">전체 ${mine.length}건 ${I.chev}</button>` : ""}</div>
-    ${mine.length ? mine.slice(-3).reverse().map((n) => newsItem(n, m, d.T)).join("") : `<div class="empty">밤사이 내 종목과 이어진 미국 기사가 없어요.</div>`}
-    <div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계가 있다는 뜻이에요. 이 기사 때문에 주가가 움직였다는 뜻은 아니에요.</div></section>`;
+  const once = new Set(), top = [...all].filter((x) => !shown.has("b" + x.n.id) && !once.has(x.n.id) && once.add(x.n.id)).sort((a, b) => (b.n.media_count || 0) - (a.n.media_count || 0) || (a.n.story === "새 소식" ? -1 : 1)).slice(0, 3);
+  const rel = mine.filter((n) => !shown.has("r" + n.id));
+  const h = (n) => `<section class="sec"><div class="sec-h"><h2>내 종목과 이어진 소식 더</h2>${n ? `<button class="more" data-act="tab" data-tab="news">전체 ${n}건 ${I.chev}</button>` : ""}</div>`;
+  const tail = `<div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계가 있다는 뜻이에요. 이 기사 때문에 주가가 움직였다는 뜻은 아니에요.</div></section>`;
+  if (d.brief && top.length) return h(all.length) + top.map((x) => briefItem(x.n, x.code)).join("") + tail;
+  if (rel.length) return h(mine.length) + rel.slice(-3).reverse().map((n) => newsItem(n, m, d.T)).join("") + tail;
+  return "";                                        // 다 보였거나 없으면 이 구역은 쓰지 않는다(없다는 말은 '먼저 확인할 것'에 있다)
 }
 
 function excludedHtml(m, d) {
@@ -481,6 +487,11 @@ const INFO = {
   eve: ["어제 저녁 거래란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">어제 낮 장이 끝난 뒤 저녁 8시까지 열리는 넥스트레이드(대체거래소) 시장에서 마지막으로 거래된 가격을, 어제 낮 종가와 비교한 값이에요.</p>
     <div class="rows" style="margin-top:8px"><div class="rowline"><span>언제 값인가요</span><b style="font-weight:500;font-size:13px;max-width:215px">어제 저녁 6~8시 사이 마지막 거래. 미국 장이 열리기 전이에요.</b></div><div class="rowline"><span>예상에 쓰나요</span><b style="font-weight:500;font-size:13px;max-width:215px">아니요. 참고로만 보여 드려요.</b></div></div>
     <div class="tiny" style="margin-top:12px">이 값을 예상 계산에 넣어 보았지만 눈에 띄게 더 맞지 않아 쓰지 않아요. 저녁 거래 뒤에 미국 장과 야간선물이 움직이기 때문에, 아침 시작 가격은 이 값과 다를 수 있어요. 저녁 거래가 없던 종목에는 나오지 않아요.</div>`],
+  pick: ["먼저 확인할 것을 고르는 기준", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">내 계좌의 보유 종목·수량으로 코드가 골라요. 같은 밤이라도 계좌마다 다르게 나와요.</p>
+    <div class="rows" style="margin-top:8px"><div class="rowline"><span>먼저 보여요</span><b style="font-weight:500;font-size:13px;max-width:215px">개장 전 거래가 예상 가격대를 벗어난 종목, 9시 시작가가 예상 밖인 종목, 어제 실적 공시 같은 주의가 붙은 종목. 금액이 작아도 보여요.</b></div>
+    <div class="rowline"><span>금액이 클 때만</span><b style="font-weight:500;font-size:13px;max-width:215px">08:11에 믿을 정도가 낮거나 개장 전 거래가 없는 종목은 보유 금액의 10% 이상일 때만 보여요.</b></div>
+    <div class="rowline"><span>소식</span><b style="font-weight:500;font-size:13px;max-width:215px">회사 자체 소식 → 다른 모델이 연결을 확인한 소식 → 고객사·공급사 기사 → 제목에 회사가 나온 기사 순으로, 한 종목에 1건씩 2건까지.</b></div></div>
+    <div class="tiny" style="margin-top:12px">확인할 순서를 알려 드리는 것이고, 사고팔라는 뜻이 아니에요. 소식은 사업 관계로 이어진 것일 뿐 주가가 움직인 원인이라는 뜻이 아니에요.</div>`],
   nxtout: ["개장 전 거래가 예상을 벗어났어요", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 개장 전 거래 가격이 이미 아침 예상 가격대를 벗어났어요. 지난 1년 동안 이런 종목이 예상대로 시작한 경우는 10번 중 3번 남짓이었고, 시작가도 개장 전 거래 쪽으로 벗어난 경우가 10번 중 6~7번이었어요.</p><div class="tiny" style="margin-top:12px">아직 확인 중인 표시예요.</div>`],
 };
 export const infoSheet = (k) => `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>${INFO[k][0]}</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b">${INFO[k][1]}</div>`;
@@ -606,32 +617,110 @@ function casesHtml(w) {
 
 
 /* ───── 11/20 원래 버전 고도화(사용자 아침 흐름 기준) ───── */
-/** 먼저 볼 종목: 장 전엔 개장 전 거래가 예상 가격대 밖이거나 믿을 정도 '낮음', 개장 뒤엔 범위 밖에서 시작, 언제든 종목 주의(어제 실적 공시 등) */
-export function attention(m, st) {
-  const act = m.showAct;
-  return m.rows.filter((r) => r.q > 0 || r.h.q > 0).map((r) => {
-    const s = r.s, g = st.slot !== "0730" ? s.grade : null;
-    const out = act ? s.y != null && !s.inb : !!(g && g.g != null && !(s.b80[0] <= g.g && g.g <= s.b80[1]));
-    const low = !act && !!(g && g.level === "낮음");
-    const why = out ? (act ? `예상보다 ${s.y > s.b80[1] ? "높게" : "낮게"} 시작` : `개장 전 거래가 예상보다 ${g.g > s.b80[1] ? "높음" : "낮음"}`) : low ? "믿을 정도 낮음" : (s.cautions || []).length ? s.cautions[0].title : "";
-    return { r, why };
-  }).filter((x) => x.why).sort((a, b) => Math.abs(b.r.Hamt) - Math.abs(a.r.Hamt));
+/* ───── 11/22 개인화 첫 화면: 돈(내 계좌 카드)과 확인할 것(상태·소식)을 나눈다. 고르는 규칙은 docs/presentation/flow.md 2장 ───── */
+/** 그 종목이 내 계좌에 주는 금액: 9시 뒤엔 실제, 시작가를 정해 봤으면 그 값, 아니면 예상 */
+const amtOf = (m, r) => (m.showAct ? r.yAmt || 0 : r.pin != null ? r.value * r.pin : r.Hamt);
+/** 늘어날 쪽·줄어들 쪽 합(보유 종목만). 몫은 같은 방향 합으로 나눈다 — 오르내림이 섞여도 100%를 넘지 않게 */
+function sides(m) {
+  const xs = m.rows.filter((r) => r.q > 0).map((r) => ({ r, v: amtOf(m, r) }));
+  return { xs, inc: xs.reduce((a, x) => a + Math.max(x.v, 0), 0), dec: xs.reduce((a, x) => a + Math.min(x.v, 0), 0) };
 }
-function needLine(m, st) {
-  const list = attention(m, st), held = m.rows.filter((r) => r.q > 0);
-  const chip = (r, t) => `<button class="chip btn lo" data-act="jump" data-code="${r.s.code}">${esc(r.s.name)} · ${esc(t)}</button>`;
-  if (list.length) return `<div class="need-line"><span>먼저 볼 종목 ${list.length}</span>${list.slice(0, 4).map((x) => chip(x.r, x.why)).join("")}</div>`;
-  if (!held.length) return "";
-  if (st.slot === "0730") {                              // 07:30엔 개장 전 거래가 아직 없다 → 금액이 가장 크게 움직일 종목
-    const top = [...held].sort((a, b) => Math.abs(b.Hamt) - Math.abs(a.Hamt)).slice(0, 2);
-    return `<div class="need-line ok"><span>가장 크게 움직일 종목</span>${top.map((r) => `<button class="chip btn" data-act="jump" data-code="${r.s.code}">${esc(r.s.name)} ${won(r.Hamt)}</button>`).join("")}</div>`;
+const ieyo = (w) => { const c = w.charCodeAt(w.length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? "이에요" : "예요"); };
+/** 몫 헤드라인: "줄어들 금액의 84%가 SK하이닉스예요". 섞이면 양쪽 합을 따로 */
+export function shareLine(m) {
+  const { xs, inc, dec } = sides(m);
+  if (!xs.length || (Math.abs(inc) < 1 && Math.abs(dec) < 1)) return "";
+  const done = m.showAct, down = done ? "줄어든" : "줄어들", up = done ? "늘어난" : "늘어날";
+  if (inc >= 1 && dec <= -1) {
+    const big = [...xs].sort((a, b) => Math.abs(b.v) - Math.abs(a.v))[0];
+    return `${up} 쪽 ${man(inc)} · ${down} 쪽 ${man(dec)}이에요. 가장 큰 건 ${big.r.s.name} ${man(big.v)}이에요.`;
   }
-  return `<div class="need-line ok"><span>먼저 볼 종목 없음</span><small>${m.showAct ? "모두 예상대로 시작했어요" : "개장 전 거래가 모두 예상대로예요"}</small></div>`;
+  const neg = dec <= -1, tot = neg ? dec : inc, side = xs.filter((x) => (neg ? x.v < 0 : x.v > 0)).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  const pick = [];
+  let cum = 0;
+  for (const x of side) { if (pick.length === 2 || cum / tot > 0.5) break; pick.push(x); cum += x.v; }
+  const names = pick.map((x) => x.r.s.name).join("·");
+  if (pick.length === side.length) return side.length === 1 ? `${neg ? down : up} 금액은 모두 ${ieyo(names)}.` : `${neg ? down : up} 금액은 ${ieyo(names)}.`;
+  return `${neg ? down : up} 금액의 ${Math.round((cum / tot) * 100)}%가 ${ieyo(names)}.`;
 }
-/** 보유 종목 순서: 먼저 볼 순(먼저 볼 종목 → 금액 변화 큰 순) | 보유 금액 순(원래 순서) */
-function sortRows(rows, m, st) {
+const shareHtml = (m) => { const t = shareLine(m); return t ? `<p class="share">${esc(t)}</p>` : ""; };
+
+/** 먼저 확인할 상태: 강한 표시(개장 전 거래가 예상 밖 · 9시 시작가가 예상 밖 · 종목 주의)는 크기와 상관없이,
+ *  약한 표시(08:11 믿을 정도 낮음 · 개장 전 거래 없음)는 보유 금액 비중 10% 이상일 때만. 강한 것 먼저, 같으면 보유 금액 큰 순 */
+export function checks(m, st, d) {
+  const act = m.showAct, sv = m.stockValue || 1, out = [];
+  const pre = st.slot !== "0730" && !(d.special && d.special.premarket === false);
+  const held = m.rows.filter((r) => r.q > 0), anyG = pre && held.some((r) => r.s.grade && r.s.grade.g != null);   // 그날 개장 전 거래가 있었던 종목이 하나라도 있어야 '없음'이 뜻을 가진다
+  held.forEach((r) => {
+    const s = r.s, g = pre ? s.grade : null, w = r.value / sv;
+    let why = "", strong = false, info = "";
+    if (act) { if (s.y != null && !s.inb) { why = `예상보다 ${s.y > s.b80[1] ? "높게" : "낮게"} 시작했어요`; strong = true; } }
+    else if (g && g.g != null && !(s.b80[0] <= g.g && g.g <= s.b80[1])) { why = `개장 전 거래가 예상보다 ${g.g > s.b80[1] ? "높아요" : "낮아요"}`; strong = true; info = "nxtout"; }
+    if (!why && (s.cautions || []).length) { why = s.cautions[0].title; strong = true; }
+    if (!why && !act && anyG && w >= 0.1) {
+      if (g && g.level === "낮음") { why = "개장 전 거래 믿을 정도 낮음"; info = "grade"; }
+      else if (!g || g.g == null) why = "개장 전 거래가 없어 07:30 예상 그대로예요";
+    }
+    if (why) out.push({ r, why, strong, w, info });
+  });
+  return out.sort((a, b) => b.strong - a.strong || b.w - a.w);
+}
+
+/** 내 종목 소식(최대 2, 한 종목에 1건): 회사 자체 소식 > 다른 모델이 연결을 확인한 직접 소식 > 직접 거래 관계(고객사·공급사) 기사 > 제목에 회사가 나온 기사 > 그 밖의 관계 기사. 같으면 그 종목 보유 금액 큰 순 */
+const TRADE = /고객|공급|납품|매출처|합작|자회사|모회사/;
+export function topNews(m, d) {
+  const val = {}; m.rows.forEach((r) => (val[r.s.code] = r.value)); m.account.excluded.forEach((x) => (val[x.code] = val[x.code] || 0));
+  const c = [], bs = (d.brief && d.brief.stocks) || {};
+  Object.entries(bs).forEach(([code, v]) => {
+    if (!(code in val)) return;
+    (v.news || []).forEach((n) => {
+      if (n.tier === "업종·테마") return;
+      const path = (n.relation || {}).path || "", own = /자신에 관한 기사/.test(path), p = path.split(" → ");
+      c.push({ key: "b" + n.id, code, name: v.name || code, rank: own ? 0 : 1, v: val[code], act: `data-act="bnews" data-code="${code}" data-id="${esc(n.id)}"`,
+        who: own ? "회사 소식" : p.length >= 3 ? `${p[0] === v.name ? p[2].replace(/\s*\(.+\)$/, "") : p[0]}(${p[1]}${/사$/.test(p[1]) ? "" : " 관계"})` : "직접 이어진 소식",
+        title: n.short_summary_ko || n.title, ai: !!n.short_summary_ko, meta: `${n.source || ""}${n.media_count > 1 ? ` · 매체 ${n.media_count}곳` : ""}` });
+    });
+  });
+  d.news.forEach((n) => n.stocks.filter((s) => s.code in val).forEach((s) => {
+    const rank = n.tier === "규칙 확인" ? 3 : TRADE.test(n.relation || "") ? 2 : 4;
+    c.push({ key: "r" + n.id, code: s.code, name: s.name, rank, v: val[s.code], act: `data-act="news" data-id="${n.id}"`,
+      who: `${short(n.us)}(${n.relation})`, title: gist(n) || n.headline, ai: false, meta: hhmm(n, d.T) });
+  }));
+  const seen = new Set(), keys = new Set(), out = [];
+  c.sort((a, b) => a.rank - b.rank || b.v - a.v).forEach((x) => { if (out.length < 2 && !seen.has(x.code) && !keys.has(x.key)) { seen.add(x.code); keys.add(x.key); out.push(x); } });
+  return out;
+}
+
+/** '먼저 확인할 것' 구역. shown = 여기서 보인 기사(아래 '소식 더'에서 뺀다) */
+export function firstLook(m, d, st) {
+  const held = m.rows.filter((r) => r.q > 0);
+  if (!held.length && !m.account.excluded.length) return { html: "", shown: new Set() };
+  const ck = checks(m, st, d), tn = topNews(m, d), act = m.showAct;
+  const noPre = !!(d.special && d.special.premarket === false);
+  const ckRow = (x) => `<button class="fl-row" data-act="jump" data-code="${x.r.s.code}">${avatar(x.r.s.code, x.r.s.name)}<span class="nm"><b>${esc(x.r.s.name)}</b><span class="${x.strong ? "lo" : ""}">${x.strong ? I.warn.replace('width="16" height="16"', 'width="12" height="12"') : ""}${esc(x.why)}</span></span><b class="num ${tone(amtOf(m, x.r))}">${man(amtOf(m, x.r))}</b></button>`;
+  let state;
+  if (ck.length) state = ck.slice(0, 3).map(ckRow).join("") + (ck.length > 3 ? `<div class="tiny fl-more">확인할 표시 ${ck.length - 3}종목 더 · ${esc(ck.slice(3).map((x) => x.r.s.name).join("·"))}</div>` : "");
+  else {
+    const g = held.filter((r) => r.s.grade && r.s.grade.g != null).length;
+    const [t, s] = act ? ["모두 예상대로 시작했어요", `시작가를 받은 ${held.filter((r) => r.s.y != null).length}종목 기준이에요.`]
+      : st.slot === "0730" ? ["아직 확인할 표시는 없어요", noPre ? `오늘은 개장 전 거래가 없어요. 개장은 ${(d.special && d.special.open) || "10:00"}이에요.` : "개장 전 거래는 8시에 시작해요. 08:11에 다시 확인해 드려요."]
+      : noPre ? ["지금은 확인할 표시가 없어요", "오늘은 개장 전 거래가 없어 07:30 예상 그대로예요."]
+      : ["지금은 예상을 벗어난 종목이 없어요", g ? `${g}종목 모두 개장 전 거래가 예상대로예요.` : "개장 전 거래가 있었던 종목이 없어요."];
+    state = `<div class="fl-ok">${I.check}<div><b>${t}</b><small>${s}</small></div></div>`;
+  }
+  const shown = new Set(tn.map((x) => x.key));
+  const news = tn.length ? tn.map((x) => `<button class="fl-news" ${x.act}><span class="who">${esc(x.name)} · ${esc(x.who)}</span><b>${x.ai ? AI : ""}${esc(x.title)}</b>${x.meta ? `<small>${esc(x.meta)}</small>` : ""}</button>`).join("")
+    : `<div class="fl-none">${emptyMine(d)}</div>`;
+  return { shown, html: `<section class="sec" id="firstlook"><div class="sec-h"><h2>먼저 확인할 것</h2><button class="more" data-act="info" data-info="pick">고른 기준 ${I.chev}</button></div>
+    <div class="fl-state">${state}</div>
+    <div class="fl-h">내 종목과 이어진 밤사이 소식</div>${news}
+    <div class="tiny" style="margin-top:6px">이어졌다는 건 사업 관계가 있다는 뜻이에요. 이 소식 때문에 주가가 움직였다는 뜻은 아니에요.</div></section>` };
+}
+
+/** 보유 종목 순서: 먼저 볼 순(확인할 종목 → 금액 변화 큰 순) | 보유 금액 순(원래 순서) */
+function sortRows(rows, m, st, d) {
   if (st.ord === "value") return rows;
-  const need = new Map(attention(m, st).map((x, i) => [x.r.s.code, i]));
+  const need = new Map(checks(m, st, d).map((x, i) => [x.r.s.code, i]));
   return [...rows].sort((a, b) => (need.has(a.s.code) ? need.get(a.s.code) : 1e9) - (need.has(b.s.code) ? need.get(b.s.code) : 1e9) || Math.abs(b.Hamt) - Math.abs(a.Hamt));
 }
 /** 종목 줄 칩은 3개까지, 나머지는 '더 보기'. 밤사이 소식이 있으면 AI 해석은 펼친 채, 없으면 접어 둔다 */
@@ -649,13 +738,14 @@ function lastMorningBtn(st) {
 
 /* ───── 11/20 증권사 앱 안(예시): 증권사 홈에서 이 기능을 여는 자리. 잔고는 증권사가 넘겨준다는 가정 ───── */
 export function hostHome(m, d, st) {
-  const a = m.account, held = m.rows.filter((r) => r.q > 0), p = st.liveMode && st.pending, need = attention(m, st);
+  const a = m.account, held = m.rows.filter((r) => r.q > 0), p = st.liveMode && st.pending, need = p ? [] : checks(m, st, d), sl = p ? "" : shareLine(m);
   const amt = m.showAct && m.actSum != null ? m.actSum : m.Hsum;
   const card = p
     ? `<span class="hh-tag">06:30 도착 예정</span><b>당신이 잠든 사이에</b><p>미국 장이 열린 동안 기사를 모으고 있어요. 아침 06:30에 내 주식 예상이 도착해요.</p>`
     : `<span class="hh-tag">${m.showAct ? "9시 결과 도착" : st.slot === "0730" ? "아침 브리핑 도착" : "08:11 새로 반영"}</span><b>당신이 잠든 사이에</b>
        <p>${m.showAct ? "9시 시작가로 본 내 주식 변화" : "오늘 9시에 예상되는 내 주식 변화"} <em class="num ${tone(amt)}">${won(amt)}</em></p>
-       ${need.length ? `<small class="hh-need">먼저 볼 종목 ${need.length} · ${esc(need[0].r.s.name)}${need.length > 1 ? ` 외 ${need.length - 1}` : ""}</small>` : ""}`;
+       ${sl ? `<small class="hh-share">${esc(sl)}</small>` : ""}
+       ${need.length ? `<small class="hh-need">확인할 표시 ${need.length} · ${esc(need[0].r.s.name)}${need.length > 1 ? ` 외 ${need.length - 1}` : ""}</small>` : ""}`;
   return `<section class="host-home">
     <div class="hh-acct"><span>${a.sample ? `종합 ${esc(a.no || "")} · 예시 계좌 ${esc(a.id)}` : "내 계좌"}</span><b class="num">${won(m.baseValue + (a.cash || 0), false)}</b>
       <div class="hh-sub"><span>주식 <b class="num">${won(m.baseValue, false)}</b></span><span>예수금 <b class="num">${won(a.cash || 0, false)}</b></span></div><small>어제 종가 기준</small></div>

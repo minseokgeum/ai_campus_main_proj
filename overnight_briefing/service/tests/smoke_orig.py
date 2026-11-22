@@ -91,7 +91,13 @@ with sync_playwright() as p:
     errs.clear()
     pg.evaluate(f"location.hash = 'T={T}&slot=0811&acct=A&tab=brief'")
     wait(pg, T, "0811", "A", "brief")
-    if not pg.locator("#hero .need-line").count(): errs.append("먼저 볼 종목 줄이 없음")
+    if not pg.locator("#firstlook .fl-state").count(): errs.append("먼저 확인할 것 구역이 없음")
+    if not pg.locator("#hero .share").count(): errs.append("몫 헤드라인이 없음")
+    # 11/22: 첫 화면 순서 — 내 계좌 카드 → 먼저 확인할 것 → 내 종목 → 밤사이 시장(시장 이야기가 내 계좌보다 앞에 오면 안 됨)
+    order = pg.evaluate("""() => { const y = (q) => { const e = document.querySelector(q); return e ? e.getBoundingClientRect().top + scrollY : null; };
+      const mk = [...document.querySelectorAll('#screen .sec-h h2')].find((h) => h.textContent === '밤사이 시장');
+      return [y('#hero'), y('#firstlook'), y('#screen [data-row]'), mk ? mk.getBoundingClientRect().top + scrollY : null]; }""")
+    if None in order or order != sorted(order): errs.append(f"첫 화면 순서가 다름: {order}")
     pg.locator("#hero .eye").click()
     if "••••" not in pg.inner_text("#hero .big"): errs.append("금액 가리기가 안 됨")
     pg.locator("#hero .eye").click()

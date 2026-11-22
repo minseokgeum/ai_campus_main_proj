@@ -91,6 +91,7 @@ function renderShell() {
   $("#record").innerHTML = r.kind === "live"
     ? ((s7 || s8 || {}).before_open ? `<span class="tag sealed">장 전 고정 기록</span><b>개장 전에 고정해 둔 예상</b>07:30 카드 ${s7 ? s7.issued : "–"} · 08:11 카드 ${s8 ? s8.issued : "–"} 발행${r.open_at ? ` · 시작가 ${r.open_at} 받음` : ""}`
       : `<span class="tag late">개장 뒤 발행</span><b>장 전에 고정한 기록이 아니에요</b>카드가 ${s7 ? s7.issued : "–"}·${s8 ? s8.issued : "–"}에 발행됐어요. 입력은 장 전 자료만 썼어요.${r.open_at ? ` 시작가는 ${r.open_at}에 받았어요.` : ""}`)
+    : r.kind === "forward" && (s7 || s8) && (s7 || s8).before_open ? `<span class="tag sealed">개장 전 발행</span><b>${r.same_as_sealed ? "개장 전에 고정해 둔 예상과 같은 숫자" : "개장 전에 발행한 예상을 다시 계산한 숫자"}</b>07:30 카드 ${s7 ? s7.issued : "–"} · 08:11 카드 ${s8 ? s8.issued : "–"} 발행(개장 전).${r.same_as_sealed ? " 장 마감 뒤 같은 규칙으로 다시 계산해도 같았어요." : " 화면 숫자는 장 마감 뒤 확정된 자료로 같은 규칙을 다시 계산한 값이에요."}`
     : r.kind === "forward" && (s7 || s8) ? `<span class="tag late">개장 뒤 발행</span><b>장 전에 고정한 기록이 아니에요</b>카드가 ${s7 ? s7.issued : "–"}·${s8 ? s8.issued : "–"}에 발행됐어요.${r.same_as_sealed ? " 장 마감 뒤 같은 규칙으로 다시 계산해도 숫자가 같았어요." : ""}`
     : r.kind === "forward" ? `<span class="tag post">${r.after_freeze ? "규칙 고정 뒤 · 사후 계산" : "규칙 고정 전 · 사후 계산"}</span><b>고정한 규칙으로 다시 계산한 날</b>그날 이전 자료만 썼지만, 그 아침에 실제로 발행한 화면은 아니에요.`
       : `<span class="tag post">과거 재생</span><b>규칙을 만들 때 이미 본 기간</b>그날 이전 자료만 써서 다시 계산한 화면이에요.`;
