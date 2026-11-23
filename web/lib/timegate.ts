@@ -20,6 +20,6 @@ export async function timeGate(): Promise<TimeGate> {
   return {
     now, today: k.ymd,
     slotMax: hm >= 811 ? "0811" : hm >= 730 ? "0730" : "0000",
-    checkShown: (t, at) => t < k.ymd || (t === k.ymd && (at ? new Date(at) <= now : fixed)),
+    checkShown: (t, at) => t < k.ymd || (t === k.ymd && (at ? Math.floor(new Date(at).getTime() / 60000) * 60000 <= now.getTime() : fixed)),
   };
 }

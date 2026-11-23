@@ -80,7 +80,8 @@ export async function dayModel(t?: string): Promise<DayModel | null> {
   const k = kstNow(nowAt), hm = k.hour * 100 + k.minute;
   const shown = (slot: string) => day! < k.ymd || (day === k.ymd && hm >= (slot === "0811" ? 811 : 730));
   const past = day! < k.ymd, pastFixed = day === k.ymd && hm >= checkTime(day!)[1];
-  const CHECK_GATE = "($3 or (checked_at is not null and checked_at <= $4) or (checked_at is null and $5))";
+  // 분 단위로 비교(2026-11-24): 채점 줄은 채점이 끝나야 생기므로 실제 시각엔 차이가 없고, 시연 시각 09:01에서 09:01:30에 끝난 채점이 보인다
+  const CHECK_GATE = "($3 or (checked_at is not null and date_trunc('minute', checked_at) <= $4) or (checked_at is null and $5))";
   const cards = (await pool.query("select * from model.cards where t = $1 order by slot", [day])).rows.map(toCard).filter((c) => shown(c.slot));
   const slots = cards.map((c) => c.slot);
   const card = cards.find((c) => c.slot === "0811" && c.status === "ok") ?? cards.find((c) => c.status === "ok") ?? cards[cards.length - 1] ?? null;

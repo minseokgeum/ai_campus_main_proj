@@ -4,13 +4,15 @@
 import { useState, type ReactNode } from "react";
 import { Sheet } from "@/components/sheet";
 
-type Day = { t: string; label: string; news: boolean; ai: boolean };
-const SLOTS: [string, string, string][] = [
-  ["0640", "06:40", "준비 중 · 예상 공개 전"],
-  ["0745", "07:45", "예상 공개 · 장전 거래 전"],
-  ["0820", "08:20", "장전 거래 반영"],
-  ["1000", "10:00", "채점 뒤"],
-  ["2100", "21:00", "저녁 · 야간선물 진행 중"],
+type Day = { t: string; label: string; news: boolean; ai: boolean; chk: [string, string] };   // chk: 그날 채점 시각 [글자, 값]
+// 2026-11-24: 시간대 안의 아무 시각이 아니라 화면이 바뀌는 경계 시각으로. 채점은 날마다 실제 채점 시각
+type Key = "0600" | "0730" | "0811" | "chk" | "1800";
+const slotsOf = (d?: Day): [Key, string, string, string][] => [   // [고르는 값, 이동할 HHMM, 글자, 설명]
+  ["0600", "0600", "06:00", "야간장 마감 · 예상 준비 중"],
+  ["0730", "0730", "07:30", "예상 공개"],
+  ["0811", "0811", "08:11", "장전 거래 반영"],
+  ["chk", d?.chk[1] ?? "0905", d?.chk[0] ?? "09:05", "채점 결과 공개"],
+  ["1800", "1800", "18:00", "야간선물 시작"],
 ];
 const kind = (d?: Day) => (!d ? "" : d.ai ? "예측·뉴스·AI 요약" : d.news ? "예측·뉴스" : "예측만");
 
@@ -18,11 +20,15 @@ export function DemoPicker({ days, current, today, nowHm, trigger, className }: 
   days: Day[]; current: string | null; today: string; nowHm: string; trigger: ReactNode; className?: string;
 }) {
   const [d, setD] = useState(current?.slice(0, 8) && days.some((x) => x.t === current.slice(0, 8)) ? current.slice(0, 8) : days[0]?.t ?? "");
-  const [s, setS] = useState(current && SLOTS.some((x) => x[0] === current.slice(8)) ? current.slice(8) : "0820");
+  const [s, setS] = useState<Key>(() => {
+    const cd = days.find((x) => x.t === current?.slice(0, 8)), hm = current?.slice(8);
+    return slotsOf(cd).find((x) => x[1] === hm)?.[0] ?? "0811";
+  });
   const day = days.find((x) => x.t === d);
-  const future = (slot: string) => d === today && slot > nowHm;   // 지금보다 뒤 시각은 고를 수 없음(공개 전 예상이 보이지 않게)
+  const slots = slotsOf(day), at = (k: Key) => slots.find((x) => x[0] === k)![1];
+  const future = (k: Key) => d === today && at(k) > nowHm;   // 지금보다 뒤 시각은 고를 수 없음(공개 전 예상이 보이지 않게)
   const back = () => (typeof window === "undefined" ? "/" : window.location.pathname + window.location.search);
-  const go = () => { window.location.href = `/demo-time?at=${d}${s}&back=${encodeURIComponent(back())}`; };
+  const go = () => { window.location.href = `/demo-time?at=${d}${at(s)}&back=${encodeURIComponent(back())}`; };
   const off = () => { window.location.href = `/demo-time?at=off&back=${encodeURIComponent(back())}`; };
   return (
     <Sheet className={className} title="시연 시각 고르기" sub="고른 날짜·시각의 화면으로 바뀌어요" trigger={trigger}>
@@ -35,7 +41,7 @@ export function DemoPicker({ days, current, today, nowHm, trigger, className }: 
         <p className="dpk-note">{day ? (day.ai ? "이날은 예측·채점·야간선물·뉴스·AI 요약이 모두 있어요." : day.news ? "이날은 예측·채점·뉴스가 있어요. AI 요약은 없어요." : "이날은 예측·채점·야간선물·미국 지수만 있어요. 뉴스와 AI 요약 칸은 비어 있어요.") : "고를 수 있는 날짜가 없어요."}</p>
         <span className="dpk-l"><span>시각</span></span>
         <div className="dpk-slots" role="radiogroup" aria-label="시각">
-          {SLOTS.map(([v, t, sub]) => (
+          {slots.map(([v, , t, sub]) => (
             <button key={v} type="button" role="radio" aria-checked={s === v} className={s === v ? "on" : ""} disabled={future(v)} onClick={() => setS(v)}>
               <b>{t}</b><small>{future(v) ? "아직 오지 않은 시각" : sub}</small>
             </button>

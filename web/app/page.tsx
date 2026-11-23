@@ -60,7 +60,8 @@ export default async function Home() {
   // 07:30이 지났는데 오늘 카드가 아직 없음(야간 자료가 늦게 들어옴, 배포용 변경 기록 08)
   const delayed = !before0730 && !isClosedDay(today) && m?.t !== today;
   const hol = closedReason(today);   // 평일 휴장일이면 '신정이라' 같은 이유
-  const stamp = delayed ? `${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")} · 늦어지는 중` : fresh ? `${m!.card!.slot === "0811" && (marketDay(today)?.premarket ?? true) ? "08:11" : "07:30"} 기준` : off ? "장이 열리지 않는 날" : `${hm} · 준비 중`;
+  // 머리 기준 시각: 채점 뒤면 채점 시각(밤사이 탭과 같게, 2026-11-24), 그 전엔 07:30·08:11 카드 시각
+  const stamp = delayed ? `${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")} · 늦어지는 중` : fresh ? `${m!.check ? m!.check.checkedAt ?? checkTime(today)[0] : m!.card!.slot === "0811" && (marketDay(today)?.premarket ?? true) ? "08:11" : "07:30"} 기준` : off ? "장이 열리지 않는 날" : `${hm} · 준비 중`;
   const mins = minutesTo0730(today, nowDate);
   const lastLabel = m ? (hol ? `${Number(m.t.slice(4, 6))}월 ${Number(m.t.slice(6))}일` : isClosedDay(today) ? `${dateLabel(isoDay(m.t)).replace(/^.*\((.)\)$/, "$1")}요일` : m.t === addDays(today, -1) ? "어제" : `${md(m.t)}`) : "";
   // 3분 브리핑 '산업'·'내 종목' 카드: 내 업종을 밤사이 뉴스가 많은 순으로, 보유 종목은 등록 순으로
@@ -79,11 +80,11 @@ export default async function Home() {
     : [new Map(), null, new Map<string, [number, number]>(), []];
   const recN = rec ? [...rec.cells.values()].flatMap((m) => [...m.values()]).filter((c) => c.in80 != null) : [];
   const slot0811 = m?.card?.slot === "0811" && (marketDay(today)?.premarket ?? true);
-  // 단계를 누르면 그 시점 화면(시연 계정만, 테스트 편의, 2026-11-23): 단계 시각 + 1분으로 시연 시각을 바꾼다. 아직 오지 않은 시각은 링크 없음
+  // 단계를 누르면 그 시점 화면(시연 계정만, 테스트 편의, 2026-11-23): 단계 시각 그대로(경계 시각, 2026-11-24) 시연 시각을 바꾼다. 아직 오지 않은 시각은 링크 없음
   const demoUser = await isDemoUser();
   const stepAt = (hm: string) => {
     if (!demoUser) return undefined;
-    const [h, mi] = hm.split(":").map(Number), t = h * 60 + mi + 1;
+    const [h, mi] = hm.split(":").map(Number), t = h * 60 + mi;
     const stamp = `${today}${String(Math.floor(t / 60)).padStart(2, "0")}${String(t % 60).padStart(2, "0")}`;
     const real = new Date(), at = new Date(`${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(8, 10)}:${stamp.slice(10, 12)}:00+09:00`);
     return at.getTime() <= real.getTime() ? stamp : undefined;
