@@ -1320,5 +1320,5 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 /* 먼저 확인할 것의 작은 줄: 앱 공통 .mini(테두리 상자)를 지우고 원래 버전처럼 윗선 하나 + 한 줄 글자(2026-11-23) */
 .allview .look3 .mini { border: 0; border-top: 1px solid var(--line-2); border-radius: 0; padding: 8px 0 0; }
 .allview .look3 .mini b { display: inline; margin-bottom: 0; font-size: 13px; }
-.allview .look3 .mini > b:last-child { white-space: nowrap; }
-.allview .look3 .mini.nw > b { display: block; font-size: 13.5px; }
+.allview .look3 .mini:not(.nw) > b:last-child { white-space: nowrap; }   /* 확인할 표시 줄의 오른쪽 금액만 한 줄로 */
+.allview .look3 .mini.nw > b { display: block; font-size: 13.5px; white-space: normal; overflow-wrap: anywhere; }   /* 소식 제목은 줄바꿈 */
