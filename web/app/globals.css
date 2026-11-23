@@ -1266,3 +1266,50 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 .dbody em { font-style: normal; font-size: 12px; color: var(--muted); }
 .dgo { flex: none; font-size: 22px; color: var(--muted); }
 .dpick .fine { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 4px; }
+
+/* 예상과 밤사이 소식, 같이 읽기(원래 버전 .combined.v4와 같은 짜임, 2026-11-23) */
+.allcard .combined { margin-top: 2px; padding: 10px 12px; border-radius: 12px; background: var(--mint); display: block; }
+.allcard .combined p { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--ink); }
+.allcard .combined p + p { margin-top: 5px; }
+.allcard .combined .cb-h { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: var(--teal); }
+.allcard .combined .cb-band, .allcard .combined .cb-read { color: var(--sub); }
+.allcard .combined p.mute { color: var(--muted); }
+.allcard .combined .cb-meta { margin-top: 5px; font-size: 11px; color: var(--muted); }
+.allcard .combined.plain { background: var(--block); }
+.allcard .combined.plain .cb-h { color: var(--sub); }
+.allcard .combined .ai { display: inline-grid; place-items: center; height: 17px; padding: 0 5px; margin-right: 6px; border-radius: 5px; background: var(--teal); color: #fff; font-size: 10px; font-weight: 700; vertical-align: 2px; }
+.allcard .ac-flownote { font-size: 11.5px; color: var(--neg); line-height: 1.5; margin-top: -4px; }
+
+/* 먼저 확인할 것 칸 3개(원래 버전 .look3, 2026-11-23) */
+.allview .look3 { display: grid; gap: 8px; margin-top: 2px; }
+.allview .look3 .l3 { display: grid; grid-template-columns: 32px 1fr 16px; gap: 10px; align-items: start; width: 100%; text-align: left; padding: 12px; border-radius: 14px; background: #fff; border: 1px solid var(--line); color: var(--ink); font-size: 13px; }
+.allview .look3 a.l3 { min-height: 44px; }
+.allview .look3 .l3 > em { font-style: normal; color: var(--muted); margin-top: 6px; font-size: 18px; }
+.allview .look3 .ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--surface); color: var(--sub); font-size: 11px; font-weight: 700; }
+.allview .look3 .ic.a { background: var(--teal-soft); color: var(--teal); }
+.allview .look3 .ic.y { background: #fff4d6; color: #8a6400; }
+.allview .look3 .ic.w { background: var(--neg-bg); color: var(--neg); }
+.allview .look3 .bd { min-width: 0; display: block; }
+.allview .look3 .bd > b, .allview .look3 .nw0 > b, .allview .look3 .mini.nw > b { display: block; font-size: 14.5px; font-weight: 700; line-height: 1.45; color: var(--ink); }
+.allview .look3 .bd small { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.55; color: var(--sub); }
+.allview .look3 .who { display: block; font-size: 12px; font-weight: 700; color: #8a6400; margin-bottom: 2px; }
+.allview .look3 .nw0 { display: block; width: 100%; font-size: 13px; color: inherit; }
+.allview .look3 .mini { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; width: 100%; padding: 8px 0 0; margin-top: 8px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--sub); min-height: 32px; }
+.allview .look3 .mini b { font-weight: 700; color: var(--ink); }
+.allview .look3 .mini .lo { color: var(--neg); }
+.allview .look3 .mini.nw { display: block; }
+.allview .look3 .mini.nw > b { font-size: 13.5px; }
+.allview .look3 .ai { display: inline-grid; place-items: center; height: 17px; padding: 0 5px; margin-right: 6px; border-radius: 5px; background: var(--teal); color: #fff; font-size: 10px; font-weight: 700; vertical-align: 2px; }
+.allview .look3 .fl-more { margin-top: 6px; }
+
+/* 다가오는 일정(원래 버전 .rowline, 2026-11-23) */
+.allview .allevents { display: flex; flex-direction: column; }
+.allview .evrow { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line-2); }
+.allview .evrow:last-child { border-bottom: 0; }
+.allview .evrow b { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.45; }
+.allview .evrow small { display: block; margin-top: 2px; font-size: 12px; color: var(--sub); line-height: 1.5; }
+.allview .evchip { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; margin-right: 5px; border-radius: 6px; background: var(--teal-soft); color: var(--teal); font-size: 11px; font-weight: 700; vertical-align: 1px; }
+.allview .evchip.lo { background: var(--neg-bg); color: var(--neg); }
+.allview .evday { flex: none; padding: 3px 8px; border-radius: 8px; background: var(--surface); color: var(--sub); font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.allview .evday.on { background: var(--teal-soft); color: var(--teal); }
+.allview .look3 .bd small.late { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); color: var(--neg); }

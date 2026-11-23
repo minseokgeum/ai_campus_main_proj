@@ -15,7 +15,8 @@ import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
 import { nightNews, byStock, bySector, newsBuckets } from "@/lib/news";
 import { aiBrief, companyReasons } from "@/lib/summary";
-import { dayModel, isoDay, night as nightOf, recordData } from "@/lib/model";
+import { dayModel, isoDay, night as nightOf, nxtHistory, recordData } from "@/lib/model";
+import { upcomingEvents } from "@/lib/events";
 import { account, buildRows, P } from "@/lib/night";
 import { md, US, usLatest } from "@/lib/market";
 import { lastCloses } from "@/lib/prices";
@@ -71,7 +72,9 @@ export default async function Home() {
   // '한 화면에 보기'(원래 버전처럼 밤사이 정보를 한 화면에): 쿠키로 기억. 오늘 예상이 나온 때만 그 화면, 그 밖의 상태(07:30 전·휴장·지연)는 나눠 보기와 같다
   const allMode = (await cookies()).get("home_view")?.value === "all";
   const allOn = allMode && fresh && acct.holdings.length > 0;
-  const [reasons, rec] = allOn ? await Promise.all([companyReasons(brief.date), recordData(acct.holdings.map((h) => h.code), 20)]) : [new Map(), null];
+  const [reasons, rec, nxtHist, events] = allOn ? await Promise.all([companyReasons(brief.date), recordData(acct.holdings.map((h) => h.code), 20), nxtHistory(acct.holdings.map((h) => h.code), m!.t),
+    upcomingEvents(m!.t, [...acct.holdings.map((h) => h.code), ...acct.watch])])
+    : [new Map(), null, new Map<string, [number, number]>(), []];
   const recN = rec ? [...rec.cells.values()].flatMap((m) => [...m.values()]).filter((c) => c.in80 != null) : [];
   const slot0811 = m?.card?.slot === "0811" && (marketDay(today)?.premarket ?? true);
   const steps = [{ t: "06:00", label: "야간장 마감", done: true }, { t: "07:30", label: "예상", done: true },
@@ -89,7 +92,7 @@ export default async function Home() {
       <main className="scroll home">
         {acct.holdings.length ? <ViewToggle all={allMode} /> : null}
         {allOn ? (
-          <AllView rows={rows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons}
+          <AllView rows={rows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
             lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
             us={us} night={night} buckets={buckets} nightLive={now.hour >= 18}
             briefSlot={!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : null} />

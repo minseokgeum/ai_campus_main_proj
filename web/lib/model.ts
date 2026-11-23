@@ -189,3 +189,18 @@ export async function recordData(codes: string[], n = 20): Promise<{ dates: stri
   }
   return { dates, cells };
 }
+
+/** 종목별 최근 장전 거래 기록: t 이전 08:11 카드 최근 days장 중 장전 거래 값(nxt_g)이 있던 날 수. 코드 → [있던 날, 센 날].
+ *  원래 버전 nxt_hist와 같은 쓰임: 3일 이상 셌는데 0이면 '평소 개장 전 거래가 없는 종목 → 새 숫자는 08:50 예상체결가부터'(2026-11-23) */
+export async function nxtHistory(codes: string[], t: string, days = 10): Promise<Map<string, [number, number]>> {
+  const out = new Map<string, [number, number]>();
+  if (!codes.length) return out;
+  try {
+    const r = await db().query(
+      `select code, count(nxt_g) as has, count(*) as n from model.card_stocks
+       where slot = '0811' and code = any($1) and t in (select distinct t from model.card_stocks where slot = '0811' and t < $2 order by t desc limit $3)
+       group by code`, [codes, t, days]);
+    for (const x of r.rows) out.set(x.code, [Number(x.has), Number(x.n)]);
+  } catch { /* 표가 없으면 빈 값 */ }
+  return out;
+}

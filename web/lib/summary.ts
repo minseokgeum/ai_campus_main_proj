@@ -84,13 +84,24 @@ export async function aiBrief(date: string): Promise<Brief> {
 
 export { IMPACT_LABEL } from "@/lib/format";
 
-/** 종목 이유 한 문장(news.company_reason, news_company_reason.ipynb가 매일 07:00 만듦): 종목코드 → 문장·관계사 문장·근거 기사.
+/** 종목 이유(news.company_reason, news_company_reason.ipynb가 평일 06:25~ 아침 카드 직후 만듦): 종목코드 → 문장·관계사 문장·근거 기사·방향·매체 수.
  *  홈 '한 화면에 보기'의 "예상과 밤사이 소식, 같이 읽기" 자리. 표가 없거나 그날 줄이 없으면 빈 값 */
-export async function companyReasons(date: string): Promise<Map<string, { line: string; relation: string | null; key: string | null }>> {
-  const out = new Map<string, { line: string; relation: string | null; key: string | null }>();
+export type Reason = {
+  line: string; relation: string | null; key: string | null;
+  dir: "위쪽" | "아래쪽" | "엇갈림" | null;   // 기사 내용으로 본 이 종목 쪽 방향(자기 기사는 impact, 관계사 기사는 규칙으로 바꾼 stock_impact). 주가 방향이 아니다
+  outlets: number | null;                     // 고른 소식의 매체 수(시간대 안)
+};
+const DIR: Record<string, Reason["dir"]> = { positive: "위쪽", negative: "아래쪽", mixed: "엇갈림" };
+export async function companyReasons(date: string): Promise<Map<string, Reason>> {
+  const out = new Map<string, Reason>();
   try {
-    const { rows } = await db().query("select company_code, line, relation_line, key from news.company_reason where date = $1 and coalesce(line, '') <> ''", [date]);
-    for (const r of rows) out.set(r.company_code, { line: r.line, relation: r.relation_line ?? null, key: r.key ?? null });
+    const { rows } = await db().query(
+      `select company_code, line, relation_line, key, route, impact, stock_impact, payload->>'news_outlets' as outlets
+       from news.company_reason where date = $1 and coalesce(line, '') <> ''`, [date]);
+    for (const r of rows) {
+      const imp = r.route === "관계사" ? r.stock_impact : r.impact;
+      out.set(r.company_code, { line: r.line, relation: r.relation_line || null, key: r.key ?? null, dir: DIR[imp] ?? null, outlets: r.outlets == null ? null : Number(r.outlets) });
+    }
   } catch { /* 표가 아직 없으면 빈 값 */ }
   return out;
 }
