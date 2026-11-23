@@ -3,12 +3,14 @@
 사용(news_search 폴더에서): python -u run_news.py <단계> [START_ROUND]
   extract  : news_extract 실시간 처리(WATCH_RUN). START_ROUND(UTC 회차)부터 아직 처리 안 한 기사를 60초마다 처리
   track    : news_track 실시간 처리(WATCH_RUN). 새 추출 결과로 사건 묶기·후속 판별·매체 수
-  summaries: 지금 볼 브리핑 범위(전날 23:00 ~ 그날 05:45에 수집된 기사, 한국)로 시장 요약·제목·업종·종목 요약 → news_to_db
+  summaries: 지금 볼 브리핑 범위(전날 23:00 ~ 그날 06:15에 발행된 기사, 한국)로 시장 요약·제목·업종·종목 요약 → news_to_db.
+             날짜(YYYY-MM-DD)를 붙이면 그날 브리핑을 다시 만든다(예: summaries 2026-11-23)
   ko       : news_ko_summary 실시간 처리(WATCH_RUN). 추출된 기사마다 뉴스 상세용 한국어 번역(comparison_summary를 줄글 한 단락으로)을 미리 만든다
   sync     : news_to_db만(기사 한국어 한 줄·요약을 DB로)
   collect  : news_collect 연속 수집(구글 뉴스 RSS 검색 → DB). 멈출 때까지 돈다(2026-11-21 맥에서 서버로 옮김)
   relation : news_company_relation(종목–해외 상대 관계 한 문장). 검색어 연결표(news.term_links)가 바뀐 짝만 새로 만든다 → news_to_db. 연결표를 다시 올렸을 때 손으로
-  reason   : news_company_reason(종목마다 밤사이 기사 한 문장, 관계사 기사면 관계 문장) 지금 브리핑 범위로 → news_to_db. cron 07:00(06:20 아침 카드 뒤)
+  reason   : news_company_reason(종목마다 밤사이 기사 한 문장, 관계사 기사면 관계 문장) 지금 브리핑 범위로 → news_to_db. cron 07:00(06:20 아침 카드 뒤).
+             summaries처럼 날짜를 붙이면 그날 것을 다시 만든다
 extract·track·ko·collect는 서버 systemd가 계속 켜 두고(꺼지면 다시 켬), summaries·sync는 cron이 부른다.
 """
 import datetime as dt
@@ -48,15 +50,17 @@ def collect():
     g['run_collect'](g['TERMS'], until=None)
 
 
-BRIEF_START = dt.time(23, 0)    # 브리핑 범위 시작: 전날 23:00(한국, 수집 시각 기준)
-BRIEF_END = dt.time(5, 45)      # 끝: 그날 05:45 수집분까지. 05:50에 확정본을 돌려 06:00 전에 끝낸다(2026-11-20 결정)
-TIME_COLUMN = 'first_seen_utc'  # 수집 시각 기준(발행 시각으로 자르면 늦게 수집되는 기사가 빠진다). 월요일도 평일과 같다
+BRIEF_START = dt.time(23, 0)    # 브리핑 범위 시작: 전날 23:00(한국, 발행 시각)
+BRIEF_END = dt.time(6, 15)      # 끝: 그날 06:15 발행분까지. 06:20에 확정본을 돌리고 06:30에 화면에 공개(2026-11-23 결정)
+TIME_COLUMN = 'published_utc'   # 발행 시각 기준(2026-11-23: '밤사이 나온 기사'라는 서비스 취지에 맞게. 그전엔 수집 시각).
+                                # 노트북은 여기에 더해 END까지 수집된 기사만 쓴다(나중에 다시 돌려도 정규 실행과 같은 기사). 월요일도 평일과 같다
 
 
-def brief_window(now=None):
-    """06:00 브리핑의 범위. 12:00 뒤면 다음 날 브리핑(오늘 23:00 ~ 내일 05:45), 그 전이면 오늘 브리핑(어제 23:00 ~ 오늘 05:45)."""
+def brief_window(now=None, day=None):
+    """06:30 브리핑의 범위. day(YYYY-MM-DD)를 주면 그날 브리핑(전날 23:00 ~ 그날 06:15).
+    안 주면 12:00 뒤엔 다음 날 브리핑(오늘 23:00 ~ 내일 06:15), 그 전엔 오늘 브리핑(어제 23:00 ~ 오늘 06:15)."""
     now = now or dt.datetime.now(KST)
-    end_day = now.date() + dt.timedelta(days=1) if now.hour >= 12 else now.date()
+    end_day = dt.date.fromisoformat(day) if day else now.date() + dt.timedelta(days=1) if now.hour >= 12 else now.date()
     start = dt.datetime.combine(end_day - dt.timedelta(days=1), BRIEF_START, KST)
     end = dt.datetime.combine(end_day, BRIEF_END, KST)
     return start.strftime('%Y-%m-%d %H:%M'), end.strftime('%Y-%m-%d %H:%M')
@@ -72,7 +76,7 @@ if __name__ == '__main__':
     elif step == 'ko':
         run('news_ko_summary', dict(RUN_LLM=True, WATCH_RUN=True))
     elif step == 'summaries':
-        s, e = brief_window()
+        s, e = brief_window(day=sys.argv[2] if len(sys.argv) > 2 else None)
         print('브리핑 범위', s, '~', e, flush=True)
         for nb in ['news_macro_hot_issue', 'news_headline', 'news_sector_hot_issue', 'news_company_hot_issue', 'news_company_summary']:
             try:
@@ -88,7 +92,7 @@ if __name__ == '__main__':
         run('news_company_relation', dict(RUN_LLM=True))
         run('news_to_db', {})
     elif step == 'reason':
-        s, e = brief_window()
+        s, e = brief_window(day=sys.argv[2] if len(sys.argv) > 2 else None)
         print('브리핑 범위', s, '~', e, flush=True)
         run('news_company_reason', dict(RUN_LLM=True, START_KST=s, END_KST=e, TIME_COLUMN=TIME_COLUMN))
         run('news_to_db', {})
