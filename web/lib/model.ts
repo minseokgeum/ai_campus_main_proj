@@ -7,6 +7,7 @@ import { kstNow } from "@/lib/calendar";
 import { appNow } from "@/lib/clock";
 import { checkTime } from "@/lib/marketdays";
 import { timeGate } from "@/lib/timegate";
+import { adjustOf, trustOf } from "@/lib/trust";
 
 const TIER = tiers as Record<string, number>;
 /** 1: 모델 설계 200종목 · 2: 서비스 대상(설계 밖, 같은 규칙으로 계산) · 3: 서비스 대상 아님 */
@@ -19,7 +20,10 @@ export type Card = {
 };
 export type CardStock = {
   code: string; name: string; pc: number; h: number; l80: number; u80: number; l90: number; u90: number;
-  grade: "높음" | "보통" | "낮음" | null; p: number | null; nxtG: number | null; earn: boolean;
+  grade: "높음" | "보통" | "낮음" | null;   // 믿을 정도 = 07:30 예상 믿을 정도(lib/trust.ts, E107). 08:11 장전 거래가 있을 때만
+  dir: "높음" | "보통" | "낮음" | null;     // 방향 유지 = 장전 거래 방향대로 시가가 열릴 가능성(카드 grade_0811, 예전 화면 이름 '믿을 정도')
+  p: number | null; nxtG: number | null; earn: boolean;
+  hb: number | null; lb: number | null; ub: number | null;   // 08:11 보정 예상 시가·보정 범위(장전 거래가 없으면 null)
 };
 export type CheckRow = { code: string; open: number; y: number; in80: boolean; in90: boolean };
 export type Check = { scored: number; inBand80: number; inBand90: number; maeH: number; checkedAt: string | null };   // checkedAt: 채점을 마친 시각 HH:MM(지난 기록은 null)
@@ -91,9 +95,12 @@ export async function dayModel(t?: string): Promise<DayModel | null> {
   ]);
   for (const r of st.rows) {
     const caut = (r.cautions as { kind: string }[]) ?? [];
+    const h = Number(r.h), l80 = Number(r.l80), u80 = Number(r.u80), g = num(r.nxt_g);
+    const adj = adjustOf(h, l80, u80, g);
     out.stocks.set(r.code, {
-      code: r.code, name: r.name, pc: Number(r.pc), h: Number(r.h), l80: Number(r.l80), u80: Number(r.u80), l90: Number(r.l90), u90: Number(r.u90),
-      grade: r.grade_level ?? null, p: num(r.grade_p), nxtG: num(r.nxt_g), earn: caut.some((c) => c.kind === "e_earn"),
+      code: r.code, name: r.name, pc: Number(r.pc), h, l80, u80, l90: Number(r.l90), u90: Number(r.u90),
+      grade: trustOf(h, l80, u80, g), dir: r.grade_level ?? null, p: num(r.grade_p), nxtG: g, earn: caut.some((c) => c.kind === "e_earn"),
+      hb: adj?.hb ?? null, lb: adj?.lb ?? null, ub: adj?.ub ?? null,
     });
   }
   if (ck.rows[0]) {

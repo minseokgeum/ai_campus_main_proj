@@ -20,6 +20,22 @@ DRAFT = [{"code": "000660", "name": "SK하이닉스", "q": 12, "avg": None, "in_
          {"code": "105840", "name": "우진", "q": 50, "avg": 9000, "in_model": False}]
 bad, n = [], 0
 
+# 08:11 해석 규칙(E107): 서비스 복사본(core/trust08.py)이 정본(model/workbench/trust_0811.py)과 같은 숫자·같은 결과인지
+import importlib.util
+from pathlib import Path as _P
+_root = _P(__file__).resolve().parents[2]
+_spec = importlib.util.spec_from_file_location("trust_0811", _root / "model/workbench/trust_0811.py"); _canon = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_canon)
+sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+from core import trust08 as _copy
+n += 1
+if (tuple(_copy.CUTS), _copy.W, _copy.K) != (tuple(_canon.CUTS), _canon.W, _canon.K):
+    bad.append("trust08 상수가 정본과 다름")
+for _H, _L, _U, _g in ((0, -.02, .02, .005), (0, -.02, .02, .015), (.01, -.01, .03, -.02), (-.03, -.05, -.01, -.031)):
+    n += 1
+    _c, _k = _copy.t08(_H, _L, _U, _g), _canon.adjust(_H, _L, _U, _g)
+    if _c["trust"] != _canon.trust(_H, _L, _U, _g) or abs(_c["Hb"] - _k[0]) > 1e-6 or abs(_c["adj"][0] - _k[1]) > 1e-6:
+        bad.append(f"trust08 결과가 정본과 다름: {(_H, _L, _U, _g)}")
+
 
 def wait(pg, T, slot, acct, tab):
     pg.wait_for_function(

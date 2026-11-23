@@ -12,7 +12,7 @@ import { StockPanel, colorOf, pctText, swonText, wonText } from "@/components/st
 export type BRow = {
   code: string; name: string; sector: string; tier: 1 | 2 | 3; kind: "ok" | "out" | "low" | "nocalc" | "notservice"; side: "up" | "down" | null;
   qty: number; pc: number | null; h: number | null; l80: number | null; u80: number | null; l90: number | null; u90: number | null;
-  grade: "높음" | "보통" | "낮음" | null; nxtG: number | null; earn: boolean; y: number | null; open: number | null; in80: boolean | null; nNews: number; v?: { neg: number; pos: number; neu: number };   // v: 밤사이 소식의 이 종목 기준 판정 개수
+  grade: "높음" | "보통" | "낮음" | null; dir: "높음" | "보통" | "낮음" | null; hb: number | null; lb: number | null; ub: number | null; nxtG: number | null; earn: boolean; y: number | null; open: number | null; in80: boolean | null; nNews: number; v?: { neg: number; pos: number; neu: number };   // v: 밤사이 소식의 이 종목 기준 판정 개수
   avg: number | null;   // 평단(보유 종목에 넣었을 때)
 };
 
@@ -167,15 +167,17 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
               <>
                 {cur.tier === 2 ? <p className="t2box">모델을 설계할 때 쓰지 않은 종목이에요. 같은 규칙으로 계산했지만, 과거 검증은 설계 종목(코스피 150 + 코스닥 50)으로만 했어요.</p> : null}
                 <StockPanel icon={<span className="ic" style={{ background: tint(cur.sector)[0], color: tint(cur.sector)[1] }}>{cur.name.slice(0, 1)}</span>} phase={phase} qty={qtyOf(cur)} setQty={(q) => setOvr({ ...ovr, [cur.code]: q })} acctAmount={acct.amount} acctValue={acct.value}
-                  s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg }} />
+                  s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: phase === "pre" && cur.hb != null ? cur.hb : cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg,
+                    adj: phase === "pre" && cur.lb != null && cur.ub != null ? [cur.lb, cur.ub] : null, h0730: cur.h }} />
                 <div className="schips">
                   {cur.grade ? <span className="g tq">믿을 정도 {cur.grade} {DOTS[cur.grade]}<GradeHelp /></span> : <span className="n">믿을 정도는 08:11에 나와요</span>}
                   {cur.kind === "out" ? <span className="w">범위 밖</span> : null}
+                  {phase === "pre" && cur.dir ? <span className="n">방향 유지 {cur.dir}</span> : null}
                   {phase === "post" && cur.in80 != null ? <span className={cur.in80 ? "g" : "w"}>{cur.in80 ? "범위 안에서 시작" : "범위 밖에서 시작"}</span> : null}
                   <span className="sec">{cur.sector} 업종 · {rows.filter((r) => r.sector === cur.sector).length}종목</span>
                   {cur.earn ? <span className="w">어제 실적 공시</span> : null}
                 </div>
-                <p className="fine">노란 띠는 80% 범위예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{phase === "pre" && cur.nxtG != null ? <><br />08:10 장전 거래 가격은 {pctText(cur.nxtG)}이에요.</> : null}</p>
+                <p className="fine">노란 띠는 07:30 예상 범위(80%)예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{phase === "pre" && cur.nxtG != null ? <><br />08:10 장전 거래 가격은 {pctText(cur.nxtG)}이에요.</> : null}{phase === "pre" && cur.hb != null && cur.lb != null && cur.ub != null ? <><br />08:11 보정 예상 시가 {pctText(cur.hb)} · 보정 범위 {pctText(cur.lb)} ~ {pctText(cur.ub)}(07:30 예상 {pctText(cur.h)}을 장전 거래 쪽으로 옮겼어요).</> : null}{phase === "pre" && cur.dir ? <><br />방향 유지 {cur.dir}: 장전 거래 방향대로 시가가 열릴 가능성이에요.</> : null}</p>
               </>
             )}
             <div className="slinks">

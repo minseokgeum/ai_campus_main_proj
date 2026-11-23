@@ -163,6 +163,8 @@ button { border: 0; background: none; padding: 0; cursor: pointer; }
 .band .zero { position: absolute; top: 24px; height: 26px; width: 0; border-left: 1.5px dashed var(--mute); opacity: .75; }
 .band .f90 { position: absolute; top: 31px; height: 12px; border-radius: 6px; background: var(--band); opacity: .32; }
 .band .f80 { position: absolute; top: 29px; height: 16px; border-radius: 8px; background: var(--band); box-shadow: inset 0 0 0 1.2px var(--band-edge); min-width: 6px; }
+.band .fadj { position: absolute; top: 25px; height: 24px; border-radius: 11px; border: 1.6px solid var(--accent); background: transparent; min-width: 6px; pointer-events: none; }   /* 08:11 보정 가격대(E107) */
+.band .h730 { position: absolute; top: 33px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #b8c0c3; pointer-events: none; }   /* 07:30 예상 자리 */
 .band .end { position: absolute; top: 28px; height: 18px; line-height: 18px; font-size: 12px; font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .band .end.lo { transform: translateX(-100%); padding-right: 6px; } .band .end.hi { padding-left: 6px; }
 .band .dot { position: absolute; top: 37px; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2.5px var(--card); z-index: 2; }

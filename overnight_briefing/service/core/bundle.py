@@ -7,6 +7,7 @@
 pandas가 필요하므로 이 모듈은 로컬(라이브)에서만 쓴다. 배포판은 build_snapshot.py가 이 결과를 JSON으로 굳혀 쓴다.
 """
 from __future__ import annotations
+from core.trust08 import t08 as _t08
 
 import hashlib
 import importlib.util
@@ -192,7 +193,8 @@ def _universe(c8: dict, c7: dict) -> dict:
             b80=[_f(v) for v in s["band80"]], b90=[_f(v) for v in s["band90"]], in0730=s["code"] in in7,
             cautions=[dict(kind=c["kind"], title=STOCK_CAUTION.get(c["kind"], ("확인할 점", c.get("text", "")))[0],
                            body=STOCK_CAUTION.get(c["kind"], ("", c.get("text", "")))[1]) for c in s.get("cautions", [])],
-            grade=dict(level=g.get("level"), p=_f(g.get("p"), 3), g=_f(g.get("nxt_g"))) if g.get("level") else None,
+            grade=dict(level=g.get("level"), p=_f(g.get("p"), 3), g=_f(g.get("nxt_g"))) if g.get("level") else None,   # 방향 유지(카드 grade_0811)
+            t08=_t08(s["H"], s["band80"][0], s["band80"][1], g.get("nxt_g")),                                          # 07:30 예상 믿을 정도·08:11 보정(E107)
             y=_f(a.get("y")), inb=a.get("in_band80"), dir=a.get("nxt_dir_match"), seg=sg[0], group=sg[1])
     return out
 

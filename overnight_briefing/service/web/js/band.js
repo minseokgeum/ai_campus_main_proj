@@ -30,6 +30,10 @@ export function bandHtml(s, o) {
   let h = `<div class="band${o.pin != null ? " pinned" + near(o.pin) : ""}" data-band="${s.code}" data-h="${s.H}" data-lo="${lo}" data-hi="${hi}" style="--g:${G}px" role="img" aria-label="${esc(s.name)} 예상 범위 ${pct(lo)}에서 ${pct(hi)}, 예상 시가 ${pct(s.H)}">`;
   h += `<i class="track"></i>${o.wide ? `<i class="f90" style="left:${x(lo9)};width:${w(lo9, hi9)}"></i>` : ""}<i class="f80" style="left:${x(lo)};width:${w(lo, hi)}"></i>`;
   h += `<i class="zero" style="left:${x(0)}"></i>`;
+  if (s.adj && slot === "0811" && !o.showActual) {   // 08:11 보정 범위(청록 테두리)와 07:30 예상 자리(회색 점), E107
+    h += `<i class="fadj" style="left:${x(s.adj[0])};width:${w(s.adj[0], s.adj[1])}"></i>`;
+    if (s.H0730 != null) h += `<i class="h730" style="left:${x(s.H0730)}"></i>`;
+  }
   if (o.avg != null && isFinite(o.avg)) {
     if (o.avg >= dom[0] && o.avg <= dom[1]) h += `<i class="avg" style="left:${x(o.avg)}"></i><span class="avg-l" style="left:${x(o.avg)}">평단</span>`;
   }

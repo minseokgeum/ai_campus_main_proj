@@ -77,7 +77,7 @@ function dayInfo(t: string, checkedAt: string | null = null) {
 const toB = (r: Row, nNews: number, avg: number | null = null, v?: { neg: number; pos: number; neu: number }): BRow => ({
   code: r.code, name: r.name, sector: r.sector, tier: r.tier, kind: r.kind, side: r.side, qty: r.qty,
   pc: r.s?.pc ?? null, h: r.s?.h ?? null, l80: r.s?.l80 ?? null, u80: r.s?.u80 ?? null, l90: r.s?.l90 ?? null, u90: r.s?.u90 ?? null,
-  grade: r.s?.grade ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
+  grade: r.s?.grade ?? null, dir: r.s?.dir ?? null, hb: r.s?.hb ?? null, lb: r.s?.lb ?? null, ub: r.s?.ub ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
 });
 
 export default async function Night({ searchParams }: { searchParams: Promise<Q> }) {
@@ -167,10 +167,10 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   // 필터·정렬
   const count = (k: (r: Row) => boolean) => all.filter(k).length;
   const f = sp.f ?? "";
-  const pass = (r: Row) => !f || (f === "out" && r.kind === "out") || (f === "low" && r.kind === "low") || (f === "t2" && r.tier === 2) ||
+  const pass = (r: Row) => !f || (f === "out" && r.kind === "out") || (f === "low" && r.kind === "out") || (f === "t2" && r.tier === 2) ||
     (f === "t3" && r.kind === "notservice") || (f === "in" && r.kind === "ok" && r.c != null) || f === `s:${r.sector}`;
   const rows = ordered(all.filter(pass), sp.o);
-  const nOut = count((r) => r.kind === "out"), nLow = count((r) => r.kind === "low");
+  const nOut = count((r) => r.kind === "out");
   const nAtt = rows.filter((r) => r.kind === "out" || r.kind === "low").length;
   const sectors = bySector(all).filter((g) => !g.sector.startsWith("그 외")).slice(0, 3);
   const partial = holdRows.filter((r) => r.kind === "nocalc" && !(phase === "post" && r.s)).length;
@@ -205,7 +205,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   </>;
   // 필터를 걸면 위 묶음 이름도 그 필터로(피그마 462:8306 '범위 밖 종목 2')
   const fTitle = f === "out" ? { title: `범위 밖 종목 ${nOut}`, sub: phase === "post" ? "실제 시가가 예상 범위를 벗어난 종목이에요" : "장전 거래 가격이 예상 범위를 벗어난 종목이에요" }
-    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nLow}`, sub: "비슷한 아침에 장전 거래와 다른 방향으로 열린 날이 많았어요" } : null;
+    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nOut}`, sub: "장전 거래 가격이 07:30 예상 범위 밖이에요. 08:11 보정 예상을 함께 보세요" } : null;
 
   return (
     <Shell>
@@ -224,7 +224,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
 
       <NightBoard t={m.t} phase={phase} view={view} sortLabel={SORT_LABEL(sp.o)} initialOpen={sp.open}
         rows={rows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))} holdRows={holdRows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))}
-        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : "오늘 시가에 예상되는 내 주식 변화"}
+        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : graded && !noGrade ? "오늘 시가 예상 · 08:11 장전 거래 반영" : "오늘 시가에 예상되는 내 주식 변화"}
         accountHead={<><MaskToggle /><SectorSheet rows={holdRows} acct={acct} count={pf.holdings.length} label={label} /></>}
         accountBelow={<>
           {sectors.length ? (
@@ -273,7 +273,6 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
                 <Link href={nightHref(base, { f: undefined })} className={!f ? "on" : ""}>전체 {all.length}</Link>
                 {phase === "post" ? <Link href={nightHref(base, { f: "in" })} className={f === "in" ? "on" : ""}>범위 안 {count((r) => r.kind === "ok" && r.c != null)}</Link> : null}
                 <Link href={nightHref(base, { f: "out" })} className={f === "out" ? "on" : ""}>범위 밖 {nOut}</Link>
-                {phase === "pre" && graded && !noGrade ? <Link href={nightHref(base, { f: "low" })} className={f === "low" ? "on" : ""}>믿을 정도 낮음 {nLow}</Link> : null}
                 {count((r) => r.tier === 2) ? <Link href={nightHref(base, { f: "t2" })} className={f === "t2" ? "on" : ""}>모델 설계 밖 {count((r) => r.tier === 2)}</Link> : null}
                 {count((r) => r.kind === "notservice") ? <Link href={nightHref(base, { f: "t3" })} className={f === "t3" ? "on" : ""}>서비스 대상 아님 {count((r) => r.kind === "notservice")}</Link> : null}
                 {sectors.map((g) => <Link key={g.sector} href={nightHref(base, { f: `s:${g.sector}` })} className={f === `s:${g.sector}` ? "on" : ""}>{g.sector} {g.list.length}</Link>)}
@@ -286,9 +285,9 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
         </>}
         attention={fTitle ?? (nAtt ? (phase === "post"
           ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 · 기록 탭에 저장됐어요" }
-          : { title: `확인이 필요한 종목 ${nAtt}`, sub: `범위 밖 ${nOut} · 믿을 정도 낮음 ${nLow} — 눌러서 자세히 보세요` }) : null)}
+          : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `장전 거래 가격이 07:30 예상 범위 밖 ${nOut}(믿을 정도 낮음) — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
         rest={{ title: nAtt ? `나머지 ${rows.length - nAtt}종목` : `${view === "hold" ? "보유" : "관심"} 종목`, sub: "누르면 아래에서 자세히 열려요" }}
-        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 범위 밖이거나 믿을 정도가 낮은 종목은 위로 올려 펼쳐 둬요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
+        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래 가격이 07:30 예상 범위의 어디에 있는지로 믿을 정도를 매기고, 장전 거래 쪽으로 예상 시가를 보정해요. 범위 밖(믿을 정도 낮음) 종목은 위로 올려 펼쳐 둬요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
       />
     </Shell>
   );
