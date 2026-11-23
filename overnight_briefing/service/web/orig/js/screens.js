@@ -752,7 +752,7 @@ export function firstLook(m, d, st) {
       // 예상 밖 종목이 아침 예상 금액의 절반 이상일 때만 계좌 예상 전체를 낮춰 말한다. 그보다 작으면 그 종목 금액만 다시 보게 한다(과장 방지, 11/22).
       const stale = sh >= 50 ? `07:30 계좌 예상(${man(m.Hsum)})은 그대로 참고하기 어려워요.` : `07:30 계좌 예상(${man(m.Hsum)}) 가운데 ${nxr.map((r) => r.s.name).join("·")} 금액은 개장 전 거래 가격으로 다시 봐야 해요.`;
       const why = nx ? `개장 전 거래가 예상 밖인 종목이 아침 예상 금액 변화의 ${sh}%예요. ${stale} 지난 기록에서도 이런 종목은 시작가가 예상 밖에서 열린 날이 더 많았어요.`
-        : act ? "예상 가격대 밖에서 시작한 종목이에요." : "믿을 정도가 낮을수록 시작가 방향이 예상과 달라지는 날이 많았어요.";
+        : act ? "예상 가격대 밖에서 시작한 종목이에요." : "믿을 정도가 낮을수록 시작가 방향이 개장 전 거래 방향과 달라지는 날이 많았어요.";
       body = `<b>확인할 표시 ${ck.length}종목</b><small>${esc(why + evTxt)}</small>${mini}${ck.length > 3 ? `<small class="fl-more">${esc(ck.slice(3).map((x) => x.r.s.name).join("·"))} 더</small>` : ""}`;
     } else if (act) {
       const got = held.filter((r) => r.s.y != null).length;

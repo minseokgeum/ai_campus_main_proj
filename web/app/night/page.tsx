@@ -205,7 +205,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   </>;
   // 필터를 걸면 위 묶음 이름도 그 필터로(피그마 462:8306 '범위 밖 종목 2')
   const fTitle = f === "out" ? { title: `범위 밖 종목 ${nOut}`, sub: phase === "post" ? "실제 시가가 예상 범위를 벗어난 종목이에요" : "장전 거래 가격이 예상 범위를 벗어난 종목이에요" }
-    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nLow}`, sub: "방향만 참고하세요" } : null;
+    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nLow}`, sub: "비슷한 아침에 장전 거래와 다른 방향으로 열린 날이 많았어요" } : null;
 
   return (
     <Shell>
