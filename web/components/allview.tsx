@@ -26,7 +26,7 @@ type Props = {
   preRows: Row[];            // 장전 예상(장후에도 '예상' 칸과 띠에 씀)
   post: boolean;             // 채점 뒤인가
   slot0811: boolean;         // 08:11 카드(장전 거래 반영)인가
-  steps: { t: string; label: string; done: boolean }[];
+  steps: { t: string; label: string; done: boolean; at?: string }[];   // at: 누르면 그 시점으로(시연 계정만)
   news: Map<string, Article[]>;   // 종목코드 → 그 종목 기사
   reasons: Map<string, Reason>;
   x: number | null;          // 밤사이 야간선물 변화(카드 x, 비율). 같이 읽기 첫 문장
@@ -218,7 +218,7 @@ function FirstLook(p: Props & { shown: Set<string> }) {
         <div className="l3"><span className={`ic ${tn.length ? "y" : ""}`}>소식</span><span className="bd">
           {tn.length ? tn.map((x, i) => (
             <Link key={x.a.key} className={i ? "mini nw" : "nw0"} href={`/news/a/${encodeURIComponent(x.a.key)}`}>
-              <span className="who">{x.r.name} · {who(x.rank)}</span><b>{x.a.ko ? <span className="ai">AI</span> : null}{x.a.ko ?? x.a.title}</b>{!i ? <small>{x.a.source}</small> : null}
+              <span className="who">{x.r.name} · {who(x.rank)}</span><b>{x.a.ko ? <span className="ai">AI</span> : null}{x.a.ko ?? x.a.title}</b>{x.a.source ? <small>{x.a.source}</small> : null}
             </Link>
           )) : <><b>밤사이 내 종목과 이어진 미국 기사가 없어요.</b><small>시장 전체 소식은 아래 &apos;밤사이 시장&apos;에서 볼 수 있어요.</small></>}
         </span><span /></div>
@@ -283,7 +283,9 @@ export function AllView(p: Props) {
           })}
         </div>
         <ol className="allsteps">
-          {p.steps.map((s) => <li key={s.t} className={s.done ? "done" : ""}><i /><b>{s.t}</b><span>{s.label}</span></li>)}
+          {p.steps.map((s) => <li key={s.t} className={s.done ? "done" : ""}>{s.at
+            ? <a href={`/demo-time?at=${s.at}&back=/`} aria-label={`${s.t} ${s.label} 시점 화면 보기`}><i /><b>{s.t}</b><span>{s.label}</span></a>
+            : <><i /><b>{s.t}</b><span>{s.label}</span></>}</li>)}
         </ol>
       </section>
 

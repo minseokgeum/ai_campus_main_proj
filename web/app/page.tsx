@@ -24,7 +24,7 @@ import { addDays, kstNow, minutesTo0730 } from "@/lib/calendar";
 import { isWeekend } from "@/lib/calendar";
 import { checkTime, closedReason, isClosedDay, marketDay, nextOpenDay } from "@/lib/marketdays";
 import { dateLabel, pct, swon } from "@/lib/format";
-import { appNow } from "@/lib/clock";
+import { appNow, isDemoUser } from "@/lib/clock";
 
 export const dynamic = "force-dynamic";
 
@@ -77,8 +77,18 @@ export default async function Home() {
     : [new Map(), null, new Map<string, [number, number]>(), []];
   const recN = rec ? [...rec.cells.values()].flatMap((m) => [...m.values()]).filter((c) => c.in80 != null) : [];
   const slot0811 = m?.card?.slot === "0811" && (marketDay(today)?.premarket ?? true);
-  const steps = [{ t: "06:00", label: "야간장 마감", done: true }, { t: "07:30", label: "예상", done: true },
-    { t: "08:11", label: "장전 거래", done: slot0811 }, { t: m?.check?.checkedAt ?? checkTime(today)[0], label: "채점", done: !!m?.check }];
+  // 단계를 누르면 그 시점 화면(시연 계정만, 테스트 편의, 2026-11-23): 단계 시각 + 1분으로 시연 시각을 바꾼다. 아직 오지 않은 시각은 링크 없음
+  const demoUser = await isDemoUser();
+  const stepAt = (hm: string) => {
+    if (!demoUser) return undefined;
+    const [h, mi] = hm.split(":").map(Number), t = h * 60 + mi + 1;
+    const stamp = `${today}${String(Math.floor(t / 60)).padStart(2, "0")}${String(t % 60).padStart(2, "0")}`;
+    const real = new Date(), at = new Date(`${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(8, 10)}:${stamp.slice(10, 12)}:00+09:00`);
+    return at.getTime() <= real.getTime() ? stamp : undefined;
+  };
+  const checkHm = m?.check?.checkedAt ?? checkTime(today)[0];
+  const steps = [{ t: "06:00", label: "야간장 마감", done: true, at: stepAt("06:00") }, { t: "07:30", label: "예상", done: true, at: stepAt("07:30") },
+    { t: "08:11", label: "장전 거래", done: slot0811, at: stepAt("08:11") }, { t: checkHm, label: "채점", done: !!m?.check, at: stepAt(checkHm) }];
   const idleStocks = acct.holdings.map((h) => { const u = uStock(h.code); return { code: h.code, name: u?.name ?? h.code, sector: u?.sector ?? "기타", value: h.qty * (px.get(h.code)?.close ?? 0), pct: null, grade: null, l80: null, u80: null, news: news.get(h.code)?.length ?? 0 }; });
 
   return (
@@ -91,6 +101,11 @@ export default async function Home() {
       </header>
       <main className="scroll home">
         {acct.holdings.length ? <ViewToggle all={allMode} /> : null}
+        {allMode && demoUser && !allOn && !off ? (   // 07:30 전처럼 한 화면에 보기가 안 나오는 시각에도 단계 줄(시연 계정만): 눌러서 다른 시점으로
+          <ol className="allsteps stepnav">
+            {steps.map((x) => <li key={x.t}>{x.at ? <a href={`/demo-time?at=${x.at}&back=/`} aria-label={`${x.t} ${x.label} 시점 화면 보기`}><i /><b>{x.t}</b><span>{x.label}</span></a> : <><i /><b>{x.t}</b><span>{x.label}</span></>}</li>)}
+          </ol>
+        ) : null}
         {allOn ? (
           <AllView rows={rows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
             lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
