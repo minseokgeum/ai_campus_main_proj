@@ -20,8 +20,8 @@ export type Card = {
 };
 export type CardStock = {
   code: string; name: string; pc: number; h: number; l80: number; u80: number; l90: number; u90: number;
-  grade: "높음" | "보통" | "낮음" | null;   // 믿을 정도 = 07:30 예상 믿을 정도(lib/trust.ts, E107). 08:11 장전 거래가 있을 때만
-  dir: "높음" | "보통" | "낮음" | null;     // 방향 유지 = 장전 거래 방향대로 시가가 열릴 가능성(카드 grade_0811, 예전 화면 이름 '믿을 정도')
+  grade: "높음" | "보통" | "낮음" | null;   // 믿을 정도 = 8시 장전 흐름(오름·내림)이 9시 시가까지 이어질 가능성(카드 grade_0811, 설계서 D08)
+  gap: "높음" | "보통" | "낮음" | null;     // 07:30 예상과 08:11 2차 예측이 가까운 정도(lib/trust.ts, E107). 낮음 = '07:30 예상과 크게 달라짐' 표시
   p: number | null; nxtG: number | null; earn: boolean;
   hb: number | null; lb: number | null; ub: number | null;   // 08:11 보정 예상 시가·보정 범위(장전 거래가 없으면 null)
 };
@@ -99,7 +99,7 @@ export async function dayModel(t?: string): Promise<DayModel | null> {
     const adj = adjustOf(h, l80, u80, g);
     out.stocks.set(r.code, {
       code: r.code, name: r.name, pc: Number(r.pc), h, l80, u80, l90: Number(r.l90), u90: Number(r.u90),
-      grade: trustOf(h, l80, u80, g), dir: r.grade_level ?? null, p: num(r.grade_p), nxtG: g, earn: caut.some((c) => c.kind === "e_earn"),
+      grade: r.grade_level ?? null, gap: trustOf(h, l80, u80, g), p: num(r.grade_p), nxtG: g, earn: caut.some((c) => c.kind === "e_earn"),
       hb: adj?.hb ?? null, lb: adj?.lb ?? null, ub: adj?.ub ?? null,
     });
   }

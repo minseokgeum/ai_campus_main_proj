@@ -115,7 +115,7 @@ function checkList(p: Props) {
     else if (g != null && !(s.l80 <= g && g <= s.u80)) { why = `개장 전 거래가 예상보다 ${g > s.u80 ? "높아요" : "낮아요"}`; strong = true; nxo = true; }
     if (!why && s.earn) { why = "어제 실적 공시"; strong = true; }
     if (!why && !post && anyG && w >= 0.1) {
-      if (g != null && s.dir === "낮음") why = "개장 전 거래 방향 유지 낮음";
+      if (g != null && s.grade === "낮음") why = "믿을 정도 낮음 · 장전 거래가 보합 근처";
       else if (g == null) why = nxtNone(r.code) ? "평소 개장 전 거래가 없는 종목 · 새 숫자는 08:50 예상체결가부터" : "개장 전 거래가 없어 07:30 예상 그대로예요";
     }
     if (why) ck.push({ r, why, strong, w, nxo });
@@ -158,8 +158,8 @@ function FirstLook(p: Props & { shown: Set<string> }) {
     const tot = held.reduce((a, r) => a + Math.abs(h730(r)), 0);
     const sh = tot ? Math.round((100 * nxr.reduce((a, r) => a + Math.abs(h730(r)), 0)) / tot) : 0;
     const h730sum = held.reduce((a, r) => a + h730(r), 0), hsum = held.reduce((a, r) => a + r.amount!, 0);
-    const why = nxr.length ? `${jo(nxr.map((r) => r.name).join("·"), "은", "는")} 개장 전 거래가 07:30 예상과 크게 달라요(믿을 정도 낮음, 아침 예상 금액 변화의 ${sh}%). 08:11 계좌 예상은 개장 전 거래로 다시 계산했어요(2차 예측: 07:30 ${swon(h730sum)} → ${swon(hsum)}). 이런 종목은 오차가 평소보다 클 수 있어 주의해서 보세요.`
-      : post ? "예상 가격대 밖에서 시작한 종목이에요." : "방향 유지가 낮을수록 시작가 방향이 개장 전 거래 방향과 달라지는 날이 많았어요.";
+    const why = nxr.length ? `${jo(nxr.map((r) => r.name).join("·"), "은", "는")} 개장 전 거래가 07:30 예상과 크게 달라요(아침 예상 금액 변화의 ${sh}%). 08:11 계좌 예상은 개장 전 거래로 다시 계산했어요(2차 예측: 07:30 ${swon(h730sum)} → ${swon(hsum)}). 이런 종목은 오차가 평소보다 클 수 있어 주의해서 보세요.`
+      : post ? "예상 가격대 밖에서 시작한 종목이에요." : "믿을 정도가 낮으면(장전 거래가 보합 근처) 시작가가 장전 거래와 다른 방향으로 열리는 날이 많았어요.";
     b2 = <><b>확인할 표시 {ck.length}종목</b><small>{why + evTxt}</small>
       {ck.slice(0, 3).map((x) => (
         <a key={x.r.code} className="mini" href={`#ac-${x.r.code}`}><span><b>{x.r.name}</b> <span className={x.strong ? "lo" : ""}>{x.why}</span></span>
@@ -179,12 +179,12 @@ function FirstLook(p: Props & { shown: Set<string> }) {
   } else if (p.noPre) {
     b2 = <><b>오늘은 개장 전 거래가 없어요</b><small>{`개장은 ${p.openAt}이에요. 07:30 예상이 개장 전 마지막 숫자예요.` + evTxt}</small></>;
   } else {
-    const gr = held.filter((r) => r.s!.nxtG != null), lv = (k: string) => gr.filter((r) => r.s!.grade === k).length;   // 믿을 정도(1차·2차 예측이 가까운 정도, lib/trust.ts)
+    const gr = held.filter((r) => r.s!.nxtG != null), lv = (k: string) => gr.filter((r) => r.s!.grade === k).length;   // 믿을 정도(8시 흐름이 9시까지 이어질 가능성, 카드 D08)
     const h730s = held.reduce((a, r) => a + h730(r), 0), hs = held.reduce((a, r) => a + (r.amount ?? 0), 0);
     const mix = ["높음", "보통", "낮음"].map((k) => (lv(k) ? `${k} ${lv(k)}` : "")).filter(Boolean).join(" · ");
     const noneR = held.filter((r) => r.s!.nxtG == null);
     const noneTxt = !noneR.length ? "" : noneR.every((r) => nxtNone(r.code)) ? ` ${jo(noneR.map((r) => r.name).join("·"), "은", "는")} 평소에도 개장 전 거래가 없는 종목이라 새 숫자는 08:50 거래소 예상체결가부터예요.` : ` 개장 전 거래가 없던 ${noneR.length}종목은 07:30 예상 그대로예요.`;
-    b2 = gr.length ? <><b>개장 전 거래가 있던 {gr.length}종목 모두 예상대로예요</b><small>{`아침 예상 가격대 안에서 거래되고 있어요. 믿을 정도(1차·2차 예측이 가까운 정도): ${mix}. 08:11 2차 예측으로 다시 계산했어요(07:30 ${swon(h730s)} → ${swon(hs)}).${noneTxt}` + evTxt}</small></>
+    b2 = gr.length ? <><b>개장 전 거래가 있던 {gr.length}종목 모두 예상대로예요</b><small>{`아침 예상 가격대 안에서 거래되고 있어요. 믿을 정도(8시 흐름이 9시까지 이어질 가능성): ${mix}. 08:11 2차 예측으로 다시 계산했어요(07:30 ${swon(h730s)} → ${swon(hs)}).${noneTxt}` + evTxt}</small></>
       : <><b>개장 전 거래가 있었던 종목이 없어요</b><small>{"07:30 예상 그대로예요." + evTxt}</small></>;
   }
 

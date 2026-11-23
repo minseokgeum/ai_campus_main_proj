@@ -14,7 +14,7 @@ export const SLOTS = [
     input: "기사 제목·근거 구절, 관계표 줄(미국 쪽 → 관계 → 종목, 근거 문장)", output: "한 문장, ‘A의 ○○ → △△ 흐름 → 종목(관계)’ 순서",
     ban: "주가 방향 예측, 관계표에 없는 연결 만들기", now: "판정 단계가 만든 경로 문장" },
   { id: "4", tab: "brief", name: "종목 한 줄", where: "종목 창 맨 위 설명",
-    input: "예상 시작가·가격대(%, 원), 믿을 정도(07:30 예상)·방향 유지 등급, 주의 표시, 이어진 기사 수", output: "문장 2개 이내, 숫자는 화면과 같은 자릿수",
+    input: "예상 시작가·가격대(%, 원), 믿을 정도 등급·07:30 예상과 크게 달라짐 표시, 주의 표시, 이어진 기사 수", output: "문장 2개 이내, 숫자는 화면과 같은 자릿수",
     ban: "‘오를/내릴 것’ 같은 단정, 예상 가격대를 확률처럼 말하기", now: "규칙 문장(코드)으로 채움" },
   { id: "5", tab: "night", name: "밤 흐름 한 줄", where: "밤사이 › 차트 아래 설명",
     input: "야간선물 1분 가격(시작·가장 높은/낮은 때·마감), 15분 기사 수", output: "문장 1~2개, 시각과 등락률만",
@@ -23,7 +23,7 @@ export const SLOTS = [
     input: "그 종목의 예상 가격대·예상 시작가, 밤사이 이어진 기사(요약·관계 근거·매체 수)", output: "한두 문장, 해요체, stance·news_direction·checked",
     ban: "원인 단정, 매매 권유, 관계 근거 없는 연결, 예상 가격대를 확률처럼 말하기", now: "예상 가격대를 말로 옮긴 문장과 '좋은 쪽·나쁜 쪽' 한 문장은 코드가 쓰고, 소식 한 줄만 밤사이 프롬프트 결과(brief.json). 다른 모델이 연결을 한 번 더 확인한 기사만 씀" },
 ];
-export const FIXED = "주의 문구(월요일·실적 공시·개장 전 거래가 예상 밖), 믿을 정도·방향 유지 설명, 맨 아래 안내는 미리 정한 고정 문구라 LLM이 쓰지 않아요.";
+export const FIXED = "주의 문구(월요일·실적 공시·개장 전 거래가 예상 밖), 믿을 정도 설명, 맨 아래 안내는 미리 정한 고정 문구라 LLM이 쓰지 않아요.";
 
 const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1); return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b); };
 
@@ -97,7 +97,7 @@ export function glance(m, d, slot, evs) {
 export function stockNote(r, slot, nNews) {
   const s = r.s, p = tick(s.pc * (1 + s.H));
   let t = `예상 시작가는 어제 종가보다 ${pct(Math.abs(s.H)).replace("+", "")} ${s.H < 0 ? "낮은" : "높은"} ${num(p)}원이에요. 지난 비슷한 아침 10번 중 8번은 ${num(tick(s.pc * (1 + s.b80[0])))}원~${num(tick(s.pc * (1 + s.b80[1])))}원 사이에서 열렸어요.`;
-  if (slot !== "0730" && s.grade) t += ` 08:10 개장 전 거래는 ${pct(s.grade.g)}이고, 이 방향이 9시 시작가까지 이어질 가능성(방향 유지)은 ‘${s.grade.level}’이에요.`;
+  if (slot !== "0730" && s.grade) t += ` 08:10 개장 전 거래는 ${pct(s.grade.g)}이고, 이 방향이 9시 시작가까지 이어질 가능성(믿을 정도)은 ‘${s.grade.level}’이에요.`;
   if (nNews) t += ` 밤사이 이어진 미국 기사가 ${nNews}건 있어요.`;
   return t;
 }

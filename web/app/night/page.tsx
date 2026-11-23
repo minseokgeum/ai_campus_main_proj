@@ -77,7 +77,7 @@ function dayInfo(t: string, checkedAt: string | null = null) {
 const toB = (r: Row, nNews: number, avg: number | null = null, v?: { neg: number; pos: number; neu: number }): BRow => ({
   code: r.code, name: r.name, sector: r.sector, tier: r.tier, kind: r.kind, side: r.side, qty: r.qty,
   pc: r.s?.pc ?? null, h: r.s?.h ?? null, l80: r.s?.l80 ?? null, u80: r.s?.u80 ?? null, l90: r.s?.l90 ?? null, u90: r.s?.u90 ?? null,
-  grade: r.s?.grade ?? null, dir: r.s?.dir ?? null, hb: r.s?.hb ?? null, lb: r.s?.lb ?? null, ub: r.s?.ub ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
+  grade: r.s?.grade ?? null, gap: r.s?.gap ?? null, hb: r.s?.hb ?? null, lb: r.s?.lb ?? null, ub: r.s?.ub ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
 });
 
 export default async function Night({ searchParams }: { searchParams: Promise<Q> }) {
@@ -167,10 +167,10 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   // 필터·정렬
   const count = (k: (r: Row) => boolean) => all.filter(k).length;
   const f = sp.f ?? "";
-  const pass = (r: Row) => !f || (f === "out" && r.kind === "out") || (f === "low" && r.kind === "out") || (f === "t2" && r.tier === 2) ||
+  const pass = (r: Row) => !f || (f === "out" && r.kind === "out") || (f === "low" && r.s?.grade === "낮음") || (f === "t2" && r.tier === 2) ||
     (f === "t3" && r.kind === "notservice") || (f === "in" && r.kind === "ok" && r.c != null) || f === `s:${r.sector}`;
   const rows = ordered(all.filter(pass), sp.o);
-  const nOut = count((r) => r.kind === "out");
+  const nOut = count((r) => r.kind === "out"), nLow = count((r) => r.s?.grade === "낮음");
   const nAtt = rows.filter((r) => r.kind === "out" || r.kind === "low").length;
   const sectors = bySector(all).filter((g) => !g.sector.startsWith("그 외")).slice(0, 3);
   const partial = holdRows.filter((r) => r.kind === "nocalc" && !(phase === "post" && r.s)).length;
@@ -205,7 +205,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   </>;
   // 필터를 걸면 위 묶음 이름도 그 필터로(피그마 462:8306 '범위 밖 종목 2')
   const fTitle = f === "out" ? { title: `범위 밖 종목 ${nOut}`, sub: phase === "post" ? "실제 시가가 예상 범위를 벗어난 종목이에요" : "장전 거래 가격이 예상 범위를 벗어난 종목이에요" }
-    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nOut}`, sub: "07:30 예상과 08:11 2차 예측이 크게 달라요. 오차가 클 수 있어 주의해서 보세요" } : null;
+    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nLow}`, sub: "장전 거래가 보합 근처라 오를지 내릴지 바뀔 수 있어요" } : null;
 
   return (
     <Shell>
@@ -285,9 +285,9 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
         </>}
         attention={fTitle ?? (nAtt ? (phase === "post"
           ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 · 기록 탭에 저장됐어요" }
-          : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `07:30 예상과 크게 달라진 종목 ${nOut}(믿을 정도 낮음) — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
+          : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `07:30 예상과 크게 달라진 종목 ${nOut} — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
         rest={{ title: nAtt ? `나머지 ${rows.length - nAtt}종목` : `${view === "hold" ? "보유" : "관심"} 종목`, sub: "누르면 아래에서 자세히 열려요" }}
-        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래로 예상을 한 번 더 계산해요(2차 예측). 07:30 예상과 크게 달라진 종목(믿을 정도 낮음)은 위로 올려 펼쳐 둬요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
+        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래로 예상을 한 번 더 계산해요(2차 예측). 07:30 예상과 크게 달라진 종목은 위로 올려 펼쳐 둬요. 믿을 정도는 8시 장전 흐름이 9시 시가까지 이어질 가능성이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
       />
     </Shell>
   );
