@@ -8,6 +8,7 @@ import { portfolio } from "@/lib/portfolio";
 import { demoAt, demoDays, demoPresets, isDemoUser } from "@/lib/clock";
 import { kstNow } from "@/lib/calendar";
 import { DemoPicker } from "@/components/demopicker";
+import { guestSet } from "@/lib/demo";
 
 async function doLogout() {
   "use server";
@@ -27,7 +28,7 @@ export default async function My() {
     <>
       <main className="sheet">
         <div className="shead"><Link href="/" aria-label="뒤로">‹</Link><span className="ttl">마이</span></div>
-        <section className="prof"><span className="pic">{user.username.slice(0, 1).toUpperCase()}</span><div><b>{user.username.startsWith("guest") ? "둘러보기" : user.username} 님</b><small>{user.username.startsWith("guest") ? "둘러보기 계정 · 바꾼 종목은 나에게만 보여요" : "아이디 로그인"}</small></div></section>
+        <section className="prof"><span className="pic">{user.username.slice(0, 1).toUpperCase()}</span><div><b>{user.username.startsWith("guest") ? "둘러보기" : user.username} 님</b><small>{user.username.startsWith("guest") ? `둘러보기 계정${guestSet(user.username) ? ` · 계좌 ${guestSet(user.username)!.key} 복사본` : ""} · 바꾼 종목은 나에게만 보여요` : "아이디 로그인"}</small></div></section>
         {demo ? (
           <section className="demotime">
             <h3>시연 시각 <small>시연 계정만 · 지난 시각으로 화면 보기</small></h3>

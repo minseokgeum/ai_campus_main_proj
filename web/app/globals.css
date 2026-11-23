@@ -1249,3 +1249,20 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 .lgraph .lgbox span { color: #66777a; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
 .lgraph .lgcnt { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); min-width: 26px; height: 24px; padding: 0 7px; box-sizing: border-box; display: grid; place-items: center; border-radius: 12px; background: #f6d36b; color: #4a3800; font-style: normal; font-size: 13px; font-weight: 700; pointer-events: none; }
 .lgraph .lglbl { display: none; }
+
+/* 둘러볼 계좌 고르기(/start/demo, 2026-11-23): 시작 화면 모양에 맞춘 카드 3장 */
+.startbtns .ghost { display: flex; justify-content: center; align-items: center; }
+.starttop > span { min-width: 44px; }
+.starttop a[aria-label="뒤로"] { min-width: 44px; min-height: 44px; display: flex; align-items: center; font-size: 15px; color: var(--ink); }
+.dpick { flex: 1; display: flex; flex-direction: column; gap: 12px; padding-top: 16px; }
+.dpick h1 { font-size: 22px; line-height: 1.4; }
+.dpick .lead { font-size: 14px; color: var(--sub); line-height: 1.6; margin-bottom: 6px; }
+.dcard { width: 100%; min-height: 88px; display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: #fff; text-align: left; }
+.dcard:active { background: var(--mint); border-color: var(--teal); }
+.dkey { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--teal-soft); color: var(--teal); font-weight: 800; font-size: 17px; display: grid; place-items: center; }
+.dbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.dbody b { font-size: 16px; color: var(--ink); }
+.dbody small { font-size: 13px; color: var(--sub); }
+.dbody em { font-style: normal; font-size: 12px; color: var(--muted); }
+.dgo { flex: none; font-size: 22px; color: var(--muted); }
+.dpick .fine { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 4px; }

@@ -69,10 +69,11 @@ async function cleanupGuests(): Promise<void> {
   }
 }
 
-/** 둘러보기(2026-11-22 바꿈): 들어올 때마다 그 사람만의 체험 계정(guest_날짜+무작위, 예 guest_261127a1b2c3)을 새로 만들어 시험 종목을 넣는다.
+/** 둘러보기(2026-11-22 바꿈): 들어올 때마다 그 사람만의 체험 계정을 새로 만든다.
+ *  2026-11-23: 시연 계좌 A·B·C(user1~3, data/demo_accounts.json) 중 고른 것의 복사본(보유·수량·평단·관심)으로 시작한다. 이름은 guest_날짜_계좌_무작위(예 guest_261124_A_1b2c3d).
  *  발표 때 QR로 여러 명이 함께 들어와도 서로 바꾼 보유·관심 종목이 섞이지 않게 한다(예전엔 공용 계정 guest 하나를 같이 썼다).
  *  이틀 지난 체험 계정은 이때 정리한다. 정리에 실패해도 들어오는 것은 막지 않는다 */
-export async function guestLogin(sample: string[]): Promise<void> {
+export async function guestLogin(key: string, sample: { code: string; qty: number; avg: number | null }[], watch: string[] = []): Promise<void> {
   try {
     await cleanupGuests();
   } catch (e) {
@@ -81,14 +82,16 @@ export async function guestLogin(sample: string[]): Promise<void> {
   const db = appdb();
   let id: number | undefined;
   for (let i = 0; i < 3 && id === undefined; i++) {
-    const name = `guest_${kstYmd6()}${randomBytes(3).toString("hex")}`;
+    const name = `guest_${kstYmd6()}_${key}_${randomBytes(3).toString("hex")}`;
     const r = await db.query("insert into app.users (username, password_hash) values ($1, $2) on conflict (username) do nothing returning id",
       [name, hash(randomBytes(12).toString("hex"))]);
     id = r.rows[0]?.id;
   }
   if (id === undefined) throw new Error("체험 계정을 만들지 못했어요");
-  for (const [i, code] of sample.entries())
-    await db.query("insert into app.holdings (user_id, code, qty) values ($1, $2, $3) on conflict do nothing", [id, code, 10 + ((i * 37) % 90)]);
+  for (const h of sample)
+    await db.query("insert into app.holdings (user_id, code, qty, avg_price) values ($1, $2, $3, $4) on conflict do nothing", [id, h.code, h.qty, h.avg]);
+  for (const code of watch)
+    await db.query("insert into app.watch (user_id, code) values ($1, $2) on conflict do nothing", [id, code]);
   await startSession(id);
 }
 
