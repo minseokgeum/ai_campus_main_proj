@@ -31,12 +31,15 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
 
   const base = phase === "post" && s.y != null ? s.y : s.h;
   const r = what ?? base;
-  const amountNow = qty * s.pc * base;
-  const amount = qty * s.pc * r;
+  // 장후 금액은 수량 × (실제 시가 − 어제 종가)(2026-11-24, 등락률 y는 잘린 값). 계산은 정확히, 표시할 때만 1원 반올림
+  const exact = phase === "post" && s.y != null && s.open != null;
+  const per = (q: number) => (exact ? q * (s.open! - s.pc) : q * s.pc * base);
+  const amountNow = per(qty);
+  const amount = what == null ? amountNow : qty * s.pc * r;
   const acct = acctAmount - amountNow + amount;
   const acctPct = acctValue > 0 ? acct / acctValue : 0;
   const dq = qty - s.qty;
-  const price = s.pc * (1 + r);
+  const price = what == null && exact ? s.open! : s.pc * (1 + r);
   const base0 = s.avg ? s.avg / s.pc - 1 : null;   // 평단을 어제 종가 대비 %로(띠 위 '내 기준선')
 
   const adj = phase === "pre" ? s.adj ?? null : null;
@@ -59,7 +62,7 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
     <div className="panel">
       <div className="pacct">
         <span>계좌 예상 <b className="amt tot" style={{ color: colorOf(acct) }}>{swonText(acct)}</b> <small style={{ color: colorOf(acct) }}>{pctText(acctPct)}</small></span>
-        <span className="r">{dq !== 0 ? <b className="teal">수량 바꿔서 <span className="amt">{swonText((qty - s.qty) * s.pc * base)}</span></b> : <>이 종목 <b className="amt">{swonText(amount)}</b></>}</span>
+        <span className="r">{dq !== 0 ? <b className="teal">수량 바꿔서 <span className="amt">{swonText(per(qty - s.qty))}</span></b> : <>이 종목 <b className="amt">{swonText(amount)}</b></>}</span>
       </div>
       {dq !== 0 ? (
         <div className="cash">

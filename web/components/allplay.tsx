@@ -76,9 +76,9 @@ export function AllPlay(p: {
   const sameSum = same.reduce((a, x) => a + Math.abs(x.amount!), 0);
   const top = same[0];
   const verb = amount < 0 ? (p.post ? "줄어든" : "줄어들") : (p.post ? "늘어난" : "늘어날");
-  // 종목별로 보면: 금액 변화 큰 3종목 + 그 외
+  // 종목별로 보면: 금액 변화 큰 3종목 + 그 외. %는 원래 버전처럼 같은 방향(늘어난 쪽·줄어든 쪽) 합계 대비 → 위 "줄어들 금액의 n%" 문장과 같은 숫자. '그 외' 줄은 % 없음
   const byAmt = [...calc].sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
-  const absSum = byAmt.reduce((a, x) => a + Math.abs(x.amount!), 0) || 1;
+  const sideSum = (v: number) => calc.filter((x) => Math.sign(x.amount!) === Math.sign(v)).reduce((a, x) => a + Math.abs(x.amount!), 0);
   const head = byAmt.slice(0, 3), rest = byAmt.slice(3);
   const restAmt = rest.reduce((a, x) => a + x.amount!, 0);
   const maxAbs = Math.max(1, ...head.map((x) => Math.abs(x.amount!)), Math.abs(restAmt));
@@ -116,7 +116,7 @@ export function AllPlay(p: {
                 <div key={name} className="ab-r">
                   <span className="ab-n">{code ? <a href={`#ac-${code}`}>{name}</a> : name}</span>
                   <span className="ab-b"><i style={{ left: amt < 0 ? `${50 - w}%` : "50%", width: `${w}%`, background: signColor(amt) }} /></span>
-                  <span className="ab-v"><b className="amt" style={{ color: signColor(amt) }}>{swon(amt)}</b><small>{Math.round((Math.abs(amt) / absSum) * 100)}%</small></span>
+                  <span className="ab-v"><b className="amt" style={{ color: signColor(amt) }}>{swon(amt)}</b><small>{code && amt && sideSum(amt) ? `${Math.round((Math.abs(amt) / sideSum(amt)) * 100)}%` : ""}</small></span>
                 </div>
               );
             })}

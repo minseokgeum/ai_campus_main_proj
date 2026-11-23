@@ -1317,6 +1317,7 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 .allsteps li > a { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 44px; min-height: 44px; color: inherit; text-decoration: none; }
 .allsteps li > a span { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: #b8c0c3; }
 .stepnav { margin: 4px 0 10px; padding: 10px 6px 4px; background: var(--mint); border-radius: 14px; }
+.allsteps.stepnav::before { top: 15px; }   /* 위 여백 10px만큼 선도 내려 동그라미 가운데로 */
 /* 먼저 확인할 것의 작은 줄: 앱 공통 .mini(테두리 상자)를 지우고 원래 버전처럼 윗선 하나 + 한 줄 글자(2026-11-23) */
 .allview .look3 .mini { border: 0; border-top: 1px solid var(--line-2); border-radius: 0; padding: 8px 0 0; }
 .allview .look3 .mini b { display: inline; margin-bottom: 0; font-size: 13px; }

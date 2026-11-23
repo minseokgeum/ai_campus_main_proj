@@ -89,7 +89,7 @@ export default async function Home() {
     const real = new Date(), at = new Date(`${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(8, 10)}:${stamp.slice(10, 12)}:00+09:00`);
     return at.getTime() <= real.getTime() ? stamp : undefined;
   };
-  const checkHm = m?.check?.checkedAt ?? checkTime(today)[0];
+  const checkHm = (m?.t === today ? m.check?.checkedAt : null) ?? checkTime(today)[0];   // 오늘 채점 전이면 어제 채점 시각이 아니라 기준 시각(개장 5분 뒤)
   const steps = [{ t: "06:00", label: "야간장 마감", done: true, at: stepAt("06:00") }, { t: "07:30", label: "예상", done: true, at: stepAt("07:30") },
     { t: "08:11", label: "장전 거래", done: slot0811, at: stepAt("08:11") }, { t: checkHm, label: "채점", done: !!m?.check, at: stepAt(checkHm) }];
   const idleStocks = acct.holdings.map((h) => { const u = uStock(h.code); return { code: h.code, name: u?.name ?? h.code, sector: u?.sector ?? "기타", value: h.qty * (px.get(h.code)?.close ?? 0), pct: null, grade: null, l80: null, u80: null, news: news.get(h.code)?.length ?? 0 }; });

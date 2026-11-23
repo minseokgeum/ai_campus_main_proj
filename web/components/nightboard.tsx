@@ -40,16 +40,18 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
   }, [open]);
 
   const qtyOf = (r: BRow) => ovr[r.code] ?? r.qty;
-  const pctOf = (r: BRow) => (phase === "post" ? r.y : r.h);
+  // 금액 원칙(2026-11-24): 계산은 정확히, 화면에 찍을 때만 1원 반올림. 장전은 홈·종목 창과 같은 예상(08:11이면 2차 예측 hb),
+  // 장후는 수량 × (실제 시가 − 어제 종가)(DB 등락률 y는 잘린 값이라 금액에 쓰지 않는다)
+  const pctOf = (r: BRow) => (phase === "post" ? r.y : r.hb ?? r.h);
+  const amtOf = (r: BRow, q: number) => (r.pc == null ? null : phase === "post" ? (r.open != null ? q * (r.open - r.pc) : null) : (r.hb ?? r.h) != null ? q * r.pc * (r.hb ?? r.h)! : null);
   const acct = useMemo(() => {
     const all = new Map(holdRows.map((r) => [r.code, r]));
     for (const r of rows) if (ovr[r.code] != null && !all.has(r.code)) all.set(r.code, r);
     let value = 0, amount = 0, pre = 0;
     for (const r of all.values()) {
-      const p = pctOf(r);
-      if (r.pc == null || p == null) continue;
-      const q = qtyOf(r);
-      value += q * r.pc; amount += q * r.pc * p; pre += q * r.pc * (r.h ?? 0);
+      const q = qtyOf(r), a = amtOf(r, q);
+      if (r.pc == null || a == null) continue;
+      value += q * r.pc; amount += a; pre += q * r.pc * (r.hb ?? r.h ?? 0);
     }
     return { value, amount, pre, after: value + amount, pct: value ? amount / value : 0 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,7 +86,7 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
     const newsLine = !r.nNews ? <span className="nl3">소식 없음</span>
       : r.v && (r.v.neg || r.v.pos) ? <span className="nl3 vl">{r.v.neg ? <span><b className="neg">부정</b> {r.v.neg}</span> : null}{r.v.pos ? <span><b className="pos">긍정</b> {r.v.pos}</span> : null}</span>
       : r.v?.neu ? <span className="nl3">중립 소식만 있어요</span> : <span className="nl3">소식 {r.nNews}건</span>;
-    const amt = r.pc != null && p != null ? q * r.pc * p : null;
+    const amt = amtOf(r, q);
     return (
       <button type="button" key={r.code} className="nrow" onClick={() => setOpen(r.code)}>
         <span className="ic" style={{ background: bg, color: fg }}>{r.name.slice(0, 1)}{warn ? <i /> : null}</span>
