@@ -1322,3 +1322,31 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 .allview .look3 .mini b { display: inline; margin-bottom: 0; font-size: 13px; }
 .allview .look3 .mini:not(.nw) > b:last-child { white-space: nowrap; }   /* 확인할 표시 줄의 오른쪽 금액만 한 줄로 */
 .allview .look3 .mini.nw > b { display: block; font-size: 13.5px; white-space: normal; overflow-wrap: anywhere; }   /* 소식 제목은 줄바꿈 */
+
+/* 한 화면에 보기 조작(components/allplay.tsx, 2026-11-24): 원래 버전의 띠 누르기·끌기, 수량 −/+, 되돌리기, 순서, 보유·관심 나눠 보기 */
+.allacct .whatif { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--teal-soft); color: var(--teal); border-radius: 10px; padding: 8px 10px 8px 12px; font-size: 12.5px; font-weight: 600; }
+.allacct .whatif button { flex: none; min-height: 32px; padding: 0 10px; border-radius: 8px; background: #fff; color: var(--teal); font-size: 12.5px; font-weight: 700; }
+.allbars .ab-n a { color: inherit; }
+.allord, .allhold { display: flex; gap: 6px; flex-wrap: wrap; }
+.allord button, .allhold button { min-height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--line); background: #fff; font-size: 12.5px; font-weight: 600; color: var(--sub); display: inline-flex; align-items: center; gap: 4px; }
+.allord button.on, .allhold button.on { border-color: var(--teal); background: var(--teal-soft); color: var(--teal); }
+.allhold button small { font-size: 11px; font-weight: 500; color: inherit; opacity: .8; }
+.alllegend .la { width: 2px; height: 11px; background: #008c82; }
+.alllegend .lp { width: 9px; height: 9px; border-radius: 5px; border: 2px solid #008c82; background: rgba(0,140,130,.25); }
+.allcard .aband.play { cursor: pointer; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.allcard .aband.play:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+.allcard .ac-foot { display: flex; align-items: center; gap: 10px; }
+.allcard .ac-foot .ac-range { flex: 1; min-width: 0; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1.4; }
+.allcard .ac-foot .ac-range em { font-style: normal; font-size: 11px; color: var(--teal); font-weight: 600; }
+.allstep { flex: none; display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 18px; padding: 2px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.allstep.changed { border-color: var(--teal); }
+.allstep > button:not(.q) { width: 32px; height: 32px; border-radius: 16px; background: #eef1f2; font-size: 18px; line-height: 1; color: var(--ink); touch-action: manipulation; }
+.allstep > button:disabled { opacity: .35; }
+.allstep .q { min-width: 52px; height: 32px; padding: 0 4px; font-size: 14px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.allstep.changed .q { color: var(--teal); }
+.allstep .q small { font-size: 11px; font-weight: 500; margin-left: 1px; color: var(--muted); }
+.allstep input { width: 64px; height: 32px; text-align: center; border: 0; font: inherit; font-size: 14px; font-weight: 700; color: var(--teal); background: none; }
+.schips .pinchip { padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; background: var(--teal-soft); color: var(--teal); min-height: 26px; }
+.schips span b { font-weight: 700; }
+.allcoach { display: flex; align-items: center; gap: 10px; background: #2f3437; color: #fff; border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; }
+.allcoach button { flex: none; background: #ffd970; color: #192d31; font-weight: 700; border-radius: 8px; padding: 6px 10px; font-size: 12px; }

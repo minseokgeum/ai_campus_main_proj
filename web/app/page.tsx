@@ -41,7 +41,7 @@ export default async function Home() {
   const rows = m?.card?.status === "ok" ? buildRows(m, holdItems, m.check ? "post" : "pre") : [];
   const preRows = m?.card?.status === "ok" ? buildRows(m, holdItems, "pre") : [];
   const ac = account(preRows);
-  const news = byStock(articles, acct.holdings.map((h) => h.code));
+  const news = byStock(articles, [...acct.holdings.map((h) => h.code), ...acct.watch]);   // 관심 종목 기사는 한 화면에 보기 카드에서 씀
   const px = await lastCloses(acct.holdings.map((h) => h.code));   // 예상 범위 없는 종목의 지도 칸 크기(보유 금액)
   const nWatch = preRows.filter((r) => r.kind === "out" || r.kind === "low").length;
   const nIn = rows.filter((r) => r.c?.in80).length;
@@ -72,6 +72,8 @@ export default async function Home() {
   // '한 화면에 보기'(원래 버전처럼 밤사이 정보를 한 화면에): 쿠키로 기억. 오늘 예상이 나온 때만 그 화면, 그 밖의 상태(07:30 전·휴장·지연)는 나눠 보기와 같다
   const allMode = (await cookies()).get("home_view")?.value === "all";
   const allOn = allMode && fresh && acct.holdings.length > 0;
+  // 한 화면에 보기 관심 종목 카드(수량 0, 2026-11-24): 보유와 겹치는 코드는 뺀다
+  const watchRows = allOn ? buildRows(m, acct.watch.filter((c) => !acct.holdings.some((h) => h.code === c)).map((code) => ({ code, qty: 0 })), m!.check ? "post" : "pre") : [];
   const [reasons, rec, nxtHist, events] = allOn ? await Promise.all([companyReasons(brief.date), recordData(acct.holdings.map((h) => h.code), 20), nxtHistory(acct.holdings.map((h) => h.code), m!.t),
     upcomingEvents(m!.t, [...acct.holdings.map((h) => h.code), ...acct.watch])])
     : [new Map(), null, new Map<string, [number, number]>(), []];
@@ -107,7 +109,7 @@ export default async function Home() {
           </ol>
         ) : null}
         {allOn ? (
-          <AllView rows={rows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
+          <AllView t={m!.t} rows={rows} watchRows={watchRows} avg={Object.fromEntries(acct.holdings.map((h) => [h.code, h.avg]))} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
             lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
             us={us} night={night} buckets={buckets} nightLive={now.hour >= 18}
             briefSlot={!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : null} />
