@@ -109,7 +109,7 @@ export default async function Home() {
           </ol>
         ) : null}
         {allOn ? (
-          <AllView t={m!.t} rows={rows} watchRows={watchRows} avg={Object.fromEntries(acct.holdings.map((h) => [h.code, h.avg]))} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
+          <AllView t={m!.t} rows={rows} watchRows={watchRows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
             lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
             us={us} night={night} buckets={buckets} nightLive={now.hour >= 18}
             briefSlot={!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : null} />

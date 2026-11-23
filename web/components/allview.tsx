@@ -26,7 +26,6 @@ type Props = {
   t: string;                 // 카드 날짜(YYYYMMDD). 바꾼 수량 저장 칸 이름(밤사이 종목 창과 같은 칸)
   rows: Row[];               // 장전: 예상 · 장후: 실제(채점)
   watchRows: Row[];          // 관심 종목(수량 0, 2026-11-24)
-  avg: Record<string, number | null>;   // 종목코드 → 평단(넣은 종목만)
   preRows: Row[];            // 장전 예상(장후에도 '예상' 칸과 띠에 씀)
   post: boolean;             // 채점 뒤인가
   slot0811: boolean;         // 08:11 카드(장전 거래 반영)인가
@@ -234,7 +233,7 @@ export function AllView(p: Props) {
     const s = r.s!, vd = verdictsOf(p.news.get(r.code) ?? [], r.code), nArt = p.news.get(r.code)?.length ?? 0;
     const nxt = p.slot0811 && !p.post ? s.nxtG ?? null : null;
     return {
-      code: r.code, name: r.name, qty: r.qty, avg: p.avg[r.code] ?? null, watch, warn: r.kind === "out" || r.kind === "low",
+      code: r.code, name: r.name, qty: r.qty, watch, warn: r.kind === "out" || r.kind === "low",
       s, c: r.c, pct: r.pct ?? s.h, nxt, y: p.post ? r.c?.y ?? null : null,
       icon: <Avatar name={r.name} size={30} />,
       chips: <>

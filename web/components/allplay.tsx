@@ -1,8 +1,8 @@
 "use client";
 // 홈 '한 화면에 보기'의 조작(2026-11-24): 원래 버전(overnight_briefing/service/web/orig/js app.js·band.js·screens.js)과 같은 규칙.
-// ① 노란 띠를 누르거나 끌면 "그 가격에 열리면" 금액(손을 떼면 그 값으로 가정, ✕로 풀기) ② 수량 −/+(길게 누르면 빨라짐, 숫자를 누르면 직접 입력)
-// ③ 바꾼 것이 있으면 맨 위에 되돌리기 ④ 순서: 먼저 볼 순(먼저 확인할 것에 나온 종목 먼저) · 보유 금액 순 ⑤ 전체·보유·관심 나눠 보기
-// ⑥ 평단: 띠 위 청록 선 + "예상 시작가는 내 평균 단가보다 x%" ⑦ 처음 한 번 안내.
+// ① 노란 띠를 누르거나 끌면 "그 가격에 열리면" 금액(손을 떼면 그 값으로 가정) ② 수량 −/+(길게 누르면 빨라짐, 숫자를 누르면 직접 입력)
+// ③ 바꾼 카드 안에 되돌리기(그 종목 수량·가정 시작가를 원래대로) ④ 순서: 먼저 볼 순(먼저 확인할 것에 나온 종목 먼저) · 보유 금액 순 ⑤ 전체·보유·관심 나눠 보기 ⑥ 처음 한 번 안내.
+// 2026-11-24 사용자 결정: 맨 위 되돌리기 줄·평단 표시는 넣지 않는다. 가정·수량을 바꿔도 카드 높이와 범례가 그대로라 아래 카드가 밀리지 않게 한다.
 // 바꾼 수량은 이 브라우저 탭에만(밤사이 종목 창과 같은 저장 칸 qty:날짜), 가정한 시작가는 화면을 다시 열면 풀린다. 계정 보유 종목·주문과는 상관없다.
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -18,7 +18,6 @@ const MAXQ = 99999;
 export type PlayCard = {
   code: string; name: string;
   qty: number;               // 계정 수량(관심 종목은 0)
-  avg: number | null;        // 평단(넣은 종목만)
   watch: boolean;            // 관심 종목
   warn: boolean;             // 확인 필요(장전 거래·시작가가 예상 밖)
   s: CardStock; c: CheckRow | null;
@@ -69,8 +68,8 @@ export function AllPlay(p: {
   });
   const calc = now.filter((x) => x.q > 0 && x.amount != null);
   const value = calc.reduce((a, x) => a + x.value, 0), amount = calc.reduce((a, x) => a + x.amount!, 0);
-  const changed = now.some((x) => x.q !== x.c.qty), pinned = !p.post && now.some((x) => x.pin != null);
-  const reset = () => { setOvr((o) => { const n = { ...o }; p.cards.forEach((c) => delete n[c.code]); return n; }); setPins({}); setLive(null); };
+  const pinned = !p.post && now.some((x) => x.pin != null);
+  const resetOne = (code: string) => { setOvr((o) => { const n = { ...o }; delete n[code]; return n; }); setPins((o) => { const n = { ...o }; delete n[code]; return n; }); setLive(null); };
 
   // 기여: 합계와 같은 방향 종목 중 가장 큰 종목이 그 방향 금액의 몇 %인가(원래 버전 "줄어들 금액의 84%가 SK하이닉스예요")
   const same = calc.filter((x) => Math.sign(x.amount!) === Math.sign(amount) && x.amount !== 0).sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
@@ -108,9 +107,6 @@ export function AllPlay(p: {
           <div><small>어제 종가 기준</small><b className="amt">{won(value)}</b></div><span aria-hidden>→</span>
           <div className="r"><small>{p.post ? "실제 시가 기준" : pinned ? "정한 시작가 기준" : "예상 시가 기준"}</small><b className="amt">{won(value + amount)}</b></div>
         </div>
-        {changed || pinned ? (
-          <div className="whatif"><span>{changed && pinned ? "수량과 시작가를" : changed ? "수량을" : "시작가를"} 바꿔서 보는 중이에요</span><button type="button" onClick={reset}>↺ 되돌리기</button></div>
-        ) : null}
         {bars.length ? (
           <div className="allbars">
             <p className="ab-h"><span>종목별로 보면</span><span>가운데 = 어제 종가</span></p>
@@ -153,12 +149,10 @@ export function AllPlay(p: {
         ) : null}
         {p.record ? <Link href="/night/record" className="allrec"><span>지난 20거래일 동안 내 종목 <b>{p.record.inN}/{p.record.n}</b>번이 예상 범위 안에서 열렸어요(목표 80%)</span><em>›</em></Link> : null}
         <p className="alllegend"><span><i className="lb" />노란 띠 · 80% 예상 범위</span><span><i className="ld" />대표 예상</span>
-          {p.slot0811 && !p.post ? <span><i className="ln" />08:10 장전 거래</span> : null}{p.post ? <span><i className="lo" />실제 시가</span> : null}
-          {p.cards.some((c) => c.avg) ? <span><i className="la" />내 평균 단가</span> : null}{pinned ? <span><i className="lp" />내가 정한 시작가</span> : null}</p>
+          {p.slot0811 && !p.post ? <span><i className="ln" />08:10 장전 거래</span> : null}{p.post ? <span><i className="lo" />실제 시가</span> : null}</p>
         {shown.map((c) => {
           const x = nowOf.get(c.code)!, s = c.s, q = x.q, zero = c.watch && q === 0;
-          const avg0 = c.avg ? c.avg / s.pc - 1 : null;
-          const e = c.avg && x.v != null ? (s.pc * (1 + x.v)) / c.avg - 1 : null;
+          const moved = q !== c.qty || pins[c.code] != null;
           return (
             <article key={c.code} id={`ac-${c.code}`} className={`allcard ${c.warn ? "warn" : ""}`}>
               <div className="ac-h">
@@ -170,24 +164,20 @@ export function AllPlay(p: {
               {coachAt === c.code ? (
                 <div className="allcoach" role="note"><span>노란 띠를 눌러 보세요. 그 가격에 시작하면 내 금액이 바로 보여요.</span><button type="button" onClick={coachDone}>알겠어요</button></div>
               ) : null}
-              <PlayBand s={s} nxt={c.nxt} y={c.y} pin={x.pin} avg0={avg0} play={!p.post}
+              <PlayBand s={s} nxt={c.nxt} y={c.y} pin={x.pin} play={!p.post}
                 onLive={(v) => { if (coach) coachDone(); setLive(v == null ? null : { code: c.code, v }); }}
                 onPin={(v) => { setLive(null); setPins((o) => ({ ...o, [c.code]: v })); }} />
               <div className="ac-foot">
                 <Stepper q={q} name={c.name} changed={q !== c.qty} set={(f) => setQ(c, f)} />
-                <span className="ac-range">
-                  {q !== c.qty ? <em>{c.qty ? `잔고 ${c.qty.toLocaleString("ko-KR")}주` : "관심 종목"}에서 바꿔 보는 중</em> : null}
-                  {q === 0 ? <>금액은 <b>수량을 넣으면 보여요</b></> : p.post && c.c ? <>실제 시가로 <b className="amt">{swon(x.amount ?? 0)}</b></>
-                    : <>노란 띠 안이면 <b className="amt">{swon(q * s.pc * s.l80)}</b> ~ <b className="amt">{swon(q * s.pc * s.u80)}</b></>}
-                </span>
+                {moved ? <button type="button" className="ac-reset" aria-label={`${c.name} 수량·시작가 원래대로`} onClick={() => resetOne(c.code)}>↺ 되돌리기</button> : null}
               </div>
+              <p className="ac-range">
+                {q === 0 ? <>금액은 수량을 넣으면 보여요</> : p.post && c.c ? <>실제 시가로 <b className="amt">{swon(x.amount ?? 0)}</b></>
+                  : <>노란 띠 안이면 <span className="rv"><b className="amt">{swon(q * s.pc * s.l80)}</b> ~ <b className="amt">{swon(q * s.pc * s.u80)}</b></span></>}
+              </p>
               <div className="schips">
                 {c.watch ? <span className="g">관심 종목</span> : null}
-                {x.pin != null && pins[c.code] != null ? (
-                  <button type="button" className="pinchip" aria-label="정한 시작가 지우기" onClick={() => setPins((o) => { const n = { ...o }; delete n[c.code]; return n; })}>시작가 {pct(P(pins[c.code]))} 가정 ✕</button>
-                ) : null}
                 {c.chips}
-                {e != null ? <span className="n">{p.post ? "실제" : x.pin != null ? "정한" : "예상"} 시작가는 내 평균 단가보다 <b style={{ color: signColor(e) }}>{pct(P(e))}</b></span> : null}
               </div>
               {c.flow}
               {c.combined}
@@ -238,10 +228,10 @@ function Stepper({ q, name, changed, set }: { q: number; name: string; changed: 
 }
 
 /** 노란 띠(누르기·끌기): 80% 예상 범위 · 대표 예상(검은 점) · 어제 종가(회색 점선) · 08:10 장전 거래(빨간 선) · 실제 시가(빈 동그라미)
- *  · 평단(청록 선, 눈금 밖이면 끝에 화살표) · 내가 정한 시작가(청록 동그라미 + "x%에 열리면").
+ *  · 내가 정한 시작가(청록 동그라미 + "x%에 열리면").
  *  눈금은 띠·표식으로만 정하고 가정 값으로 넓히지 않는다(끄는 동안 손가락 밑에서 띠가 움직이지 않게). 0.1% 단위 */
-function PlayBand({ s, nxt, y, pin, avg0, play, onLive, onPin }: {
-  s: CardStock; nxt: number | null; y: number | null; pin: number | undefined; avg0: number | null; play: boolean;
+function PlayBand({ s, nxt, y, pin, play, onLive, onPin }: {
+  s: CardStock; nxt: number | null; y: number | null; pin: number | undefined; play: boolean;
   onLive: (v: number | null) => void; onPin: (v: number) => void;
 }) {
   const W = 342, pad = 12;
@@ -260,8 +250,6 @@ function PlayBand({ s, nxt, y, pin, avg0, play, onLive, onPin }: {
   };
   const pinX = pin != null ? X(pin) : null;
   const clash = (x: number) => pinX != null && Math.abs(pinX - x) < 58;   // 말풍선과 겹치는 위쪽 글자는 잠깐 숨긴다
-  const avgIn = avg0 != null && Math.abs(avg0) <= m;
-  const ax = avg0 != null ? X(avg0) : 0, aNear0 = Math.abs(ax - X(0)) < 44;
   return (
     <svg ref={svg} width="100%" viewBox={`0 0 ${W} 58`} className={`aband${play ? " play" : ""}`}
       role={play ? "slider" : "img"} aria-label={play ? `${s.name} 가정할 시작가 변화(예상 범위 ${pc(l)} ~ ${pc(u)}, 대표 예상 ${pc(h)})` : `예상 범위 ${pc(l)} ~ ${pc(u)}, 대표 예상 ${pc(h)}`}
@@ -275,12 +263,6 @@ function PlayBand({ s, nxt, y, pin, avg0, play, onLive, onPin }: {
       <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
       <rect x={X(l)} y={21} width={Math.max(3, X(u) - X(l))} height={12} rx={6} fill={BAND} />
       <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
-      {avg0 != null && avgIn ? <>
-        <rect x={ax - 1} y={15} width={2} height={22} fill="#008c82" />
-        {!clash(ax) ? <text x={aNear0 ? ax + (avg0 >= 0 ? 4 : -4) : ax} y={10} textAnchor={aNear0 ? (avg0 >= 0 ? "start" : "end") : "middle"} fontSize={10} fontWeight={700} fill="#008c82">평단</text> : null}
-      </> : avg0 != null && !clash(avg0 < 0 ? pad : W - pad) ? (
-        <text x={avg0 < 0 ? pad : W - pad} y={10} textAnchor={avg0 < 0 ? "start" : "end"} fontSize={10} fontWeight={700} fill="#008c82">{avg0 < 0 ? `◀ 평단 ${pc(avg0)}` : `평단 ${pc(avg0)} ▶`}</text>
-      ) : null}
       {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={50} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:10</text></> : null}
       <circle cx={X(h)} cy={27} r={6} fill="#2f3437" stroke="#fff" strokeWidth={2} />
       {y != null ? <circle cx={X(y)} cy={27} r={6} fill="#fff" stroke="#192d31" strokeWidth={2} /> : null}
