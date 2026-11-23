@@ -2,11 +2,13 @@
 import { redirect } from "next/navigation";
 import AddForm from "./AddForm";
 import { requireUser } from "@/lib/auth";
-import { portfolio, savePortfolio, UNIVERSE } from "@/lib/portfolio";
+import { portfolio, savePortfolio, UNIVERSE, viewingPast } from "@/lib/portfolio";
+import { PastLock } from "@/components/ui";
 
 async function save(form: FormData) {
   "use server";
   const user = await requireUser();
+  if (await viewingPast()) redirect("/mine/add");   // 지난 시각에서는 저장하지 않는다
   const items = JSON.parse(String(form.get("items") ?? "[]")) as { code: string; qty: number; avg?: number | null }[];
   const pf = await portfolio(user.id);
   const merged = new Map<string, { qty: number; avg?: number | null }>([...pf.holdings.map((h) => [h.code, { qty: h.qty }] as [string, { qty: number }]), ...pf.watch.map((c) => [c, { qty: 0 }] as [string, { qty: number }])]);
@@ -17,6 +19,7 @@ async function save(form: FormData) {
 
 export default async function AddPage() {
   const user = await requireUser();
+  if (await viewingPast()) return <PastLock back="/mine" />;
   const pf = await portfolio(user.id);
   const owned = [...pf.holdings.map((h) => h.code), ...pf.watch];
   return <AddForm universe={UNIVERSE.map(({ code, name, sector }) => ({ code, name, sector }))} initial={[]} owned={owned} save={save} />;

@@ -221,3 +221,15 @@ export function Soon({ title, body }: { title: string; body: string }) {
     </div>
   );
 }
+
+/** 시연 시각으로 지난 시각을 보는 중일 때 종목 추가·수정 대신 보여 주는 안내(2026-11-23: 과거 시각은 그때 보유 구성으로 보여 줘서 고칠 수 없게) */
+export function PastLock({ back }: { back: string }) {
+  return (
+    <main className="addpage">
+      <div className="addtop"><a href={back} aria-label="뒤로">‹</a><b>종목 바꾸기</b></div>
+      <h1>지난 시각을 보는 중이에요</h1>
+      <p className="lead">지금 화면은 그 시각에 가지고 있던 종목으로 보여 드려요. 종목 추가·수정은 지금 시각에서 할 수 있어요.</p>
+      <a className="cta" href={`/demo-time?at=off&back=${encodeURIComponent(back)}`} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>지금 시각으로 돌아가기</a>
+    </main>
+  );
+}

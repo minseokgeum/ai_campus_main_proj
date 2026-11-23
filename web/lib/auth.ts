@@ -5,6 +5,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { appdb } from "@/lib/appdb";
+import { logPortfolio } from "@/lib/portfolio";
 
 const COOKIE = "sid";
 const DAYS = 30;
@@ -92,6 +93,9 @@ export async function guestLogin(key: string, sample: { code: string; qty: numbe
     await db.query("insert into app.holdings (user_id, code, qty, avg_price) values ($1, $2, $3, $4) on conflict do nothing", [id, h.code, h.qty, h.avg]);
   for (const code of watch)
     await db.query("insert into app.watch (user_id, code) values ($1, $2) on conflict do nothing", [id, code]);
+  // 보유 기록: 고른 계좌 복사본을 '처음부터' 유효한 구성으로(시연 시각을 과거로 돌려도 같은 종목, 2026-11-23)
+  const client = await db.connect();
+  try { await logPortfolio(client, id, "-infinity"); } finally { client.release(); }
   await startSession(id);
 }
 

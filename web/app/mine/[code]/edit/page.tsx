@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { portfolio, setHolding, uStock } from "@/lib/portfolio";
+import { portfolio, setHolding, uStock, viewingPast } from "@/lib/portfolio";
+import { PastLock } from "@/components/ui";
 
 export default async function EditHolding({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ watch?: string }> }) {
   const { code } = await params;
@@ -10,11 +11,13 @@ export default async function EditHolding({ params, searchParams }: { params: Pr
   const u = uStock(code);
   if (!u) notFound();
   const user = await requireUser();
+  if (await viewingPast()) return <PastLock back={`/mine/${code}`} />;
   const h = (await portfolio(user.id)).holdings.find((x) => x.code === code);
 
   async function save(form: FormData) {
     "use server";
     const me = await requireUser();
+    if (await viewingPast()) redirect(`/mine/${code}/edit`);   // 지난 시각에서는 저장하지 않는다
     const qty = Number(String(form.get("qty") ?? "0").replace(/,/g, ""));
     const avgRaw = String(form.get("avg") ?? "").replace(/,/g, "").trim();
     await setHolding(me.id, code, qty, avgRaw ? Number(avgRaw) : null);
