@@ -205,7 +205,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   </>;
   // 필터를 걸면 위 묶음 이름도 그 필터로(피그마 462:8306 '범위 밖 종목 2')
   const fTitle = f === "out" ? { title: `범위 밖 종목 ${nOut}`, sub: phase === "post" ? "실제 시가가 예상 범위를 벗어난 종목이에요" : "장전 거래 가격이 예상 범위를 벗어난 종목이에요" }
-    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nOut}`, sub: "장전 거래 가격이 07:30 예상 범위 밖이에요. 08:11 보정 예상을 함께 보세요" } : null;
+    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nOut}`, sub: "07:30 예상과 08:11 2차 예측이 크게 달라요. 오차가 클 수 있어 주의해서 보세요" } : null;
 
   return (
     <Shell>
@@ -224,7 +224,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
 
       <NightBoard t={m.t} phase={phase} view={view} sortLabel={SORT_LABEL(sp.o)} initialOpen={sp.open}
         rows={rows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))} holdRows={holdRows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))}
-        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : graded && !noGrade ? "오늘 시가 예상 · 08:11 장전 거래 반영" : "오늘 시가에 예상되는 내 주식 변화"}
+        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : graded && !noGrade ? "오늘 시가 예상 · 08:11 2차 예측" : "오늘 시가에 예상되는 내 주식 변화"}
         accountHead={<><MaskToggle /><SectorSheet rows={holdRows} acct={acct} count={pf.holdings.length} label={label} /></>}
         accountBelow={<>
           {sectors.length ? (
@@ -285,9 +285,9 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
         </>}
         attention={fTitle ?? (nAtt ? (phase === "post"
           ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 · 기록 탭에 저장됐어요" }
-          : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `장전 거래 가격이 07:30 예상 범위 밖 ${nOut}(믿을 정도 낮음) — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
+          : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `07:30 예상과 크게 달라진 종목 ${nOut}(믿을 정도 낮음) — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
         rest={{ title: nAtt ? `나머지 ${rows.length - nAtt}종목` : `${view === "hold" ? "보유" : "관심"} 종목`, sub: "누르면 아래에서 자세히 열려요" }}
-        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래 가격이 07:30 예상 범위의 어디에 있는지로 믿을 정도를 매기고, 장전 거래 쪽으로 예상 시가를 보정해요. 범위 밖(믿을 정도 낮음) 종목은 위로 올려 펼쳐 둬요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
+        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래로 예상을 한 번 더 계산해요(2차 예측). 07:30 예상과 크게 달라진 종목(믿을 정도 낮음)은 위로 올려 펼쳐 둬요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
       />
     </Shell>
   );

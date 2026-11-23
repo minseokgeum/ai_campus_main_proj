@@ -177,7 +177,7 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
                   <span className="sec">{cur.sector} 업종 · {rows.filter((r) => r.sector === cur.sector).length}종목</span>
                   {cur.earn ? <span className="w">어제 실적 공시</span> : null}
                 </div>
-                <p className="fine">노란 띠는 07:30 예상 범위(80%)예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{phase === "pre" && cur.nxtG != null ? <><br />08:10 장전 거래 가격은 {pctText(cur.nxtG)}이에요.</> : null}{phase === "pre" && cur.hb != null && cur.lb != null && cur.ub != null ? <><br />08:11 보정 예상 시가 {pctText(cur.hb)} · 보정 범위 {pctText(cur.lb)} ~ {pctText(cur.ub)}(07:30 예상 {pctText(cur.h)}을 장전 거래 쪽으로 옮겼어요).</> : null}{phase === "pre" && cur.dir ? <><br />방향 유지 {cur.dir}: 장전 거래 방향대로 시가가 열릴 가능성이에요.</> : null}</p>
+                <p className="fine">노란 띠는 07:30 예상 범위(80%)예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{phase === "pre" && cur.nxtG != null ? <><br />08:10 장전 거래 가격은 {pctText(cur.nxtG)}이에요.</> : null}{phase === "pre" && cur.hb != null && cur.lb != null && cur.ub != null ? <><br />08:11 2차 예측 {pctText(cur.hb)} · 2차 예측 범위 {pctText(cur.lb)} ~ {pctText(cur.ub)}(07:30 예상 {pctText(cur.h)}, 장전 거래로 다시 계산).</> : null}{phase === "pre" && cur.dir ? <><br />방향 유지 {cur.dir}: 장전 거래 방향대로 시가가 열릴 가능성이에요.</> : null}</p>
               </>
             )}
             <div className="slinks">

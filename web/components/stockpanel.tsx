@@ -77,7 +77,7 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
         <button type="button" aria-label="1주 늘리기" onClick={() => setQty(qty + 1)}>+</button>
       </div>
 
-      <p className="slabel">{what != null ? "이 가격이면?" : phase === "post" ? "오늘 실제 시가" : adj ? "오늘 예상 시가 · 08:11 장전 거래 반영" : "오늘 예상 시가 범위"}</p>
+      <p className="slabel">{what != null ? "이 가격이면?" : phase === "post" ? "오늘 실제 시가" : adj ? "오늘 예상 시가 · 08:11 2차 예측" : "오늘 예상 시가 범위"}</p>
       <div className="sbig" style={{ color: colorOf(r) }}>
         <b>{pctText(r)}</b>
         <span>{what != null ? `가정 ${wonText(price)}` : phase === "post" && s.open ? `시가 ${wonText(s.open)}` : `예상 ${wonText(price)}`} · 어제 {wonText(s.pc)}</span>
@@ -117,7 +117,7 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
         </svg>
       </div>
 
-      <p className="blegend"><span><i className="ldot" />{adj ? "08:11 보정 예상" : "모델 예상"}</span>{nxt != null ? <span><i className="lnxt" />08:10 실제 거래</span> : null}{adj ? <span>노란 띠 07:30 범위 · 청록 테두리 08:11 보정 범위</span> : null}</p>
+      <p className="blegend"><span><i className="ldot" />{adj ? "08:11 2차 예측" : "모델 예상"}</span>{nxt != null ? <span><i className="lnxt" />08:10 실제 거래</span> : null}{adj ? <span>노란 띠 07:30 범위 · 청록 테두리 2차 예측 범위</span> : null}</p>
       {s.avg ? (
         <div className="avgline"><span>평단 <span className="avgwon">{wonText(s.avg)} </span>대비</span>
           <b><span style={{ color: colorOf(s.pc * (1 + s.l80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.l80) / s.avg - 1)}</span> ~ <span style={{ color: colorOf(s.pc * (1 + s.u80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.u80) / s.avg - 1)}</span></b></div>

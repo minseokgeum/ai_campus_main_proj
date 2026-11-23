@@ -98,7 +98,7 @@ export function heroHtml(m, d, st) {
   // 11/19: 개장 전 거래가 없는 날(수능일 등, core/extras.py SPECIAL)엔 08:11도 07:30과 같은 값이다. 개장 시각도 그날 값을 쓴다
   const noPre = !!(d.special && d.special.premarket === false), openAt = (d.special && d.special.open) || "09:00";
   const sealed = d.record && d.record.sealed, no730 = !!(sealed && Object.keys(sealed).length && !sealed["0730"]);
-  if (st.slot === "0811" && !act) h += `<div class="tiny" style="margin-top:8px">${noPre ? "오늘은 개장 전 거래가 없어 07:30 예상과 같아요." : `8시~8시 10분 개장 전 거래 쪽으로 예상을 보정했어요(07:30 예상 ${man(m.H0730sum)}). 실제 서비스에서는 9시 전까지 계속 새로 반영돼요.`}</div>`;
+  if (st.slot === "0811" && !act) h += `<div class="tiny" style="margin-top:8px">${noPre ? "오늘은 개장 전 거래가 없어 07:30 예상과 같아요." : `8시~8시 10분 개장 전 거래로 한 번 더 계산한 2차 예측이에요(07:30 예상 ${man(m.H0730sum)}). 실제 서비스에서는 9시 전까지 계속 새로 반영돼요.`}</div>`;
   if (m.changed || m.pinned) h += `<div class="what-if"><span>${m.changed && m.pinned ? "수량과 시작가를" : m.changed ? "수량을" : "시작가를"} 바꿔서 보는 중이에요</span><button data-act="reset">${I.undo} 되돌리기</button></div>`;
   if (act) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb).length, dr = got.filter((r) => r.s.dir != null), dok = dr.filter((r) => r.s.dir).length;
@@ -114,7 +114,7 @@ export function heroHtml(m, d, st) {
     const sh = { "높음": 0, "보통": 0, "낮음": 0, "없음": 0 };
     m.rows.forEach((r) => (sh[r.s.t08 && r.s.t08.trust ? r.s.t08.trust : "없음"] += r.value));
     const seg = [["높음", "g-hi", "var(--ok)"], ["보통", "g-mid", "var(--mute)"], ["낮음", "g-lo", "#F0A23C"], ["없음", "g-none", "var(--line)"]].filter(([k]) => sh[k] > 0);
-    h += `<div class="trust"><div class="sub" style="display:flex;justify-content:space-between"><span>07:30 예상 믿을 정도 <span class="tiny">· 보유 금액 기준</span></span><button class="tiny" data-act="info" data-info="trust" style="text-decoration:underline">뜻 보기</button></div>
+    h += `<div class="trust"><div class="sub" style="display:flex;justify-content:space-between"><span>믿을 정도(1차·2차 예측이 가까운 정도) <span class="tiny">· 보유 금액 기준</span></span><button class="tiny" data-act="info" data-info="trust" style="text-decoration:underline">뜻 보기</button></div>
       <div class="bar">${seg.map(([k, c]) => `<i class="${c}" style="width:${(sh[k] / sv) * 100}%"></i>`).join("")}</div>
       <div class="legend">${seg.map(([k, , c]) => `<span style="--c:${c}">${k === "없음" ? "개장 전 거래 없음" : k} ${Math.round((sh[k] / sv) * 100)}%</span>`).join("")}</div></div>`;
   }
@@ -444,12 +444,12 @@ export function stockSheet(r, m, d, st) {
   <div class="sheet-b"><p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0 0 4px" data-llm="4">${esc(stockNote(r, st.slot, myNews.length))}</p>${combinedHtml(d, s.code)}
     ${bandHtml(s, { dom: domain([s.b90[0], s.b90[1], s.H, g ? g.g : null, m.showAct ? s.y : null].filter((v) => v != null)), slot: st.slot, showActual: m.showAct, pin: null, wide: true }).replace('data-band="', 'data-band-static="')}
     <table class="tbl"><thead><tr><th>${num(r.q)}주 기준</th><th>어제 종가 대비</th><th>가격</th><th>내 금액</th></tr></thead><tbody>
-      ${line("var(--band)", "가격대 위쪽 끝", s.b80[1])}${line("var(--ink)", s.H0730 != null && !m.showAct ? "08:11 보정 예상 시작가" : "예상 시작가", s.H, true)}${s.H0730 != null && !m.showAct ? line("var(--mute)", "07:30 예상 시작가", s.H0730) : ""}${line("var(--band)", "가격대 아래쪽 끝", s.b80[0])}
+      ${line("var(--band)", "가격대 위쪽 끝", s.b80[1])}${line("var(--ink)", s.H0730 != null && !m.showAct ? "08:11 2차 예측 시작가" : "예상 시작가", s.H, true)}${s.H0730 != null && !m.showAct ? line("var(--mute)", "07:30 예상 시작가", s.H0730) : ""}${line("var(--band)", "가격대 아래쪽 끝", s.b80[0])}
       ${s.eve && s.eve.r != null ? line("var(--mute)", `어제 저녁 거래(${s.eve.at || "20:00"})`, s.eve.r) : ""}${g && g.g != null ? line("var(--ink2)", "08:10 개장 전 거래", g.g) : ""}${m.showAct && s.y != null ? line(s.inb ? "var(--ok)" : "var(--miss)", "9시 실제 시작가", s.y, true) : ""}</tbody></table>
     <div class="tiny" style="margin-top:8px">옅은 노란색은 10번 중 9번이 들어온 더 넓은 가격대(${pct(s.b90[0])} ~ ${pct(s.b90[1])})예요.</div>
     ${s.cautions.map((c) => `<div class="notice" style="margin-top:12px">${I.warn}<div><b>${esc(c.title)}</b>${esc(c.body)}</div></div>`).join("")}
-    ${s.t08 && s.t08.trust && st.slot !== "0730" && !m.showAct ? `<h4>07:30 예상 믿을 정도</h4><div class="rows"><div class="rowline"><span>등급</span><b>${trustChip(s.t08)}</b></div><div class="rowline"><span>08:11 보정 예상 시작가</span><b class="${tone(s.t08.Hb)}">${pct2(s.t08.Hb)}</b></div><div class="rowline"><span>08:11 보정 가격대</span><b>${pct(s.t08.adj[0])} ~ ${pct(s.t08.adj[1])}</b></div></div>
-      <div class="tiny" style="margin-top:6px">08:10 개장 전 가격이 07:30 가격대의 가운데면 높음, 가장자리면 보통, 밖이면 낮음이에요. 08:11에는 예상 시작가를 개장 전 가격 쪽으로 옮기고(07:30 예상 ${pct2(s.H0730 ?? s.H)}) 가격대 폭을 다시 맞춰요.</div>` : ""}
+    ${s.t08 && s.t08.trust && st.slot !== "0730" && !m.showAct ? `<h4>믿을 정도 · 08:11 2차 예측</h4><div class="rows"><div class="rowline"><span>믿을 정도</span><b>${trustChip(s.t08)}</b></div><div class="rowline"><span>08:11 2차 예측 시작가</span><b class="${tone(s.t08.Hb)}">${pct2(s.t08.Hb)}</b></div><div class="rowline"><span>2차 예측 가격대</span><b>${pct(s.t08.adj[0])} ~ ${pct(s.t08.adj[1])}</b></div></div>
+      <div class="tiny" style="margin-top:6px">07:30 예상(1차 ${pct2(s.H0730 ?? s.H)})과 08:11 2차 예측이 가까우면 높음, 크게 다르면 낮음이에요. 2차 예측은 8시~8시 10분 개장 전 거래로 다시 계산한 값이에요.</div>` : ""}
     ${g ? `<h4>방향 유지</h4><div class="rows"><div class="rowline"><span>등급</span><b>${gradeChip(g)}</b></div><div class="rowline"><span>지난 비슷한 경우 방향이 같았던 비율</span><b>${g.p >= 0.995 ? "99% 이상" : Math.round(g.p * 100) + "%"}</b></div></div>
       <div class="tiny" style="margin-top:6px">08:10 개장 전 거래(넥스트레이드)의 방향이 9시 시작가까지 이어질지를 본 값이에요. 예상 시작가 숫자가 얼마나 정확한지와는 다른 얘기예요.</div>` : ""}
     <h4>내 잔고</h4><div class="rows">
@@ -498,9 +498,9 @@ const INFO = {
     <div class="rowline"><span><i class="lg-act" style="display:inline-block;vertical-align:-1px;margin-right:6px"></i>실제 시작가</span><b style="font-weight:500;font-size:13px;max-width:215px">9시에 시작한 가격. 예상대로면 초록, 벗어나면 빨강이에요.</b></div></div>
     <div class="notice info" style="margin-top:14px"><div><b>노란 막대를 눌러 보세요</b>막대 위 아무 곳이나 누르거나 끌면 ‘그 가격에 시작하면 내 금액이 얼마인지’ 바로 보여요. 수량은 − + 로 바꿔 볼 수 있고, 실제 주문은 나가지 않아요.</div></div>
     <div class="tiny" style="margin-top:12px">예상 가격대는 약속이 아니에요. 10번 중 2번쯤은 이 밖에서 시작해요. 막대가 넓은 건 덜 믿을 만해서가 아니라, 그 종목이 평소 많이 오르내렸기 때문이에요.</div>`],
-  trust: ["믿을 정도란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">07:30 예상 가격대를 얼마나 믿을 수 있는지, 08:10 개장 전 거래 가격이 그 가격대의 어디에 있는지로 08:11에 세 단계로 나눈 값이에요.</p>
-    <div class="rows" style="margin-top:8px"><div class="rowline"><span class="chip hi">높음 ${meter(3)}</span><b style="font-weight:500;font-size:13px">가격대 가운데. 지난 기록에서 시작가가 가격대 안 10번 중 9번</b></div><div class="rowline"><span class="chip">보통 ${meter(2)}</span><b style="font-weight:500;font-size:13px">가격대 가장자리. 10번 중 8번</b></div><div class="rowline"><span class="chip lo">낮음 ${meter(1)}</span><b style="font-weight:500;font-size:13px">가격대 밖. 10번 중 3번</b></div></div>
-    <div class="tiny" style="margin-top:12px">08:11에는 예상 시작가를 개장 전 가격 쪽으로 옮기고 가격대 폭을 다시 맞춘 ‘08:11 보정’도 함께 보여 드려요. 숫자는 규칙을 고정한 뒤 14거래일(2,800종목-날) 기록이에요. 개장 전 거래가 없는 종목은 07:30 예상만 있어요.</div>`],
+  trust: ["믿을 정도란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:11에는 8시~8시 10분 개장 전 거래로 예상을 한 번 더 계산해요(2차 예측). 믿을 정도는 07:30 예상(1차)과 08:11 예상(2차)이 얼마나 가까운지예요.</p>
+    <div class="rows" style="margin-top:8px"><div class="rowline"><span class="chip hi">높음 ${meter(3)}</span><b style="font-weight:500;font-size:13px">1차·2차가 가까워요. 지난 기록에서 시작가가 07:30 가격대 안 10번 중 9번</b></div><div class="rowline"><span class="chip">보통 ${meter(2)}</span><b style="font-weight:500;font-size:13px">조금 달라요. 10번 중 8번</b></div><div class="rowline"><span class="chip lo">낮음 ${meter(1)}</span><b style="font-weight:500;font-size:13px">크게 달라요. 10번 중 3번. 2차 예측을 기준으로 보되 오차가 클 수 있어요</b></div></div>
+    <div class="tiny" style="margin-top:12px">1차와 2차의 거리는 07:30 가격대 폭에 견줘 재요. 2차 예측은 개장 전 거래가 있는 모든 종목에 적용해요. 숫자는 규칙을 고정한 뒤 15거래일(3,000종목-날) 기록이에요. 개장 전 거래가 없는 종목은 07:30 예상만 있어요.</div>`],
   grade: ["방향 유지란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 개장 전 거래가 가리키는 방향(어제 종가보다 위/아래)이 9시 시작가까지 이어질지를 세 단계로 나눈 값이에요.</p>
     <div class="rows" style="margin-top:8px"><div class="rowline"><span class="chip hi">높음 ${meter(3)}</span><b style="font-weight:500;font-size:13px">지난 비슷한 경우 10번 중 9번 이상 같은 방향</b></div><div class="rowline"><span class="chip">보통 ${meter(2)}</span><b style="font-weight:500;font-size:13px">10번 중 7~9번</b></div><div class="rowline"><span class="chip lo">낮음 ${meter(1)}</span><b style="font-weight:500;font-size:13px">그보다 낮음. 방향이 자주 바뀌었어요</b></div></div>
     <div class="tiny" style="margin-top:12px">개장 전 거래가 어제 종가에서 멀리 움직였을수록 방향이 이어지는 일이 많았어요. 노란 막대의 폭이나 예상 시작가가 얼마나 맞는지와는 따로 보는 값이에요.</div>`],
@@ -758,7 +758,7 @@ export function firstLook(m, d, st) {
       const nxr = ck.filter((x) => x.info === "nxtout").map((x) => x.r), tot = held.reduce((a, r) => a + a7(r), 0);
       const sh = tot ? Math.round((100 * nxr.reduce((a, r) => a + a7(r), 0)) / tot) : 0;
       // 11/23(E107): 개장 전 거래가 07:30 가격대 밖인 종목은 08:11 예상을 개장 전 가격 쪽으로 보정해 계좌 예상에 이미 넣었다
-      const why = nx ? `${nxr.map((r) => r.s.name).join("·")}의 개장 전 거래가 07:30 가격대 밖이에요(믿을 정도 낮음, 아침 예상 금액 변화의 ${sh}%). 그래서 08:11 계좌 예상은 개장 전 가격 쪽으로 보정했어요(07:30 ${man(m.H0730sum)} → ${man(m.Hsum)}). 지난 기록에서 이런 종목은 시작가가 07:30 가격대 안에서 열린 날이 10번 중 3번이었어요.`
+      const why = nx ? `${jo(nxr.map((r) => r.s.name).join("·"), "은", "는")} 개장 전 거래가 07:30 예상과 크게 달라요(믿을 정도 낮음, 아침 예상 금액 변화의 ${sh}%). 08:11 계좌 예상은 개장 전 거래로 다시 계산했어요(2차 예측: 07:30 ${man(m.H0730sum)} → ${man(m.Hsum)}). 이런 종목은 오차가 평소보다 클 수 있어 주의해서 보세요.`
         : act ? "예상 가격대 밖에서 시작한 종목이에요." : "방향 유지가 낮을수록 시작가 방향이 개장 전 거래 방향과 달라지는 날이 많았어요.";
       body = `<b>확인할 표시 ${ck.length}종목</b><small>${esc(why + evTxt)}</small>${mini}${ck.length > 3 ? `<small class="fl-more">${esc(ck.slice(3).map((x) => x.r.s.name).join("·"))} 더</small>` : ""}`;
     } else if (act) {
@@ -779,7 +779,9 @@ export function firstLook(m, d, st) {
       const mix = ["높음", "보통", "낮음"].map((k) => (lv(k) ? `${k} ${lv(k)}` : "")).filter(Boolean).join(" · ");
       const noneR = held.filter((r) => !(r.s.grade && r.s.grade.g != null)), none = noneR.length;
       const noneTxt = !none ? "" : noneR.every(nxtNone) ? ` ${jo(noneR.map((r) => r.s.name).join("·"), "은", "는")} 평소에도 개장 전 거래가 없는 종목이라 새 숫자는 08:50 거래소 예상체결가부터예요.` : ` 개장 전 거래가 없던 ${none}종목은 07:30 예상 그대로예요.`;
-      body = gr.length ? `<b>개장 전 거래가 있던 ${gr.length}종목 모두 예상대로예요</b><small>${esc(`아침 예상 가격대 안에서 거래되고 있어요. 시작가 방향 믿을 정도: ${mix}.${noneTxt}` + evTxt)}</small>`
+      const tmix = ["높음", "보통"].map((k) => { const c = gr.filter((r) => r.s.t08 && r.s.t08.trust === k).length; return c ? `${k} ${c}` : ""; }).filter(Boolean).join(" · ");
+      const moved = Math.abs(m.Hsum - m.H0730sum) >= 1 ? ` 08:11 2차 예측으로 다시 계산했어요(07:30 ${man(m.H0730sum)} → ${man(m.Hsum)}).` : "";
+      body = gr.length ? `<b>개장 전 거래가 있던 ${gr.length}종목 모두 예상대로예요</b><small>${esc(`아침 예상 가격대 안에서 거래되고 있어요. 믿을 정도(1차·2차 예측이 가까운 정도): ${tmix || mix}.${moved}${noneTxt}` + evTxt)}</small>`
         : `<b>개장 전 거래가 있었던 종목이 없어요</b><small>${esc("07:30 예상 그대로예요." + evTxt)}</small>`;
     }
     boxes.push(row(ic, ck.length || late ? "w" : "", body + lateTxt, "", "check"));
