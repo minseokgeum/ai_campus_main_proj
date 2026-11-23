@@ -154,7 +154,20 @@ export function Glance({ title, rows, sector }: { title: string; rows: { name: s
 
 /** AI 전체 요약(핫이슈 줄). 줄이 없으면 준비 중 */
 /** lines: 글 한 줄, 또는 [굵은 머리말, 글](피그마 522:6842 '반도체 AI 서버 투자…') */
-export function AiSummary({ meta, what, lines, note }: { meta: string; what: string; lines: (string | [string, string])[]; note?: string }) {
+/** empty: 요약은 돌았는데 줄이 없을 때 '준비 중' 대신 보여 줄 문구(본문, 아래 작은 글씨). 없으면 준비 중 */
+export function AiSummary({ meta, what, lines, note, empty }: { meta: string; what: string; lines: (string | [string, string])[]; note?: string; empty?: [string, string] }) {
+  if (!lines.length && empty) {
+    return (
+      <section className="ai">
+        <div className="top">
+          <span className="badge">AI 전체 요약</span>
+          <span className="meta">{meta}</span>
+        </div>
+        <p className="pending">{empty[0]}</p>
+        <p className="note">{empty[1]}</p>
+      </section>
+    );
+  }
   if (!lines.length) return <AiPending meta={meta} what={what} />;
   return (
     <section className="ai">

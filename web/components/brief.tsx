@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Sheet } from "@/components/sheet";
 import type { Brief, Evidence } from "@/lib/summary";
 import { dateLabel } from "@/lib/format";
+import { BRIEF_AT } from "@/lib/briefing";
 
 export type BriefFocus = { codes: string[]; names: Record<string, string>; sectors: string[] };   // 보유 종목(순서대로), 이름, 뉴스 많은 순 내 업종
 
@@ -49,7 +50,7 @@ export function BriefSheet({ brief, date, trigger, className, focus }: { brief: 
   const cards = cardsOf(brief, focus);
   if (!cards.length) return <Link href="/news" className={className}>{trigger}</Link>;
   return (
-    <Sheet className={className} title={brief.title ?? "오늘의 핵심 3가지"} sub={`${dateLabel(date)} 06:00 KST 기준`} trigger={trigger}
+    <Sheet className={className} title={brief.title ?? "오늘의 핵심 3가지"} sub={`${dateLabel(date)} ${BRIEF_AT} KST 기준`} trigger={trigger}
       kicker={<p className="bkick">오늘의 핵심 3가지 <span>AI 요약</span></p>}>
       <div className="bcards">
         {cards.map((c) => (

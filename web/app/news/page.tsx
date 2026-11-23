@@ -200,7 +200,11 @@ function Mine({ base, acct, view, pick, open, list, ai, links }: { base: Q; acct
       </div>
       <AiSummary meta={impactMeta ?? `${view === "hold" ? "보유" : "관심"} ${codes.length}종목 · 밤사이 소식 ${total}건`} what="내 종목"
         note={`${view === "hold" ? "보유" : "관심"} ${codes.length}종목 · 밤사이 소식 ${total}건 기준 · AI가 요약했어요`}
-        lines={shown.map(({ c }) => ai.companies.get(c)?.line ?? "").filter(Boolean).slice(0, 3)} />   {/* 피그마 532:6226: 3줄, 부정 소식 종목 먼저 */}
+        lines={shown.map(({ c }) => ai.companies.get(c)?.line ?? "").filter(Boolean).slice(0, 3)}   // 피그마 532:6226: 3줄, 부정 소식 종목 먼저
+        // 그날 요약이 돌았는데 줄이 없으면: 종목 요약은 회사가 기사에 직접 나온 소식으로만 만들어서(거래처·제품 검색어로 걸린 기사는 쓰지 않음, 2026-11-23 정함)
+        empty={ai.createdAt || ai.macro.length || ai.sectors.size || ai.companies.size ? [
+          `오늘은 ${pick && codes.includes(pick) ? nameOf(pick) : `${view === "hold" ? "보유" : "관심"} 종목`}에 직접 관한 소식이 없어 AI 요약을 만들지 않았어요. 아래 기사는 거래처·관련 제품 검색어로 모았어요.`,
+          "AI 요약은 회사가 기사에 직접 나온 소식으로만 만들어요."] : undefined} />
       <VerdictGlance title={`${view === "hold" ? "보유" : "관심"} 종목 소식 한눈에`} rows={withNews.map(({ c, n }) => ({ name: nameOf(c), href: q(base, { c }), ...verdictsOf(m.get(c) ?? [], c), total: n }))} />
       <Section title="종목별 뉴스" right={<><img src="/icons/dot-red.svg" alt="" width={6} height={6} />부정 소식이 있는 종목 먼저</>} />
       {withNews.length === 0 ? <Empty /> : withNews.map(({ c, n }) => {

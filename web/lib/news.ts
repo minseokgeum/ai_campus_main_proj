@@ -36,7 +36,7 @@ const RANK: Record<string, number> = { "자기 회사": 0, "브랜드": 1, "회�
 const SQL = `
   select i.key, i.title, i.source, i.outlet, i.published_utc, min(${LINK}) as link, array_agg(distinct h.term) as terms
   from items i join hits h on h.key = i.key left join news.llm_articles l on l.key = i.key
-  where coalesce(i."drop", '') = '' and i.first_seen_utc >= $1 and i.first_seen_utc < $2 and h.term = any($3)   -- 수집 시각 기준(요약과 같은 범위)
+  where coalesce(i."drop", '') = '' and i.published_utc >= $1 and i.published_utc < $2 and i.first_seen_utc < $2 and h.term = any($3)   -- 발행 시각 기준, 끝 시각까지 수집된 것(요약과 같은 범위, 2026-11-23)
     and ${NEWS_OK}   -- 뉴스가 아닌 글·투자와 관련 없는 글은 빼기(lib/newsql.ts)
   group by i.key
   order by i.published_utc desc

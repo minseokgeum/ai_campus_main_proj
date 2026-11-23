@@ -43,16 +43,16 @@ export function FuturesHelp() {
   );
 }
 
-/** 뉴스는 이렇게 모아요(배포용 변경 기록 '뉴스 수집 시간 안내', 피그마 812:1824): 뉴스 브리핑 제목 옆 ? → 모으는 시간·확정 시각.
- *  시각은 서버 일정과 같다(news_search/run_news.py: 전날 23:00 ~ 그날 05:45 수집분, 05:50 확정본) */
+/** 뉴스는 이렇게 모아요(배포용 변경 기록 '뉴스 수집 시간 안내', 피그마 812:1824): 뉴스 브리핑 제목 옆 ? → 모으는 시간·공개 시각.
+ *  시각은 서버 일정과 같다(news_search/run_news.py: 전날 23:00 ~ 그날 06:15 발행분, 06:20 확정본, 06:30 공개. 2026-11-23) */
 export function NewsTimeHelp() {
   return (
     <Sheet className="hq" title="뉴스는 이렇게 모아요" confirm="확인" xToo trigger={<span aria-label="뉴스 모으는 시간 안내">?</span>}>
       <dl className="ntime">
-        <div><dt>모으는 시간</dt><dd>전날 밤 11시부터 아침 5시 45분까지</dd></div>
-        <div><dt>확정</dt><dd>매일 아침 5시 50분에 오늘 뉴스가 확정돼요</dd></div>
+        <div><dt>모으는 뉴스</dt><dd>전날 밤 11시부터 아침 6시 15분까지 나온 뉴스</dd></div>
+        <div><dt>공개</dt><dd>매일 아침 6시 30분에 오늘 브리핑이 나와요</dd></div>
       </dl>
-      <p className="ntnote">아침 5시 45분 이후에 나온 뉴스는 오늘 브리핑에 들어가지 않아요.</p>
+      <p className="ntnote">아침 6시 15분 이후에 나온 뉴스는 오늘 브리핑에 들어가지 않아요.</p>
     </Sheet>
   );
 }

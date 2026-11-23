@@ -54,7 +54,7 @@ export async function stockLinks(codes: string[], start: Date, end: Date): Promi
     const queries = [...new Set(t.rows.map((r) => r.query as string))];
     const h = queries.length ? await pool.query(
       `select h.term, i.key from items i join hits h on h.key = i.key left join news.llm_articles l on l.key = i.key
-       where coalesce(i."drop", '') = '' and i.first_seen_utc >= $1 and i.first_seen_utc < $2 and h.term = any($3) and ${NEWS_OK}`, [start, end, queries]) : { rows: [] };
+       where coalesce(i."drop", '') = '' and i.published_utc >= $1 and i.published_utc < $2 and i.first_seen_utc < $2 and h.term = any($3) and ${NEWS_OK}`, [start, end, queries]) : { rows: [] };   // 브리핑과 같은 범위(발행 시각, 끝 시각까지 수집된 것)
     const keysOf = new Map<string, Set<string>>();
     for (const r of h.rows) { const s = keysOf.get(r.term) ?? new Set<string>(); s.add(r.key); keysOf.set(r.term, s); }
     const groups = new Map<string, { node: LinkNode; keys: Set<string>; rank: number }>();

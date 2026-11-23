@@ -35,7 +35,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
   const range = RANGES.find((x) => x[0] === sp.r) ?? RANGES[2];   // 처음은 1달
   const nowAt = await appNow();
   const today = kstNow(nowAt).ymd;
-  const br = briefing(undefined, nowAt);   // 연결 그림의 소식 수는 지금 브리핑 범위(전날 23:00 ~ 그날 05:45 수집분)
+  const br = briefing(undefined, nowAt);   // 연결 그림의 소식 수는 지금 브리핑 범위(전날 23:00 ~ 그날 06:15 발행분, lib/briefing.ts)
   const [px, hist, past, fl, lc, lk, day, demo] = await Promise.all([closes(code, addDays(today, -range[2])), bandHistory(code), stockNewsDays(code, 7), filings(code, 14), lastCloses(pf.holdings.map((x) => x.code)), stockLinks([code], br.start, br.end),
     range[0] === "1d" ? intraday(code) : Promise.resolve(null), demoAt()]);
   // 지난 소식(피그마 147:619): 기사(보도) + DART 공시, 최신순
