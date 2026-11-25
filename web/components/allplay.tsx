@@ -263,7 +263,7 @@ function PlayBand({ s, nxt, y, pin, play, onLive, onPin }: {
       <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
       <rect x={X(l)} y={21} width={Math.max(3, X(u) - X(l))} height={12} rx={6} fill={BAND} />
       <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
-      {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={50} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:10</text></> : null}
+      {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={50} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:11</text></> : null}
       <circle cx={X(h)} cy={27} r={6} fill="#2f3437" stroke="#fff" strokeWidth={2} />
       {y != null ? <circle cx={X(y)} cy={27} r={6} fill="#fff" stroke="#192d31" strokeWidth={2} /> : null}
       {pinX != null ? <>

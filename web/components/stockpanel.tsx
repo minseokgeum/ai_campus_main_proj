@@ -43,7 +43,7 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
 
   const m = Math.max(0.01, Math.abs(s.l90), Math.abs(s.u90), Math.abs(base), Math.abs(s.nxtG ?? 0), Math.abs(s.h)) * 1.2;
   const W = 342, pad = 10, X = (v: number) => pad + ((v + m) / (2 * m)) * (W - 2 * pad);
-  // 08:10 라벨과 띠 양 끝 %가 겹치면 %를 바깥쪽으로 비킨다
+  // 08:11 라벨과 띠 양 끝 %가 겹치면 %를 바깥쪽으로 비킨다
   const lx = nxt != null && Math.abs(X(s.l80) - X(nxt)) < 34 ? Math.max(18, X(nxt) - 34) : X(s.l80);
   const ux = nxt != null && Math.abs(X(s.u80) - X(nxt)) < 34 ? Math.min(W - 18, X(nxt) + 34) : X(s.u80);
   const svg = useRef<SVGSVGElement>(null);
@@ -99,7 +99,6 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
           <text x={X(0)} y={10} textAnchor="middle" fontSize={10} fill="#66777a">어제 종가</text>
           <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
           <rect x={X(s.l80)} y={21} width={Math.max(3, X(s.u80) - X(s.l80))} height={12} rx={6} fill="#FFD970" />
-          {nxt != null && what == null ? <circle cx={X(s.h)} cy={27} r={3.5} fill="#b8c0c3" /> : null}
           {/* 세로선 셋을 색·모양으로 구분(배포용 변경 기록 12·05): 어제 종가 회색 점선, 평단 청록 실선, 08:10 실제 거래 빨간 실선 */}
           <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
           {base0 != null && Math.abs(base0) <= m ? <>
@@ -108,15 +107,15 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
           </> : base0 != null ? (
             <text x={base0 < 0 ? pad : W - pad} y={10} textAnchor={base0 < 0 ? "start" : "end"} fontSize={10} fontWeight={700} fill="#008c82">{base0 < 0 ? `◀ 평단 ${pctText(base0)}` : `평단 ${pctText(base0)} ▶`}</text>
           ) : null}
-          {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={49} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:10</text></> : null}
-          {what != null ? <circle cx={X(base)} cy={27} r={4} fill="#b8c0c3" /> : null}
-          <circle cx={X(r)} cy={27} r={what != null ? 9 : 6} fill={what != null ? "rgba(0,140,130,.25)" : "#2f3437"} stroke={what != null ? "#008c82" : "#fff"} strokeWidth={2} />
+          {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={49} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:11</text></> : null}
+          <circle cx={X(nxt != null ? s.h : base)} cy={27} r={5} fill="#2f3437" stroke="#fff" strokeWidth={2} />
+          {what != null ? <circle cx={X(what)} cy={27} r={9} fill="rgba(0,140,130,.25)" stroke="#008c82" strokeWidth={2} /> : null}
           <text x={lx} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.l80)}>{pctText(s.l80)}</text>
           <text x={ux} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.u80)}>{pctText(s.u80)}</text>
         </svg>
       </div>
 
-      <p className="blegend"><span><i className="ldot" />{phase === "post" ? "실제 시가" : nxt != null ? "08:11 2차 예상" : "07:30 예상"}</span>{nxt != null ? <span><i className="lnxt" />08:10까지의 NXT 가격</span> : null}<span>노란 띠 · 07:30 예상 범위</span></p>
+      <p className="blegend"><span><i className="ldot" />{phase === "post" ? "실제 시가" : "07:30 예상"}</span>{nxt != null ? <span><i className="lnxt" />08:11 2차 예상</span> : null}<span>노란 띠 · 07:30 예상 범위</span></p>
       {s.avg ? (
         <div className="avgline"><span>평단 <span className="avgwon">{wonText(s.avg)} </span>대비</span>
           <b><span style={{ color: colorOf(s.pc * (1 + s.l80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.l80) / s.avg - 1)}</span> ~ <span style={{ color: colorOf(s.pc * (1 + s.u80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.u80) / s.avg - 1)}</span></b></div>
