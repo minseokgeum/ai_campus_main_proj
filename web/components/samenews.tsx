@@ -4,21 +4,24 @@ import { useState } from "react";
 
 export type SameRow = { key: string; outlet: string; time: string; lang: string; title: string; link: string };
 
+const row = (r: SameRow) => (
+  <a key={r.key} href={r.link} target="_blank" rel="noreferrer noopener" className="samerow">
+    <span className="sm"><i aria-hidden>{r.outlet.slice(0, 1).toUpperCase()}</i><b>{r.outlet}</b><span> · {r.time} · {r.lang}</span></span>
+    <span className="st">{r.title}</span>
+    <svg className="ext" aria-hidden width="16" height="16" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V13H3V5h3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+  </a>
+);
+
 export function SameNews({ rows }: { rows: SameRow[] }) {
   const [open, setOpen] = useState(false);
-  const shown = open ? rows : rows.slice(0, 2);
   return (
     <section className="same">
       <h2>같은 소식, 다른 매체</h2>
       <p className="sub">매체 {new Set(rows.map((r) => r.outlet)).size + 1}곳에서 같은 소식을 다뤘어요</p>
       <div className="samecard">
-        {shown.map((r) => (
-          <a key={r.key} href={r.link} target="_blank" rel="noreferrer noopener" className="samerow">
-            <span className="sm"><i aria-hidden>{r.outlet.slice(0, 1).toUpperCase()}</i><b>{r.outlet}</b><span> · {r.time} · {r.lang}</span></span>
-            <span className="st">{r.title}</span>
-            <svg className="ext" aria-hidden width="16" height="16" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V13H3V5h3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </a>
-        ))}
+        {rows.slice(0, 2).map(row)}
+        {/* 3건째부터: 펼칠 때 높이가 0.25초에 걸쳐 늘어난다(피그마 기록 31, 2026-11-25) */}
+        {rows.length > 2 ? <div className={`samextra${open ? " on" : ""}`} aria-hidden={!open}><div>{rows.slice(2).map(row)}</div></div> : null}
         {rows.length > 2 ? (
           <button type="button" className="samemore" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <>접기<i className="chev up" aria-hidden /></> : <>{rows.length - 2}건 더 보기<i className="chev" aria-hidden /></>}</button>
         ) : null}

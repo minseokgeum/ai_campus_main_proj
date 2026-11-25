@@ -150,7 +150,7 @@ export function impactFor(a: Article, code: string): string | null {
 }
 
 /** 기사 하나의 판정(시장·산업별 뉴스, 2026-11-24): 걸린 종목들의 판정(news.stock_impacts)을 합친다. codes를 주면 그 종목들만 보되 그중 판정이 없으면 전체로.
- *  긍정·부정이 섞이거나 엇갈림 판정이 하나라도 있으면 엇갈림, 긍정만(중립 섞여도) 긍정, 부정만 부정, 중립만 중립, 하나도 없으면 null(표시 없음) */
+ *  긍정·부정이 섞이거나 엇갈림 판정이 하나라도 있으면 엇갈림, 긍정만(중립 섞여도) 긍정, 부정만 부정, 중립만 중립, 하나도 없으면 null(판정 없는) */
 export function articleVerdict(a: Article, codes?: Set<string>): string | null {
   let vals = Object.entries(a.stock).filter(([c]) => !codes || codes.has(c)).map(([, v]) => v);
   if (codes && !vals.length) vals = Object.values(a.stock);
@@ -158,8 +158,8 @@ export function articleVerdict(a: Article, codes?: Set<string>): string | null {
   return (p && n) || vals.includes("mixed") ? "mixed" : p ? "positive" : n ? "negative" : vals.length ? "neutral" : null;
 }
 
-/** 뉴스 목록 묶음 순서(2026-11-24 사용자 결정, 고정): 부정 → 긍정 → 엇갈림 → 중립 → 표시 없음. 묶음 안은 최신순 */
-export const VERDICT_ORDER: [string | null, string][] = [["negative", "부정"], ["positive", "긍정"], ["mixed", "엇갈림"], ["neutral", "중립"], [null, "표시 없음"]];
+/** 뉴스 목록 묶음 순서(2026-11-24 사용자 결정, 고정): 부정 → 긍정 → 엇갈림 → 중립 → 판정 없는. 묶음 안은 최신순 */
+export const VERDICT_ORDER: [string | null, string][] = [["negative", "부정"], ["positive", "긍정"], ["mixed", "엇갈림"], ["neutral", "중립"], [null, "판정 없는"]];   // 머리줄 "판정 없는 소식"(2026-11-25 사용자 결정, 예전 "표시 없음")
 export function groupByVerdict<T extends Article>(list: T[], verdict: (a: T) => string | null) {
   return VERDICT_ORDER.map(([k, label]) => ({ k, label, xs: list.filter((a) => (verdict(a) ?? null) === k).sort((a, b) => b.published.localeCompare(a.published)) }))
     .filter((g) => g.xs.length);

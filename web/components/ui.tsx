@@ -97,9 +97,9 @@ export function NewsCard({ a, tag, impact, more }: { a: Article; tag?: string; i
   );
 }
 
-/** 판정 묶음(2026-11-24): 부정 → 긍정 → 엇갈림 → 중립 → 표시 없음 순서로 머리줄과 기사들. 뉴스 브리핑 세 화면이 같이 쓴다.
+/** 판정 묶음(2026-11-24): 부정 → 긍정 → 엇갈림 → 중립 → 판정 없는 순서로 머리줄과 기사들. 뉴스 브리핑 세 화면이 같이 쓴다.
  *  같은 소식(서버 news.stories) 기사는 가장 최근 것 한 줄, 그 정보 줄 끝에 '같은 소식 n건 ⌄'(A안). 누르면 바로 아래에 제목 · 매체 · 시각만 작은 줄로 펼친다.
- *  머리줄 = '부정 소식'(크게) + '14개 · 23건'(중간). 띠는 묶음 하나에 세로 한 줄, 기사 줄의 판정 글자·막대는 숨긴다.
+ *  머리줄 = '부정 소식'(크게) + '주제 14개 · 23건'(중간, 주제 = 같은 소식을 한 줄로 셈, 2026-11-25 사용자 결정). 띠는 묶음 하나에 세로 한 줄, 기사 줄의 판정 글자·막대는 숨긴다.
  *  묶음마다 처음엔 SHOW_ROWS줄만, 나머지는 '나머지 소식 n개 더 보기'로 펼친다. 펼치기는 모두 숨은 체크 칸 + label(스크립트 없이) */
 const SHOW_ROWS = 10;
 export function VerdictGroups({ groups, render }: { groups: { k: string | null; label: string; xs: Article[] }[]; render: (a: Article, more?: ReactNode) => ReactNode }) {
@@ -130,11 +130,11 @@ export function VerdictGroups({ groups, render }: { groups: { k: string | null; 
         const extra = folds.slice(SHOW_ROWS);
         return (
           <section key={g.label} className={`nsgroup ${gid.replace("vg-negative", "vg-neg").replace("vg-positive", "vg-pos").replace(/vg-(mixed|neutral)/, "vg-neu")}`}>
-            <p className="nsg-h"><span className="t">{g.label} 소식</span><span className="c">{folds.length < g.xs.length ? `${folds.length}개 · ${g.xs.length}건` : `${g.xs.length}건`}</span></p>
+            <p className="nsg-h"><span className="t">{g.label} 소식</span><span className="c">주제 {folds.length}개 · {g.xs.length}건</span></p>
             {folds.slice(0, SHOW_ROWS).map(row)}
             {extra.length ? <>
               <input type="checkbox" id={`${gid}-more`} className="more-cb" hidden />
-              <div className="vg-extra">{extra.map(row)}</div>
+              <div className="vg-extra"><div>{extra.map(row)}</div></div>
               <label htmlFor={`${gid}-more`} className="vg-more"><span className="o">나머지 소식 {extra.length}개 더 보기<i className="chev" aria-hidden /></span><span className="x">접기<i className="chev up" aria-hidden /></span></label>
             </> : null}
           </section>

@@ -6,6 +6,7 @@
 // 바꾼 수량은 이 브라우저 탭에만(밤사이 종목 창과 같은 저장 칸 qty:날짜), 가정한 시작가는 화면을 다시 열면 풀린다. 계정 보유 종목·주문과는 상관없다.
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { YBand, type BandPhase } from "@/components/yband";
 import { MaskToggle } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { pct, swon, won } from "@/lib/format";
@@ -14,7 +15,7 @@ import type { CardStock, CheckRow } from "@/lib/model";
 const P = (v: number) => v * 100;
 const BAND = "#FFD970";
 const MAXQ = 99999;
-const FIRST = 5;   // 처음에 보여 줄 종목 카드 수(2026-11-24: 다 보여 주면 너무 길어서 5개 + 펼치기)
+const FIRST = 3;   // 처음에 보여 줄 종목 카드 수(2026-11-24: 다 보여 주면 너무 길어서 5개 + 펼치기, 2026-11-25 사용자 결정 3개)
 
 /** 이 요소를 스크롤하는 조상(없으면 문서) */
 function scroller(el: HTMLElement): Element {
@@ -41,7 +42,8 @@ export type PlayCard = {
   s: CardStock; c: CheckRow | null;
   pct: number;               // 장전: 예상 시가 변화(08:11은 마지막 NXT 가격) · 장후: 실제 시가 변화
   nxt: number | null; y: number | null;   // 띠 표식: 08:10 장전 거래 · 실제 시가
-  icon: ReactNode; chips: ReactNode; flow: ReactNode; combined: ReactNode; links: ReactNode;
+  status: ReactNode;          // 큰 숫자 아래 상태 한 줄(실적 태그 · 장전 방향 등급 · 띠 안/밖)
+  combined: ReactNode; links: ReactNode;
 };
 
 type Step = { t: string; label: string; done: boolean; at?: string };
@@ -50,7 +52,7 @@ function lsGet(k: string) { try { return localStorage.getItem(k); } catch { retu
 function lsSet(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* 저장하지 못해도 화면은 그대로 */ } }
 
 export function AllPlay(p: {
-  t: string; post: boolean; slot0811: boolean; steps: Step[];
+  t: string; post: boolean; slot0811: boolean; steps: Step[]; nowHm: string;   // nowHm: 화면 시각(시연 시각 포함) HHMM
   cards: PlayCard[]; need: string[];          // need: 먼저 확인할 것 순서(종목코드)
   firstLook: ReactNode; record: { inN: number; n: number } | null; tail: ReactNode;
 }) {
@@ -59,13 +61,9 @@ export function AllPlay(p: {
   const loaded = useRef(false);
   useEffect(() => { try { setOvr(JSON.parse(sessionStorage.getItem(key) ?? "{}")); } catch { /* 저장소 없으면 처음 수량 */ } loaded.current = true; }, [key]);
   useEffect(() => { if (loaded.current) try { sessionStorage.setItem(key, JSON.stringify(ovr)); } catch { /* 무시 */ } }, [key, ovr]);
-  const [pins, setPins] = useState<Record<string, number>>({});
-  const [live, setLive] = useState<{ code: string; v: number } | null>(null);
   const [ord, setOrd] = useState<"need" | "value">("need");
   const [hold, setHold] = useState<"all" | "own" | "watch">("all");
-  const [coach, setCoach] = useState(false);
-  useEffect(() => { if (lsGet("all.ord") === "value") setOrd("value"); if (!lsGet("all.coach")) setCoach(true); }, []);
-  const coachDone = () => { setCoach(false); lsSet("all.coach", "1"); };
+  useEffect(() => { if (lsGet("all.ord") === "value") setOrd("value"); }, []);   // 띠 첫 안내는 노란 띠 부품(yband)이 한 번 띄운다
 
   const qOf = (c: PlayCard) => ovr[c.code] ?? c.qty;
   const setQ = (c: PlayCard, f: (cur: number) => number) => setOvr((o) => {
@@ -75,7 +73,8 @@ export function AllPlay(p: {
     if (q === c.qty) delete n[c.code]; else n[c.code] = q;
     return n;
   });
-  const pinOf = (c: PlayCard) => (p.post ? undefined : live && live.code === c.code ? live.v : pins[c.code]);
+  // 띠를 끌어 보는 값은 띠 말풍선에만 보이고 카드·합계에는 넣지 않는다(2026-11-25 시안 개발 메모: 손을 떼면 원래대로, 저장하지 않음)
+  const pinOf = (_c: PlayCard): number | undefined => undefined;
 
   // 지금 값(바꾼 수량·가정한 시작가 반영)
   const now = p.cards.map((c) => {
@@ -87,14 +86,15 @@ export function AllPlay(p: {
   const calc = now.filter((x) => x.q > 0 && x.amount != null);
   const value = calc.reduce((a, x) => a + x.value, 0), amount = calc.reduce((a, x) => a + x.amount!, 0);
   const pinned = !p.post && now.some((x) => x.pin != null);
-  const resetOne = (code: string) => { setOvr((o) => { const n = { ...o }; delete n[code]; return n; }); setPins((o) => { const n = { ...o }; delete n[code]; return n; }); setLive(null); };
+  const resetOne = (code: string) => { setOvr((o) => { const n = { ...o }; delete n[code]; return n; }); };
+  const checkHm = p.steps[p.steps.length - 1]?.t ?? "09:00";   // 채점 시각(오늘 아침 진행 마지막 단계)
 
   // 기여: 합계와 같은 방향 종목 중 가장 큰 종목이 그 방향 금액의 몇 %인가(원래 버전 "줄어들 금액의 84%가 SK하이닉스예요")
   const same = calc.filter((x) => Math.sign(x.amount!) === Math.sign(amount) && x.amount !== 0).sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
   const sameSum = same.reduce((a, x) => a + Math.abs(x.amount!), 0);
   const top = same[0];
   const verb = amount < 0 ? (p.post ? "줄어든" : "줄어들") : (p.post ? "늘어난" : "늘어날");
-  // 종목별로 보면: 금액 변화 큰 3종목 + 그 외. %는 원래 버전처럼 같은 방향(늘어난 쪽·줄어든 쪽) 합계 대비 → 위 "줄어들 금액의 n%" 문장과 같은 숫자. '그 외' 줄은 % 없음
+  // 종목별로 보면: 금액 변화 큰 3종목 + 그 외. %는 원래 버전처럼 같은 방향(늘어난 쪽·줄어든 쪽) 합계 대비 → 위 "줄어들 금액의 n%" 문장과 같은 숫자. '그 외' 줄도 %(2026-11-25 시안)
   const byAmt = [...calc].sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
   const sideSum = (v: number) => calc.filter((x) => Math.sign(x.amount!) === Math.sign(v)).reduce((a, x) => a + Math.abs(x.amount!), 0);
   const head = byAmt.slice(0, 3), rest = byAmt.slice(3);
@@ -111,12 +111,10 @@ export function AllPlay(p: {
   const nOwn = p.cards.filter((c) => !c.watch).length, nWatch = p.cards.length - nOwn;
   const hf = nOwn && nWatch ? hold : "all";
   const shown = sorted.filter((c) => hf === "all" || (hf === "watch") === c.watch);
-  const coachAt = !p.post && coach ? shown[0]?.code : undefined;
   // 펼치기: 다시 불러오지 않고 그 자리에서. 펼친 뒤 여섯째 카드가 단추가 있던 자리에 오게, 접으면 단추가 보이게 스크롤을 맞춘다
   const [more, setMore] = useState(false);
   const moreBtn = useRef<HTMLButtonElement>(null);
   const keep = useRef<{ code: string; top: number } | { btn: true } | { jump: string } | null>(null);
-  const visible = more ? shown : shown.slice(0, FIRST);
   const hidden = new Set(shown.slice(FIRST).map((c) => c.code));
   const open = () => { if (moreBtn.current && shown[FIRST]) keep.current = { code: shown[FIRST].code, top: moreBtn.current.getBoundingClientRect().top }; setMore(true); };
   const close = () => { keep.current = { btn: true }; setMore(false); };
@@ -124,8 +122,8 @@ export function AllPlay(p: {
     const k = keep.current; keep.current = null;
     if (!k) return;
     if ("top" in k) { const el = document.getElementById(`ac-${k.code}`); if (el) scroller(el).scrollBy(0, el.getBoundingClientRect().top - k.top); }
-    else if ("btn" in k) moreBtn.current?.scrollIntoView({ block: "center" });
-    else { const el = document.getElementById(`ac-${k.jump}`); if (el) glide(el); }
+    else if ("btn" in k) window.setTimeout(() => moreBtn.current?.scrollIntoView({ block: "center" }), 260);   // 접는 움직임(0.25초)이 끝난 뒤
+    else window.setTimeout(() => { const el = document.getElementById(`ac-${k.jump}`); if (el) glide(el); }, 260);
   }, [more]);
   // 위 막대·먼저 확인할 것에서 종목(#ac-코드)을 누르면 그 카드로 부드럽게. 접혀 있는 종목이면 펼친 뒤에
   const hiddenRef = useRef(hidden); hiddenRef.current = more ? new Set<string>() : hidden;
@@ -145,37 +143,40 @@ export function AllPlay(p: {
 
   return (
     <>
-      {/* ① 9시 내 주식 변화 */}
-      <section className="acct allacct">
-        <div className="at"><span>{p.post ? "오늘 시가로 실제 바뀐 내 주식" : pinned ? "내가 정한 시작가로 본 내 주식 변화" : "9시에 예상되는 내 주식 변화"}</span><MaskToggle /></div>
+      {/* ① 9시 내 주식 변화(2026-11-25 사용자 시안): 민트 카드(제목 · 금액 · 가장 큰 종목 문장 · 어제 종가 → 예상 시가) → 종목별로 보면 → 오늘 아침 진행 */}
+      <section className="acct allacct a2card">
+        <div className="at"><span>{p.post ? "오늘 시가로 바뀐 내 주식" : pinned ? "내가 정한 시작가로 본 내 주식" : "오늘 시가에 예상되는 내 주식"}</span><MaskToggle /></div>
         <div className="big" style={{ color: signColor(amount) }}><span className="amt tot">{swon(amount)}</span><small>{pct(P(value ? amount / value : 0))}</small></div>
-        {top && sameSum ? <p className="allwho">{verb} 금액의 <b>{Math.round((Math.abs(top.amount!) / sameSum) * 100)}%</b>가 {top.c.name}예요.</p> : null}
-        <div className="flow">
-          <div><small>어제 종가 기준</small><b className="amt">{won(value)}</b></div><span aria-hidden>→</span>
-          <div className="r"><small>{p.post ? "실제 시가 기준" : pinned ? "정한 시작가 기준" : "예상 시가 기준"}</small><b className="amt">{won(value + amount)}</b></div>
+        {top && sameSum ? <p className="allwho">{verb} 금액의 <b>{Math.round((Math.abs(top.amount!) / sameSum) * 100)}%</b>가 {top.c.name}{jo(top.c.name)}.</p> : null}
+        <div className="a2flow">
+          <span>어제 종가 → {p.post ? "실제 시가" : pinned ? "정한 시작가" : "예상 시가"}</span>
+          <span><span className="amt">{Math.round(value).toLocaleString("ko-KR")}</span><i aria-hidden>→</i><b className="amt">{won(value + amount)}</b></span>
         </div>
-        {bars.length ? (
-          <div className="allbars">
-            <p className="ab-h"><span>종목별로 보면</span><span>가운데 = 어제 종가</span></p>
-            {bars.map(([name, amt, code]) => {
+      </section>
+
+      {bars.length ? (
+        <section className="a2bars" aria-label="종목별로 보면">
+          <div className="a2h"><h3>종목별로 보면</h3><span>보유 {byAmt.length}종목</span></div>
+          <div className="a2rows">
+            <span className="a2axis" aria-hidden><em>어제 종가</em></span>
+            {bars.map(([name, amt, code], i) => {
               const w = (Math.abs(amt) / maxAbs) * 50;
+              const tone = !code ? "#c3c9cb" : i === 0 ? signColor(amt) : amt < 0 ? "#8fa2da" : "#e79aa1";   // 가장 큰 종목은 진하게, 나머지는 옅게, 그 외는 회색
               return (
-                <div key={name} className="ab-r">
-                  <span className="ab-n">{code ? <a href={`#ac-${code}`}>{name}</a> : name}</span>
-                  <span className="ab-b"><i style={{ left: amt < 0 ? `${50 - w}%` : "50%", width: `${w}%`, background: signColor(amt) }} /></span>
-                  <span className="ab-v"><b className="amt" style={{ color: signColor(amt) }}>{swon(amt)}</b><small>{code && amt && sideSum(amt) ? `${Math.round((Math.abs(amt) / sideSum(amt)) * 100)}%` : ""}</small></span>
+                <div key={name} className={`a2r${i === 0 ? " lead" : ""}${code ? "" : " rest"}`}>
+                  <span className="a2n">{code ? <a href={`#ac-${code}`}>{name}</a> : name}</span>
+                  {/* 막대는 어제 종가 선에 닿는 쪽은 1자, 바깥쪽만 둥글게(사용자 요청) */}
+                  <span className="a2b"><i className={amt < 0 ? "neg" : "pos"} style={{ left: amt < 0 ? `${50 - w}%` : "50%", width: `${w}%`, background: tone }} /></span>
+                  <b className="amt a2v">{swon(amt)}</b>
+                  <small className="a2p">{amt && sideSum(amt) ? `${Math.round((Math.abs(amt) / sideSum(amt)) * 100)}%` : ""}</small>
                 </div>
               );
             })}
           </div>
-        ) : null}
-        <ol className="allsteps">
-          {p.steps.map((s) => <li key={s.t} className={s.done ? "done" : ""}>{s.at
-            ? <a href={`/demo-time?at=${s.at}&back=${encodeURIComponent("/?view=all")}`} aria-label={`${s.t} ${s.label} 시점 화면 보기`}><i /><b>{s.t}</b><span>{s.label}</span></a>
-            : <><i /><b>{s.t}</b><span>{s.label}</span></>}</li>)}
-        </ol>
-      </section>
+        </section>
+      ) : null}
 
+      <Progress steps={p.steps} post={p.post} nowHm={p.nowHm} />
       {/* ② 먼저 확인할 것(서버에서 계정 수량 기준으로 만든 것) */}
       {p.firstLook}
 
@@ -195,43 +196,31 @@ export function AllPlay(p: {
           </div>
         ) : null}
         {p.record ? <Link href="/night/record" className="allrec"><span>지난 20거래일 동안 내 종목 <b>{p.record.inN}/{p.record.n}</b>번이 예상 범위 안에서 열렸어요(목표 80%)</span><em>›</em></Link> : null}
-        <p className="alllegend"><span><i className="lb" />노란 띠 · 06:30의 80% 범위</span><span><i className="ld" />06:30 예상</span>
-          {p.slot0811 && !p.post ? <span><i className="ln" />08:11 2차 예상 · NXT</span> : null}{p.post ? <span><i className="lo" />실제 시가</span> : null}</p>
-        {visible.map((c) => {
+        {/* 범례 줄은 뺌: 띠 위 이름표(06:30 · 장전 · 실제)와 '예상 범위 ?' 설명 창으로(2026-11-25 사용자 시안) */}
+        {/* 넷째 종목부터는 늘 그려 두고, 펼칠 때 높이가 0.25초에 걸쳐 늘어난다(피그마 기록 31, 2026-11-25 '움직임은 다 피그마'). 접혀 있을 땐 누를 수 없게(inert) */}
+        {[shown.slice(0, FIRST), shown.slice(FIRST)].map((part, pi) => { const cards = part.map((c) => {
           const x = nowOf.get(c.code)!, s = c.s, q = x.q, zero = c.watch && q === 0;
-          const moved = q !== c.qty || pins[c.code] != null;
+          const moved = q !== c.qty;
+          // 카드(2026-11-25 사용자 시안 '줄글 없는 버전'): 종목 · 상태 → 큰 숫자 → 상태 한 줄 → 노란 띠(이름표·양 끝 금액, 끌어 보기) → 수량 −/+(사용자 결정: 유지)
+          const ph: BandPhase = p.post && c.y != null ? "post" : p.slot0811 && !p.post && c.nxt != null ? "nxt" : "pre";
+          const state = p.post ? <span className="st on">✓ {checkHm} 채점</span> : p.slot0811 ? <span className={`st${c.nxt != null ? " on" : ""}`}>08:11 · {c.nxt != null ? "장전 거래 반영" : "장전 거래 없음"}</span> : <span className="st">06:30 공개</span>;
           return (
             <article key={c.code} id={`ac-${c.code}`} className={`allcard ${c.warn ? "warn" : ""}`}>
-              <div className="ac-h">
-                {c.icon}
-                <div className="ac-n"><b>{c.name}</b><small>어제 {won(s.pc)} → {p.post && c.c ? `실제 ${won(c.c.open)}` : `${x.pin != null ? "가정" : c.nxt != null ? "08:11 예상" : "06:30 예상"} ${won(s.pc * (1 + (x.v ?? 0)))}`}</small></div>
-                <div className="ac-v"><b style={{ color: signColor(x.v ?? 0) }}>{x.v != null ? `${x.pin != null ? "가정 " : ""}${pct(P(x.v))}` : "—"}</b>
-                  <small className={zero ? "" : "amt"} style={{ color: zero ? undefined : signColor(x.amount ?? 0) }}>{zero ? "관심" : x.amount != null ? swon(x.amount) : ""}</small></div>
-              </div>
-              {coachAt === c.code ? (
-                <div className="allcoach" role="note"><span>노란 띠를 눌러 보세요. 그 가격에 시작하면 내 금액이 바로 보여요.</span><button type="button" onClick={coachDone}>알겠어요</button></div>
-              ) : null}
-              <PlayBand s={s} nxt={c.nxt} y={c.y} pin={x.pin} play={!p.post}
-                onLive={(v) => { if (coach) coachDone(); setLive(v == null ? null : { code: c.code, v }); }}
-                onPin={(v) => { setLive(null); setPins((o) => ({ ...o, [c.code]: v })); }} />
+              <div className="ac-h2"><b className="nm">{c.name}{c.warn ? <Siren /> : null}</b><span className="qt">{zero ? "관심" : `${q.toLocaleString("ko-KR")}주`}</span>{state}</div>
+              <p className="ac-k">{ph === "post" ? "실제 시작" : ph === "nxt" ? "장전 거래 기준" : "예상 시작"}</p>
+              <p className="ac-big"><b style={{ color: signColor(x.v ?? 0) }}>{x.v != null ? pct1(x.v) : "—"}</b>
+                {!zero && x.amount != null ? <span className="amt" style={{ color: signColor(x.amount) }}>{swon(x.amount)}</span> : null}</p>
+              {c.status ? <p className="ac-stat">{c.status}</p> : null}
+              <YBand name={c.name} l={s.l80} u={s.u80} h={s.h} nxt={s.nxtG} y={c.y} phase={ph} qty={q} pc={s.pc} l90={s.l90} u90={s.u90} play={!p.post} />
               <div className="ac-foot">
                 <Stepper q={q} name={c.name} changed={q !== c.qty} set={(f) => setQ(c, f)} />
-                {moved ? <button type="button" className="ac-reset" aria-label={`${c.name} 수량·시작가 원래대로`} onClick={() => resetOne(c.code)}>↺ 되돌리기</button> : null}
+                {moved ? <button type="button" className="ac-reset" aria-label={`${c.name} 수량 원래대로`} onClick={() => resetOne(c.code)}>↺ 되돌리기</button> : null}
               </div>
-              <p className="ac-range">
-                {q === 0 ? <>금액은 수량을 넣으면 보여요</> : p.post && c.c ? <>실제 시가로 <b className="amt">{swon(x.amount ?? 0)}</b></>
-                  : <>노란 띠 안이면 <span className="rv"><b className="amt">{swon(q * s.pc * s.l80)}</b> ~ <b className="amt">{swon(q * s.pc * s.u80)}</b></span></>}
-              </p>
-              <div className="schips">
-                {c.watch ? <span className="g">관심 종목</span> : null}
-                {c.chips}
-              </div>
-              {c.flow}
               {c.combined}
               {c.links}
             </article>
           );
-        })}
+        }); return pi === 0 ? cards : part.length ? <div key="extra" className={`allextra${more ? " on" : ""}`} inert={!more}><div>{cards}</div></div> : null; })}
         {shown.length > FIRST ? (
           <button type="button" ref={moreBtn} className="allmore" aria-expanded={more} onClick={more ? close : open}>
             {more ? <>접기<i className="chev up" aria-hidden /></> : <>나머지 {shown.length - FIRST}종목 더 보기<i className="chev" aria-hidden /></>}
@@ -279,52 +268,54 @@ function Stepper({ q, name, changed, set }: { q: number; name: string; changed: 
   );
 }
 
-/** 노란 띠(누르기·끌기): 80% 예상 범위 · 대표 예상(검은 점) · 어제 종가(회색 점선) · 08:10 장전 거래(빨간 선) · 실제 시가(빈 동그라미)
- *  · 내가 정한 시작가(청록 동그라미 + "x%에 열리면").
- *  눈금은 띠·표식으로만 정하고 가정 값으로 넓히지 않는다(끄는 동안 손가락 밑에서 띠가 움직이지 않게). 0.1% 단위 */
-function PlayBand({ s, nxt, y, pin, play, onLive, onPin }: {
-  s: CardStock; nxt: number | null; y: number | null; pin: number | undefined; play: boolean;
-  onLive: (v: number | null) => void; onPin: (v: number) => void;
-}) {
-  const W = 342, pad = 12;
-  const { l80: l, u80: u, h } = s;
-  const m = Math.max(0.01, Math.abs(l), Math.abs(u), Math.abs(h), Math.abs(nxt ?? 0), Math.abs(y ?? 0)) * 1.25;
-  const X = (v: number) => pad + ((Math.max(-m, Math.min(m, v)) + m) / (2 * m)) * (W - 2 * pad);
-  const pc = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v * 100).toFixed(2)}%`;
-  const near = (a: number, b: number) => Math.abs(X(a) - X(b)) < 34;
-  const lx = nxt != null && near(l, nxt) ? Math.max(20, X(nxt) - 36) : X(l);
-  const ux = nxt != null && near(u, nxt) ? Math.min(W - 20, X(nxt) + 36) : X(u);
-  const svg = useRef<SVGSVGElement>(null), down = useRef(false);
-  const val = (clientX: number) => {
-    const r = svg.current!.getBoundingClientRect();
-    const f = Math.max(0, Math.min(1, ((clientX - r.left) / r.width * W - pad) / (W - 2 * pad)));
-    return Math.round((-m + f * 2 * m) * 1000) / 1000;
-  };
-  const pinX = pin != null ? X(pin) : null;
-  const clash = (x: number) => pinX != null && Math.abs(pinX - x) < 58;   // 말풍선과 겹치는 위쪽 글자는 잠깐 숨긴다
+/** 큰 숫자 %: 소수 한 자리(시안 "−3.1%") */
+const pct1 = (v: number) => { const r = Math.round(v * 1000) / 10; return `${r > 0 ? "+" : r < 0 ? "−" : ""}${Math.abs(r).toFixed(1)}%`; };
+
+/** 받침에 따라 '이에요/예요' */
+function jo(name: string) {
+  const c = name.charCodeAt(name.length - 1);
+  return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? "이에요" : "예요";
+}
+
+const toMin = (hm: string) => { const d = hm.replace(":", ""); return Number(d.slice(0, 2)) * 60 + Number(d.slice(2, 4)); };
+
+/** 오늘 아침 진행(2026-11-25 사용자 시안): 단계 사이 칸을 지금 시각만큼 채우고, 오른쪽에 '지금 · 다음 단계까지 n분' 또는 '✓ 채점 완료'.
+ *  지난 단계는 진한 글자, 지금 단계는 청록, 다음 단계는 회색. 시연 계정은 단계를 누르면 그 시점으로(예전과 같음) */
+function Progress({ steps, post, nowHm }: { steps: Step[]; post: boolean; nowHm: string }) {
+  if (steps.length < 2) return null;
+  const pts = steps.map((s) => toMin(s.t)), now = post ? pts[pts.length - 1] : toMin(nowHm);
+  const cur = pts.reduce((a, m, i) => (m <= now ? i : a), 0);
+  const next = steps.find((_, i) => pts[i] > now);
+  const left = next ? toMin(next.t) - now : 0;
+  const hm = `${nowHm.slice(0, 2)}:${nowHm.slice(2, 4)}`;
+  const status = post ? `✓ ${steps[steps.length - 1].t} 채점 완료`
+    : next ? `${hm} · ${next.t} ${next.label}까지 ${left >= 60 ? `${Math.floor(left / 60)}시간 ` : ""}${left % 60}분` : "";
   return (
-    <svg ref={svg} width="100%" viewBox={`0 0 ${W} 58`} className={`aband${play ? " play" : ""}`}
-      role={play ? "slider" : "img"} aria-label={play ? `${s.name} 가정할 시작가 변화(예상 범위 ${pc(l)} ~ ${pc(u)}, 06:30 예상 ${pc(h)}${nxt != null ? `, 08:11 2차 예상 ${pc(nxt)}` : ""})` : `예상 범위 ${pc(l)} ~ ${pc(u)}, 06:30 예상 ${pc(h)}${nxt != null ? `, 08:11 2차 예상 ${pc(nxt)}` : ""}`}
-      aria-valuenow={play ? Math.round((pin ?? nxt ?? h) * 10000) / 100 : undefined} tabIndex={play ? 0 : undefined}
-      onKeyDown={play ? (e) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); onPin(Math.round(Math.max(-m, Math.min(m, (pin ?? nxt ?? h) + (e.key === "ArrowLeft" ? -0.001 : 0.001))) * 1000) / 1000); } } : undefined}
-      onPointerDown={play ? (e) => { down.current = true; svg.current?.setPointerCapture?.(e.pointerId); onLive(val(e.clientX)); } : undefined}
-      onPointerMove={play ? (e) => { if (down.current) onLive(val(e.clientX)); } : undefined}
-      onPointerUp={play ? (e) => { if (!down.current) return; down.current = false; onPin(val(e.clientX)); } : undefined}
-      onPointerCancel={play ? () => { down.current = false; onLive(null); } : undefined}>
-      {!clash(X(0)) ? <text x={X(0)} y={10} textAnchor="middle" fontSize={10} fill="#66777a">어제 종가</text> : null}
-      <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
-      <rect x={X(l)} y={21} width={Math.max(3, X(u) - X(l))} height={12} rx={6} fill={BAND} />
-      <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
-      {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={50} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:11</text></> : null}
-      <circle cx={X(h)} cy={27} r={6} fill="#2f3437" stroke="#fff" strokeWidth={2} />
-      {y != null ? <circle cx={X(y)} cy={27} r={6} fill="#fff" stroke="#192d31" strokeWidth={2} /> : null}
-      {pinX != null ? <>
-        <line x1={pinX} x2={pinX} y1={14} y2={40} stroke="#008c82" strokeWidth={1.5} />
-        <circle cx={pinX} cy={27} r={8} fill="rgba(0,140,130,.25)" stroke="#008c82" strokeWidth={2} />
-        <text x={Math.max(44, Math.min(W - 44, pinX))} y={10} textAnchor="middle" fontSize={10.5} fontWeight={700} fill="#008c82">{pc(pin!)}에 열리면</text>
-      </> : null}
-      <text x={lx} y={55} textAnchor="middle" fontSize={11} fill={signColor(l)}>{pc(l)}</text>
-      <text x={ux} y={55} textAnchor="middle" fontSize={11} fill={signColor(u)}>{pc(u)}</text>
+    <section className="a2prog" aria-label="오늘 아침 진행">
+      <div className="a2h"><h3>오늘 아침 진행</h3><span className="tq">{status}</span></div>
+      <div className="a2seg" aria-hidden>
+        {pts.slice(1).map((m, i) => <i key={i}><b style={{ width: `${Math.max(0, Math.min(1, (now - pts[i]) / Math.max(1, m - pts[i]))) * 100}%` }} /></i>)}
+      </div>
+      <ol className="a2steps">
+        {steps.map((s, i) => {
+          const cls = (i === cur ? "s-now" : i < cur ? "s-done" : "") + (i === 0 ? " s-first" : i === steps.length - 1 ? " s-last" : "");
+          const body = <><b>{s.t}</b><span>{s.label}</span></>;
+          return <li key={s.t} className={cls} style={{ left: `${(100 * i) / (steps.length - 1)}%` }}>{s.at ? <a href={`/demo-time?at=${s.at}&back=${encodeURIComponent("/?view=all")}`} aria-label={`${s.t} ${s.label} 시점 화면 보기`}>{body}</a> : body}</li>;
+        })}
+      </ol>
+    </section>
+  );
+}
+
+/** 확인이 필요한 종목 표시(2026-11-25 사용자 결정: 주황 테두리 대신 이름 옆 주황 사이렌). 장전 거래·시작가가 예상 범위 밖인 종목 */
+function Siren() {
+  return (
+    <svg className="ac-siren" width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="확인 필요">
+      <title>확인 필요</title>
+      <path d="M8 1.6v1.5M2.9 3.7l1.05 1.05M13.1 3.7l-1.05 1.05" stroke="#f08a24" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M4.6 12V8.9a3.4 3.4 0 0 1 6.8 0V12Z" fill="#f08a24" />
+      <path d="M6.6 9.1a1.4 1.4 0 0 1 1.4-1.4" fill="none" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+      <rect x="3.2" y="12" width="9.6" height="2.2" rx="1.1" fill="#f08a24" />
     </svg>
   );
 }

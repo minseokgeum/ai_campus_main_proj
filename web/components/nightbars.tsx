@@ -38,7 +38,7 @@ export function NightBars({ rows, post, title, note, onPick }: { rows: BarRow[];
                 <button key={r.code} type="button" className="vb-col" style={{ left: k * COL, height: H }} onClick={() => onPick(r.code)} aria-label={`${r.name} 종목 창 열기`}>
                   {ok ? <>
                     <span className="vb-bar" style={{ top: y1, height: Math.max(4, y2 - y1) }} />
-                    {r.line != null ? <span className="vb-line" style={{ top: Y(r.line) - 1.5 }} /> : null}
+                    {r.line != null ? <span className="vb-line" style={{ top: Y(r.line) - 1 }} /> : null}
                     {scored ? <span className={`vb-dot ${r.in80 ? "in" : "out"}`} style={{ top: Y(r.open!) - 5 }} /> : null}
                     {lab != null ? (
                       <span className="vb-lab" style={{ top: Math.min(y1, scored ? Y(r.open!) - 5 : y1) - (scored ? 34 : 18) }}>

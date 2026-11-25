@@ -9,6 +9,7 @@ import { MaskToggle, Sheet } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { FuturesCard } from "@/components/futcard";
 import { gradeText } from "@/lib/trust";
+import { gradeLine, postLine } from "@/components/bandtext";
 import { FuturesHelp, GradeHelp } from "@/components/helps";
 import { P, type Row } from "@/lib/night";
 import { AllPlay, type PlayCard } from "@/components/allplay";
@@ -33,7 +34,8 @@ type Props = {
   post: boolean;             // 채점 뒤인가
   after0811: boolean;        // 시연 중인 날짜·시각의 08:11 경과 여부
   slot0811: boolean;         // 08:11 카드(장전 거래 반영)인가
-  steps: { t: string; label: string; done: boolean; at?: string }[];   // at: 누르면 그 시점으로(시연 계정만)
+  steps: { t: string; label: string; done: boolean; at?: string }[];
+  nowHm: string;             // 화면 시각 HHMM(오늘 아침 진행 막대)   // at: 누르면 그 시점으로(시연 계정만)
   news: Map<string, Article[]>;   // 종목코드 → 그 종목 기사
   reasons: Map<string, Reason>;
   x: number | null;          // 밤사이 야간선물 변화(카드 x, 비율). 같이 읽기 첫 문장
@@ -239,41 +241,23 @@ export function AllView(p: Props) {
   const can = (r: Row) => r.kind !== "notservice" && r.kind !== "nocalc";
   const all = [...p.rows.map((r) => ({ r, watch: false })), ...p.watchRows.filter((r) => !held.has(r.code)).map((r) => ({ r, watch: true }))];
   const cards: PlayCard[] = all.filter((x) => can(x.r)).map(({ r, watch }) => {
-    const s = r.s!, vd = verdictsOf(p.news.get(r.code) ?? [], r.code), nArt = p.news.get(r.code)?.length ?? 0;
+    const s = r.s!, nArt = p.news.get(r.code)?.length ?? 0;
     const nxt = p.slot0811 && !p.post ? s.nxtG ?? null : null;
     return {
       code: r.code, name: r.name, qty: r.qty, watch, warn: r.kind === "out" || r.kind === "low",
       s, c: r.c, pct: r.pct ?? s.h, nxt, y: p.post ? r.c?.y ?? null : null,
-      icon: <Avatar name={r.name} size={30} />,
-      chips: <>
-        {/* 믿을 정도 칩(문구는 lib/trust gradeText, 2026-11-25 팀원 기준)을 누르면 설명 창. 소식 칩을 누르면 그 종목의 밤사이 기사 목록 창(2026-11-24) */}
-        <GradeHelp className={s.grade ? "g" : "n"} label={gradeText(s.grade, s.p, s.nxtG, p.after0811)} />
-        {nArt ? <NewsSheet name={r.name} code={r.code} list={p.news.get(r.code) ?? []}
-          label={vd.neg || vd.pos ? <>{vd.neg ? `부정 ${vd.neg}` : ""}{vd.neg && vd.pos ? " · " : ""}{vd.pos ? `긍정 ${vd.pos}` : ""}</> : `소식 ${nArt}건`} /> : <span className="n">소식 없음</span>}
-        {s.earn ? <span className="w">어제 실적 공시</span> : null}
-      </>,
-      flow: p.post && r.c ? (() => {   // 개장 뒤: 예상 → 개장 전 → 실제(원래 버전 stock-flow)
-        const y = r.c.y, g = s.nxtG, inb = s.l80 <= y && y <= s.u80;
-        return (
-          <p className="ac-step">
-            <span>06:30 예상 <b style={{ color: signColor(s.h) }}>{pct(P(s.h))}</b></span><span aria-hidden>→</span>
-            {g != null ? <><span>08:11 2차 예상 <b style={{ color: signColor(g) }}>{pct(P(g))}</b></span><span aria-hidden>→</span></> : null}
-            <span>실제 <b style={{ color: signColor(y) }}>{pct(P(y))}</b></span>
-            <em className={inb ? "in" : "out"}>{inb ? "06:30 범위 안" : y > s.u80 ? "06:30 범위 위" : "06:30 범위 아래"}</em>
-          </p>
-        );
-      })() : nxt != null ? (() => {   // 08:11: 06:30 예상 → 08:10 개장 전 거래
-        const out = nxt > s.u80 || nxt < s.l80;
-        return (
-          <>
-            <p className="ac-step">
-              <span>06:30 예상 <b style={{ color: signColor(s.h) }}>{pct(P(s.h))}</b></span><span aria-hidden>→</span>
-              <span>08:11 2차 예상 · NXT <b style={{ color: signColor(nxt) }}>{pct(P(nxt))}</b></span>
-              <em className={out ? "out" : "in"}>{out ? (nxt > s.u80 ? "06:30 범위 위" : "06:30 범위 아래") : "06:30 범위 안"}</em>
-            </p>
-          </>
-        );
-      })() : p.after0811 && !p.post ? <p className="ac-step">장전 가격 자료가 없어 06:30 예상을 유지했어요.</p> : null,
+      // 상태 한 줄(2026-11-25 사용자 시안): 06:30엔 실적 태그만 · 08:11엔 장전 방향 등급 · 채점 뒤엔 띠 안/밖과 예상과의 차이. 근거 문장·칩은 띠 이름표와 '예상 범위 ?' 창으로
+      status: (() => {
+        const earn = s.earn ? <em className="earn">실적 발표 다음 날 · 평소보다 덜 맞아요</em> : null;
+        if (p.post && r.c) {
+          return <>{postLine(r.c.y, s.nxtG ?? s.h, s.l80, s.u80)}{earn ? <> · {earn}</> : null}</>;
+        }
+        if (p.after0811 && !p.post) {
+          if (s.nxtG == null) return <><span className="mute">장전 거래 없음 · 06:30 예상 유지</span>{earn ? <> · {earn}</> : null}</>;
+          return <><GradeHelp className={`gline ${s.grade ? "g" : "n"}`} label={gradeLine(s.grade, s.p, s.nxtG)} />{earn ? <> · {earn}</> : null}</>;
+        }
+        return earn;
+      })(),
       combined: <Combined s={s} code={r.code} x={p.x} y={p.post && r.c ? r.c.y : null} reason={p.reasons.get(r.code)} arts={p.news.get(r.code) ?? []} />,
       links: <div className="ac-links"><Link href={watch ? `/night?v=watch&open=${r.code}` : `/night?open=${r.code}`}>종목 창 ›</Link>{nArt ? <NewsSheet className="ac-news" name={r.name} code={r.code} list={p.news.get(r.code) ?? []} label={<>밤사이 소식 {nArt}건 ›</>} /> : null}<Link href={`/mine/${r.code}`}>종목 상세 ›</Link></div>,
     };
@@ -283,7 +267,7 @@ export function AllView(p: Props) {
   return (
     <div className="allview">
       {/* ① 9시 내 주식 변화 · ② 먼저 확인할 것 · ④ 종목 카드(조작) */}
-      <AllPlay t={p.t} post={p.post} slot0811={p.slot0811} steps={p.steps} cards={cards} need={checkList(p).ck.map((x) => x.r.code)}
+      <AllPlay t={p.t} post={p.post} slot0811={p.slot0811} steps={p.steps} nowHm={p.nowHm} cards={cards} need={checkList(p).ck.map((x) => x.r.code)}
         firstLook={firstLook} record={p.record}
         tail={none.length ? <div className="allnone"><b>예상 범위를 계산하지 않는 종목</b>{none.map(({ r, watch }) => <span key={r.code}>{r.name}{watch ? " · 관심" : ""}{r.kind === "notservice" ? " · 서비스 대상 아님" : " · 자료 없음"}</span>)}</div> : null} />
 

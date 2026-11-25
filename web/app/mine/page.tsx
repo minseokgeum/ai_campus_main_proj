@@ -8,7 +8,6 @@ import { portfolio, uStock } from "@/lib/portfolio";
 import { pct, won } from "@/lib/format";
 import { lastCloses } from "@/lib/prices";
 import { MineSectors } from "@/components/minesectors";
-import { NewsMenu } from "@/components/newsmenu";
 import { signColor } from "@/components/model";
 import { MaskToggle, Sheet } from "@/components/sheet";
 import { dateLabel } from "@/lib/format";
@@ -48,10 +47,7 @@ export default async function Mine({ searchParams }: { searchParams: Promise<{ v
     <>
       <header className="m3-head">
         <div className="row">
-          <h1><NewsMenu on={view} views={[
-            { key: "hold", label: "보유 종목", n: pf.holdings.length, href: "/mine" },
-            { key: "watch", label: "관심 종목", n: pf.watch.length, href: "/mine?v=watch" },
-          ]} /></h1>
+          <h1>내 종목</h1>
           <div className="r">
             <Link href="/mine/add" aria-label="종목 추가">
               <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden><path d="M11 2V20M2 11H20" stroke="#008C82" strokeWidth="2" strokeLinecap="round" /></svg>
@@ -61,6 +57,11 @@ export default async function Mine({ searchParams }: { searchParams: Promise<{ v
             </Link>
           </div>
         </div>
+        {/* 보유/관심: 제목 아래 큰 글자 탭(피그마 배포용 변경 기록 48, 2026-11-25 사용자 결정 · 숫자는 빼기). 예전 '보유 종목 ⌄' 메뉴 대신 */}
+        <nav className="ntabs" aria-label="보유·관심">
+          <Link href="/mine" className={view === "hold" ? "on" : ""} aria-current={view === "hold" ? "page" : undefined}>보유</Link>
+          <Link href="/mine?v=watch" className={view === "watch" ? "on" : ""} aria-current={view === "watch" ? "page" : undefined}>관심</Link>
+        </nav>
         <p className="sub">{dateLabel(isoDay(kstNow(await appNow()).ymd)).replace(/\((.)\)$/, "$1요일")} · 어제 종가 기준</p>
       </header>
       <main className="scroll m3">

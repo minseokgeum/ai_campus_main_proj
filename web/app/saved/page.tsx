@@ -4,7 +4,6 @@ import Link from "next/link";
 import { BottomNav, Head } from "@/components/ui";
 import { signColor } from "@/components/model";
 import { CalendarSheet } from "@/components/calendar";
-import { BriefSheet } from "@/components/brief";
 import { requireUser } from "@/lib/auth";
 import { portfolio } from "@/lib/portfolio";
 import { dayModel, isoDay, modelDates, myChecks } from "@/lib/model";
@@ -93,7 +92,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
                   )) : m?.card?.status === "ok" ? (
                     <p className="sline2">야간선물 <b style={{ color: signColor(m.night?.last ?? m.card.x ?? 0) }}>{pct(P(m.night?.last ?? m.card.x ?? 0))}</b> · 예상 범위를 낸 종목 {m.card.nStocks}개</p>
                   ) : <p className="sline2">{m?.card?.reasonText ?? "이 날은 카드가 없어요."}</p>}
-                  <div className="vlinks">{ai?.macro.length ? <BriefSheet brief={ai} date={isoDay(t!)} className="linkish teal" trigger={<>그날 브리핑 다시 보기 ›</>} /> : null}<Link href={`/night?d=${t}`}>그날 예상 다시 보기 ›</Link></div>
+                  <div className="vlinks"><Link href={`/night?d=${t}`}>그날 예상 다시 보기 ›</Link>{/* '그날 브리핑 다시 보기'는 뺌(2026-11-25 사용자 결정) */}</div>
                 </section>
 
                 <section className="pcard">

@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { DemoBar } from "@/components/demobar";
+import { Motion } from "@/components/motion";
 
 const kr = Noto_Sans_KR({ weight: ["400", "500", "700"], subsets: ["latin"], variable: "--font-kr", display: "swap" });
 
@@ -17,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko" className={kr.variable}>
       <body>
         <div className="app"><DemoBar />{children}</div>
+        <Suspense fallback={null}><Motion /></Suspense>
       </body>
     </html>
   );

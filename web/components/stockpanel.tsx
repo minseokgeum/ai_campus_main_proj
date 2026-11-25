@@ -1,14 +1,16 @@
 "use client";
-// 종목 창 안쪽(피그마 400:5083 종목 창, 462:8998 처음 안내, 572:7057·572:7244 수량 바꿈):
-// 수량 −/+·되돌리기(목록이 기억, 실제 주문 없음), 점 끌어 "이 가격이면?" 가정, 예수금·필요 현금.
+// 종목 창 안쪽(피그마 400:5083 종목 창, 572:7057·572:7244 수량 바꿈, 2026-11-25 노란 띠 시안):
+// 수량 −/+·되돌리기(목록이 기억, 실제 주문 없음), 예수금·필요 현금, 노란 띠(components/yband: 이름표·양 끝 금액·끌어 보기).
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { YBand } from "@/components/yband";
 
 const MINUS = "−";
 export const pctText = (v: number) => { const r = Math.round(v * 10000) / 100; return r === 0 ? "0.00%" : `${r > 0 ? "+" : MINUS}${Math.abs(r).toFixed(2)}%`; };
 export const swonText = (v: number) => { const r = Math.round(v); return `${r > 0 ? "+" : r < 0 ? MINUS : ""}${Math.abs(r).toLocaleString("ko-KR")}원`; };
 export const wonText = (v: number) => `${Math.round(v).toLocaleString("ko-KR")}원`;
 export const colorOf = (v: number) => (v > 0 ? "#d35d66" : v < 0 ? "#4c6fc3" : "#8a9598");
+const pct1 = (v: number) => { const r = Math.round(v * 1000) / 10; return `${r > 0 ? "+" : r < 0 ? MINUS : ""}${Math.abs(r).toFixed(1)}%`; };
 
 export type PanelStock = {
   code: string; name: string; qty: number; pc: number; h: number; l80: number; u80: number; l90: number; u90: number;
@@ -16,50 +18,26 @@ export type PanelStock = {
 };
 
 /** qty·setQty는 목록(NightBoard)이 쥐고 있다. acctAmount·acctValue는 바뀐 수량까지 넣은 계좌 값 */
-export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue }: {
+export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue, status }: {
   s: PanelStock; icon: ReactNode; phase: "pre" | "post"; qty: number; setQty: (q: number) => void; acctAmount: number; acctValue: number;
+  status?: ReactNode;   // 큰 숫자 아래 상태 한 줄(장전 방향 등급 · 띠 안/밖 · 실적 태그)
 }) {
-  const [what, setWhat] = useState<number | null>(null);
-  const [hint, setHint] = useState(false);
-  useEffect(() => {
-    try { if (localStorage.getItem("hint-drag") !== "1") setHint(true); } catch { /* 저장소 없으면 안내 생략 */ }
-  }, []);
-  useEffect(() => setWhat(null), [s.code]);
-  const closeHint = () => { setHint(false); try { localStorage.setItem("hint-drag", "1"); } catch { /* 무시 */ } };
-
   const nxt = phase === "pre" ? s.nxtG : null;
   const base = phase === "post" && s.y != null ? s.y : nxt ?? s.h;
-  const r = what ?? base;
   // 장후 금액은 수량 × (실제 시가 − 어제 종가)(2026-11-24, 등락률 y는 잘린 값). 계산은 정확히, 표시할 때만 1원 반올림
   const exact = phase === "post" && s.y != null && s.open != null;
   const per = (q: number) => (exact ? q * (s.open! - s.pc) : q * s.pc * base);
   const amountNow = per(qty);
-  const amount = what == null ? amountNow : qty * s.pc * r;
-  const acct = acctAmount - amountNow + amount;
+  const acct = acctAmount;
   const acctPct = acctValue > 0 ? acct / acctValue : 0;
   const dq = qty - s.qty;
-  const price = what == null && exact ? s.open! : s.pc * (1 + r);
-  const base0 = s.avg ? s.avg / s.pc - 1 : null;   // 평단을 어제 종가 대비 %로(띠 위 '내 기준선')
-
-  const m = Math.max(0.01, Math.abs(s.l90), Math.abs(s.u90), Math.abs(base), Math.abs(s.nxtG ?? 0), Math.abs(s.h)) * 1.2;
-  const W = 342, pad = 10, X = (v: number) => pad + ((v + m) / (2 * m)) * (W - 2 * pad);
-  // 08:11 라벨과 띠 양 끝 %가 겹치면 %를 바깥쪽으로 비킨다
-  const lx = nxt != null && Math.abs(X(s.l80) - X(nxt)) < 34 ? Math.max(18, X(nxt) - 34) : X(s.l80);
-  const ux = nxt != null && Math.abs(X(s.u80) - X(nxt)) < 34 ? Math.min(W - 18, X(nxt) + 34) : X(s.u80);
-  const svg = useRef<SVGSVGElement>(null);
-  const drag = (clientX: number) => {
-    const box = svg.current?.getBoundingClientRect();
-    if (!box) return;
-    const x = ((clientX - box.left) / box.width) * W;
-    const v = ((x - pad) / (W - 2 * pad)) * 2 * m - m;
-    setWhat(Math.max(-m, Math.min(m, Math.round(v * 1000) / 1000)));
-  };
+  const base0 = s.avg ? s.avg / s.pc - 1 : null;   // 평단을 어제 종가 대비 %로(띠 위 '평단' 이름표)
 
   return (
     <div className="panel">
       <div className="pacct">
         <span>계좌 예상 <b className="amt tot" style={{ color: colorOf(acct) }}>{swonText(acct)}</b> <small style={{ color: colorOf(acct) }}>{pctText(acctPct)}</small></span>
-        <span className="r">{dq !== 0 ? <b className="teal">수량 바꿔서 <span className="amt">{swonText(per(qty - s.qty))}</span></b> : <>이 종목 <b className="amt">{swonText(amount)}</b></>}</span>
+        <span className="r">{dq !== 0 ? <b className="teal">수량 바꿔서 <span className="amt">{swonText(per(qty - s.qty))}</span></b> : <>이 종목 <b className="amt">{swonText(amountNow)}</b></>}</span>
       </div>
       {dq !== 0 ? (
         <div className="cash">
@@ -77,57 +55,18 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
         <button type="button" aria-label="1주 늘리기" onClick={() => setQty(qty + 1)}>+</button>
       </div>
 
-      <p className="slabel">{what != null ? "이 가격이면?" : phase === "post" ? "오늘 실제 시가" : nxt != null ? "08:11 2차 예상 시가 · NXT 가격" : "06:30 예상 시가"}</p>
-      <div className="sbig" style={{ color: colorOf(r) }}>
-        <b>{pctText(r)}</b>
-        <span>{what != null ? `가정 ${wonText(price)}` : phase === "post" && s.open ? `시가 ${wonText(s.open)}` : `예상 ${wonText(price)}`} · 어제 {wonText(s.pc)}</span>
-        {what != null ? <button type="button" className="back" onClick={() => setWhat(null)}>예상으로</button> : null}
-      </div>
-
-      <div className="dragwrap">
-        {hint ? (
-          <div className="draghint" role="dialog">
-            <b>점을 끌어서 &quot;이 가격이면?&quot;을 가정해 볼 수 있어요</b>
-            <p>끌면 아래 예상 금액과 계좌 예상이 바로 바뀌어요. 실제 주문은 나가지 않아요.</p>
-            <button type="button" onClick={closeHint}>좋아요</button>
-          </div>
-        ) : null}
-        <svg ref={svg} width="100%" viewBox={`0 0 ${W} 60`} className="dragband" role="slider" aria-label="가정할 시가 변화" aria-valuenow={Math.round(r * 10000) / 100}
-          tabIndex={0} onKeyDown={(e) => { if (e.key === "ArrowLeft") setWhat(Math.max(-m, r - 0.001)); if (e.key === "ArrowRight") setWhat(Math.min(m, r + 0.001)); }}
-          onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); drag(e.clientX); closeHint(); }}
-          onPointerMove={(e) => { if (e.buttons) drag(e.clientX); }}>
-          <text x={X(0)} y={10} textAnchor="middle" fontSize={10} fill="#66777a">어제 종가</text>
-          <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
-          <rect x={X(s.l80)} y={21} width={Math.max(3, X(s.u80) - X(s.l80))} height={12} rx={6} fill="#FFD970" />
-          {/* 세로선 셋을 색·모양으로 구분(배포용 변경 기록 12·05): 어제 종가 회색 점선, 평단 청록 실선, 08:10 실제 거래 빨간 실선 */}
-          <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
-          {base0 != null && Math.abs(base0) <= m ? <>
-            <rect x={X(base0) - 1} y={15} width={2} height={22} fill="#008c82" />
-            <text x={Math.abs(X(base0) - X(0)) < 44 ? X(base0) + (base0 >= 0 ? 4 : -4) : X(base0)} y={10} textAnchor={Math.abs(X(base0) - X(0)) < 44 ? (base0 >= 0 ? "start" : "end") : "middle"} fontSize={10} fontWeight={700} fill="#008c82">평단</text>
-          </> : base0 != null ? (
-            <text x={base0 < 0 ? pad : W - pad} y={10} textAnchor={base0 < 0 ? "start" : "end"} fontSize={10} fontWeight={700} fill="#008c82">{base0 < 0 ? `◀ 평단 ${pctText(base0)}` : `평단 ${pctText(base0)} ▶`}</text>
-          ) : null}
-          {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={49} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:11</text></> : null}
-          <circle cx={X(nxt != null ? s.h : base)} cy={27} r={5} fill="#2f3437" stroke="#fff" strokeWidth={2} />
-          {what != null ? <circle cx={X(what)} cy={27} r={9} fill="rgba(0,140,130,.25)" stroke="#008c82" strokeWidth={2} /> : null}
-          <text x={lx} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.l80)}>{pctText(s.l80)}</text>
-          <text x={ux} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.u80)}>{pctText(s.u80)}</text>
-        </svg>
-      </div>
-
-      <p className="blegend"><span><i className="ldot" />{phase === "post" ? "실제 시가" : "06:30 예상"}</span>{nxt != null ? <span><i className="lnxt" />08:11 2차 예상</span> : null}<span>노란 띠 · 06:30 예상 범위</span></p>
+      {/* 2026-11-25 사용자 시안 '줄글 없는 버전': 큰 숫자 → 상태 한 줄 → 노란 띠(이름표 · 양 끝 금액 · 끌어 보기). 범례·90% 문장·'이 가격이면?'은 띠 이름표·'예상 범위 ?' 창·말풍선으로 */}
+      <p className="slabel">{phase === "post" ? "실제 시작" : nxt != null ? "장전 거래 기준" : "예상 시작"}</p>
+      <div className="sbig2"><b style={{ color: colorOf(base) }}>{pct1(base)}</b><span className="amt" style={{ color: colorOf(amountNow) }}>{swonText(amountNow)}</span></div>
+      {status ? <p className="sstat">{status}</p> : null}
+      <YBand name={s.name} l={s.l80} u={s.u80} h={s.h} nxt={s.nxtG} y={phase === "post" ? s.y : null} avg={base0} phase={phase === "post" && s.y != null ? "post" : nxt != null ? "nxt" : "pre"}
+        qty={qty} pc={s.pc} l90={s.l90} u90={s.u90} play={phase !== "post"} />
       {s.avg ? (
         <div className="avgline"><span>평단 <span className="avgwon">{wonText(s.avg)} </span>대비</span>
           <b><span style={{ color: colorOf(s.pc * (1 + s.l80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.l80) / s.avg - 1)}</span> ~ <span style={{ color: colorOf(s.pc * (1 + s.u80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.u80) / s.avg - 1)}</span></b></div>
       ) : s.qty > 0 ? (
         <div className="avgline ask"><span>평단을 넣으면 내 기준선을 함께 볼 수 있어요</span><Link href={`/mine/${s.code}/edit`}>평단 넣기 ›</Link></div>
       ) : null}
-
-      <div className="samt">
-        <span>{what != null ? "이 가격일 때 금액 변화" : phase === "post" ? "실제 금액 변화" : "예상 금액 변화"}</span>
-        <b className="amt" style={{ color: colorOf(amount) }}>{swonText(amount)}</b>
-        <small>({qty.toLocaleString("ko-KR")}주 기준)</small>
-      </div>
     </div>
   );
 }

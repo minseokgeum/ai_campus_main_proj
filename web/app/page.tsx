@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AllView } from "@/components/allview";
 import { AiMark, BottomNav } from "@/components/ui";
 import { NightChart, signColor } from "@/components/model";
+import { MaskToggle } from "@/components/sheet";
 import { FuturesHelp } from "@/components/helps";
 import { BriefCards } from "@/components/brief";
 import { FuturesCard } from "@/components/futcard";
@@ -94,10 +95,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
     { t: "08:11", label: "장전 거래", done: slot0811, at: stepAt("08:11") }, { t: checkHm, label: "채점", done: !!m?.check, at: stepAt(checkHm) }];
   // 맨 위 카드 금액과 문장: 채점 뒤엔 실제, 전엔 예상. 문장 = 합계와 같은 방향 종목 중 가장 큰 종목이 그 방향 금액의 몇 %(한 화면에 보기 문장과 같은 계산)
   const cardRows = (m?.check ? rows : preRows).filter((r) => r.amount != null && r.qty > 0);
-  const topAmt = (m?.check ? account(rows) : ac).amount;   // 예전 카드와 같은 합계
+  const topAcc = m?.check ? account(rows) : ac, topAmt = topAcc.amount, topPct = topAcc.pct;   // 예전 카드와 같은 합계 · 계좌 대비 %
   const sameDir = cardRows.filter((r) => Math.sign(r.amount!) === Math.sign(topAmt) && r.amount !== 0).sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
   const sameSum = sameDir.reduce((a, r) => a + Math.abs(r.amount!), 0);
-  const topLine = sameDir[0] && sameSum ? `${topAmt < 0 ? (m?.check ? "줄어든" : "줄어들") : (m?.check ? "늘어난" : "늘어날")} 금액의 ${Math.round((100 * Math.abs(sameDir[0].amount!)) / sameSum)}%가 ${sameDir[0].name}${/[가-힣]$/.test(sameDir[0].name) && (sameDir[0].name.charCodeAt(sameDir[0].name.length - 1) - 0xac00) % 28 ? "이에요" : "예요"}.` : "";
+  const topLine = sameDir[0] && sameSum ? <>{topAmt < 0 ? (m?.check ? "줄어든" : "줄어들") : (m?.check ? "늘어난" : "늘어날")} 금액의 <b>{Math.round((100 * Math.abs(sameDir[0].amount!)) / sameSum)}%가 {sameDir[0].name}</b>{/[가-힣]$/.test(sameDir[0].name) && (sameDir[0].name.charCodeAt(sameDir[0].name.length - 1) - 0xac00) % 28 ? "이에요" : "예요"}.</> : null;
   const map = mapInfo({ today, fresh, off, delayed, slot0811, after0811, preRows, holdings: holdItems, px, news });
 
   return (
@@ -115,7 +116,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
           </ol>
         ) : null}
         {allOn ? (
-          <AllView after0811={after0811} t={m!.t} rows={rows} watchRows={watchRows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
+          <AllView after0811={after0811} nowHm={`${String(now.hour).padStart(2, "0")}${String(now.minute).padStart(2, "0")}`} t={m!.t} rows={rows} watchRows={watchRows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
             lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
             us={us} usList={usList} night={night} buckets={buckets} nightLive={now.hour >= 18}
             briefSlot={!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : null} />
@@ -131,7 +132,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
           <section className="acct wait"><div className="at">{isWeekend(today) ? "주말이라 장이 열리지 않아요" : `${hol ?? "휴장일이라"} 장이 열리지 않아요`}</div>
             <div className="big"><span>다음 예상 {dateLabel(isoDay(nextOpenDay(today)))} 06:30</span></div>
             {m ? <p className="wb">아래 지도와 소식은 {hol ? dateLabel(isoDay(m.t)) : lastLabel} 기준이에요</p> : null}
-            {m ? <Link href={`/night?d=${m.t}`} className="wlink">{lastLabel} 결과 보기 <em>›</em></Link> : null}</section>
+            {/* 주말·휴장 → 보관 그날 화면(피그마 home_wkd, 2026-11-25 사용자 결정) */}
+            {m ? <Link href={`/saved?d=${m.t}`} className="wlink">{lastLabel} 결과 보기 <em>›</em></Link> : null}</section>
         ) : delayed ? (
           <section className="acct wait"><div className="at">오늘 예상이 조금 늦어지고 있어요</div>
             <div className="big"><span>준비 중</span></div>
@@ -142,18 +144,19 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
             <p className="wb">야간 거래가 06:00에 끝나서 내 계좌 예상을 계산하고 있어요 · 06:30 공개</p>
             {m ? <Link href={`/night?d=${m.t}`} className="wlink">{lastLabel === "어제" ? "어제" : `${lastLabel}`} 결과 보기 <em>›</em></Link> : null}</section>
         ) : (
-          // 맨 위 카드(2026-11-24 시안): 달 그림 · 시각 이름표 · '당신이 잠든 사이에' · 설명 · 금액 · 가장 큰 종목 문장. 카드를 누르면 한 화면에 보기(/?view=all)
-          <Link href="/?view=all" className="nightcard" aria-label="당신이 잠든 사이에 · 한 화면에 보기">
-            <span className="moon" aria-hidden><svg width="30" height="30" viewBox="0 0 30 30"><path d="M19.5 4.5a11 11 0 1 0 6 18.6A9 9 0 0 1 19.5 4.5Z" fill="#ffd970" /></svg></span>
-            <span className="nc-b">
-              <em className="nc-tag">{m!.check ? `${checkHm} 채점 완료` : slot0811 ? "08:11 새로 반영" : "06:30 예상"}</em>
-              <b className="nc-t">당신이 잠든 사이에</b>
-              <span className="nc-s">{m!.check ? "오늘 시가로 실제 바뀐 내 주식" : "오늘 9시에 예상되는 내 주식 변화"}</span>
-              <span className="nc-amt amt" style={{ color: signColor(topAmt) }}>{swon(topAmt)}</span>
-              {topLine ? <span className={`nc-l${topLine.length > 24 ? " long" : ""}`}>{topLine}</span> : null}
-            </span>
-            <em className="nc-go" aria-hidden>›</em>
-          </Link>
+          // 맨 위 카드(피그마 배포용 변경 기록 49, 2026-11-25 사용자 요청: 디자인은 피그마, 내용은 지금 카드 그대로):
+          // 달 · '밤사이 · 시각 상태'('당신이 잠든 사이에'는 상태 글자가 잘려서 피그마대로 '밤사이') · 눈(금액 숨기기) · › / 큰 금액 + % / 가장 큰 종목 문장. 카드 전체를 누르면 한 화면에 보기(/?view=all)
+          <section className="nightcard">
+            <Link href="/?view=all" className="nc-hit" aria-label="당신이 잠든 사이에 · 한 화면에 보기" />
+            <div className="nc-top">
+              <Moon />
+              <span className="nc-st"><b>밤사이</b><span aria-hidden> · </span>{m!.check ? <>{checkHm} <em>채점 완료</em></> : slot0811 ? <>08:11 <em>새로 반영</em></> : <>06:30 <em>예상</em></>}</span>
+              <MaskToggle />
+              <em className="nc-go" aria-hidden><svg width="9" height="15" viewBox="0 0 9 15"><path d="M1.5 1.5 7.5 7.5 1.5 13.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg></em>
+            </div>
+            <p className="nc-amtrow"><span className="nc-amt amt tot" style={{ color: signColor(topAmt) }}>{swon(topAmt)}</span><small style={{ color: signColor(topAmt) }}>{pct(P(topPct))}</small></p>
+            {topLine ? <p className="nc-l">{topLine}</p> : <p className="nc-l">{m!.check ? "오늘 시가로 실제 바뀐 내 주식이에요." : "오늘 9시에 예상되는 내 주식 변화예요."}</p>}
+          </section>
         )}
 
         <div className="hrow"><h2>뉴스 브리핑 <AiMark /></h2><Link href="/news">전체 보기</Link></div>
@@ -192,4 +195,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
       <BottomNav active="home" />
     </>
   );
+}
+
+/** 맨 위 카드 달(피그마 배포용 변경 기록 49: 노랑 #E9A92A, 보이는 크기 약 22px) */
+function Moon() {
+  return <svg className="nc-moon" width="22" height="22" viewBox="0 0 22 22" aria-hidden><path d="M14.6 2.2a9.4 9.4 0 1 0 5.2 15.9A7.6 7.6 0 0 1 14.6 2.2Z" fill="#e9a92a" /></svg>;
 }

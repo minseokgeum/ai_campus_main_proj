@@ -47,6 +47,7 @@ export default async function Record({ searchParams }: { searchParams: Promise<{
       <main className="scroll nt">
         <section className="acct rec">
           <div className="at"><span><b>지난 {dates.length}거래일 기록</b></span><Link href="/saved" className="linkish teal">전체 기록 ›</Link></div>
+          <Link href="/record" className="mrlink">설계 200종목 · 전체 종목 모델 기록 ›</Link>
           {share == null ? <p className="wb">채점 기록이 쌓이면 보여 줘요. 거래일 09:05마다 하루씩 쌓여요.</p> : (
             <>
               <div className="big"><span style={{ color: "var(--ink)" }}>{share}%</span><small style={{ color: "var(--muted)", fontWeight: 400 }}>예상 범위 안에 들어온 비율 · 목표 80%</small></div>

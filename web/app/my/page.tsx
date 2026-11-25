@@ -65,6 +65,7 @@ export default async function My() {
           <h3>내 투자</h3>
           <Link href="/mine">보유·관심 종목 관리<span>보유 {pf.holdings.length} · 관심 {pf.watch.length} ›</span></Link>
           <Link href="/mine/add">종목 추가<span>›</span></Link>
+          <Link href="/record">모델 기록<span>지금까지 얼마나 맞았나 ›</span></Link>
           <h3>알림</h3>
           <Link href="/settings/alerts">알림 설정<span>06:30 · 08:11 · 09:05 ›</span></Link>
           <h3>서비스 정보</h3>

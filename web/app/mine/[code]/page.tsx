@@ -19,7 +19,7 @@ import { kstTime, pct, swon, won } from "@/lib/format";
 import { appNow, demoAt } from "@/lib/clock";
 import { briefing } from "@/lib/briefing";
 import { stockLinks } from "@/lib/links";
-import { LinksSheet } from "@/components/links";
+import { HotLinks } from "@/components/links";
 import { PredLine } from "@/components/predline";
 import { RangeTabs } from "@/components/rangetabs";
 import { stockPred } from "@/lib/stockpred";
@@ -83,7 +83,6 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
     .slice(0, 3);
   const VC: Record<string, [string, string]> = { negative: ["부정", "#b86e12"], positive: ["긍정", "#15845a"], mixed: ["엇갈림", "#66777a"], neutral: ["중립", "#66777a"] };
   const nodes = lk.get(code) ?? [];
-  const hotLinks = nodes.filter((x) => x.n > 0).slice(0, 3);
   const newsHref = h || watch ? `/news?tab=mine&c=${code}${watch && !h ? "&v=watch" : ""}` : null;
   // 시세 요약(변경 기록 27, 2026-11-25): 전일 종가는 일봉(위 현재가와 같은 값), 거래량 · 시가총액 · 외국인 보유 · 52주(장중)는 서버 model.stock_quote_daily(lib/prices.ts quote)
   const dchg = lc.get(code) ?? lcSelf.get(code);
@@ -137,7 +136,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
                     <i style={{ background: v ? VC[v][1] : "#d8dfe0" }} aria-hidden />
                     <Link href={`/news/a/${a.key}?back=/mine/${code}`} className="c">
                       <b>{a.ko ?? a.title}</b>
-                      <span>{v ? <em style={{ color: VC[v][1] }}>{VC[v][0]}</em> : null}{v ? " · " : ""}{a.outlet || a.source} · {kstTime(a.published)}{rest.length ? ` · 같은 소식 ${rest.length}건` : ""}</span>
+                      <span>{v ? <em style={{ color: VC[v][1] }}>{VC[v][0]}</em> : null}{v ? " · " : ""}{a.source || a.outlet} · {kstTime(a.published)}{rest.length ? ` · 같은 소식 ${rest.length}건` : ""}</span>
                     </Link>
                     <a href={a.link} target="_blank" rel="noreferrer noopener" className="x" aria-label="원문 보기"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V13H3V5h3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></a>
                   </li>
@@ -145,14 +144,8 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
               </ul>
             </>
           ) : <p className="d4-none">밤사이 이 종목에 이어진 미국 뉴스가 없어요.</p>}
-          {nodes.length ? (
-            <div className="d4-us">
-              <div className="hh"><b>미국 연결 기업 소식</b><LinksSheet name={u.name} nodes={nodes} /></div>
-              {hotLinks.length ? hotLinks.map((x) => (
-                <p key={x.key} className="ln"><i aria-hidden /><b>{x.name}</b><span>{x.rel}</span><em>소식 {x.n}</em></p>
-              )) : <p className="ln none">밤사이 소식이 난 연결은 없어요</p>}
-            </div>
-          ) : null}
+          {/* 오늘 소식이 난 연결: 작은 관계 그림 + 관계도 창(2026-11-25 사용자 시안) */}
+          {nodes.length ? <div className="d4-us"><HotLinks name={u.name} nodes={nodes} /></div> : null}
         </section>
         <i className="d4-gap" aria-hidden />
 

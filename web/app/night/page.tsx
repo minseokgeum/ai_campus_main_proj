@@ -260,7 +260,8 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
             <div className="grp">
               <span>같은 업종에 묶인 내 종목</span>
               <div>
-                {sectors.map((g, k) => <Link key={g.sector} href={nightHref(base, { f: `s:${g.sector}` })} className={k === 0 && g.list.length > 1 ? "hot" : ""}>{g.sector} {g.list.length}{k === 0 && g.list.length > 1 ? "종목" : ""}</Link>)}
+                {/* 칩은 모두 같은 모양(업종 + 종목 수, 금액 변화 큰 순). 눌러서 고른 업종만 청록(2026-11-25 사용자 결정: 맨 앞 업종 강조 없앰) */}
+                {sectors.map((g) => <Link key={g.sector} href={nightHref(base, { f: `s:${g.sector}` })} className={f === `s:${g.sector}` ? "hot" : ""} aria-current={f === `s:${g.sector}` ? "true" : undefined}>{g.sector} {g.list.length}</Link>)}
                 {pf.holdings.length - sectors.reduce((a, g) => a + g.list.length, 0) > 0 ? <span>그 외 {pf.holdings.length - sectors.reduce((a, g) => a + g.list.length, 0)}</span> : null}
               </div>
             </div>
@@ -319,7 +320,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
           ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 — 눌러서 자세히 보세요" }
           : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `06:30 예상과 크게 달라진 종목 ${nOut} — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
         rest={{ title: nAtt ? `나머지 ${rows.length - nAtt}종목` : `${view === "hold" ? "보유" : "관심"} 종목`, sub: "누르면 아래에서 자세히 열려요" }}
-        footer={items.length ? <p className="fine">06:30 노란 띠는 실제 시가가 들어올 것으로 예상한 80% 범위예요. 08:11에는 08:10까지 확인한 마지막 NXT 가격을 2차 예상 시가로 써요. 장전 가격 자료가 없는 종목은 06:30 예상을 유지해요. 등급 옆 %는 전일 종가 대비 장전 등락 방향이 시가까지 이어질 추정 확률이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
+        footer={items.length ? <p className="fine">06:30 노란 띠는 실제 시가가 들어올 것으로 예상한 80% 범위예요. 08:11에는 08:10까지 확인한 마지막 NXT 가격을 2차 예상 시가로 써요. 장전 가격 자료가 없는 종목은 06:30 예상을 유지해요. 등급 옆 %는 전일 종가 대비 장전 등락 방향이 시가까지 이어질 추정 확률이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요. <Link href="/record" className="mrlink">지금까지 얼마나 맞았나 · 모델 기록 ›</Link></p> : null}
       />
     </Shell>
   );

@@ -2,6 +2,7 @@
 // 줄: 민트(모델 추정, 누르면 창) · 회색(안내). 창: 예상 시작가 → 범위 띠(어제 종가 점선 · 평단 청록 선 · 08:10 빨간 선) → 가격대 3줄과 내 금액 → 평단 · 08:10 줄 → 지난 20거래일 그래프 → 안내.
 // 자료는 lib/stockpred.ts. 숫자 모양은 밤사이 종목 창과 같다(components/stockpanel.tsx의 pctText · wonText).
 import { Sheet } from "@/components/sheet";
+import { YBand } from "@/components/yband";
 import { pct, swon, won } from "@/lib/format";
 import type { Pred, PredDay } from "@/lib/stockpred";
 
@@ -56,7 +57,8 @@ function PredBody({ p, qty, avg }: { p: Extract<Pred, { kind: "pre" | "nxt" | "p
       <p className="lab">예상 시작가</p>
       <p className="big"><b>{wonText(price(p.est))}</b><span style={{ color: colorOf(p.est) }}>{pctText(p.est)}</span></p>
       <p className="vs">어제 종가 {wonText(p.pc)} 대비</p>
-      <Band p={p} avg={avg} />
+      {/* 노란 띠: 당신이 잠든 사이에 카드·밤사이 종목 창과 같은 부품(2026-11-25 사용자 시안) */}
+      <YBand name="이 종목" l={p.l80} u={p.u80} h={p.h} nxt={p.nxt} y={p.y} avg={avg ? avg / p.pc - 1 : null} phase={p.kind} qty={qty} pc={p.pc} play={p.kind !== "post"} />
       <table className="d4-pt">
         <thead><tr><th>{qty ? `${qty.toLocaleString("ko-KR")}주 · 어제 대비` : "어제 대비"}</th><th>가격</th>{qty ? <th>내 금액</th> : null}</tr></thead>
         <tbody>
@@ -71,36 +73,11 @@ function PredBody({ p, qty, avg }: { p: Extract<Pred, { kind: "pre" | "nxt" | "p
       </table>
       <dl className="d4-pn">
         {avg ? <><dt>평단</dt><dd><span className="avgwon">{wonText(avg)} · </span>예상 시작가가 평단보다 {pctText(Math.abs(avgGap!)).replace(/^[+−]/, "")} {avgGap! >= 0 ? "높아요" : "낮아요"}</dd></> : null}
-        <dt>08:11</dt><dd>{p.nxt != null ? <>2차 예상(08:10 장전 가격) <b style={{ color: colorOf(p.nxt) }}>{pctText(p.nxt)}</b> · 띠 위 빨간 선, 검은 점은 06:30 예상 {pctText(p.h)}이에요</> : p.kind === "pre" ? "08:11에 장전 가격이 나오면 2차 예상으로 띠 위에 빨간 선을 그려요" : "장전 가격이 없어 06:30 예상을 유지했어요"}</dd>
+        <dt>08:11</dt><dd>{p.nxt != null ? <>2차 예상(08:10 장전 가격) <b style={{ color: colorOf(p.nxt) }}>{pctText(p.nxt)}</b> · 띠 위 &apos;장전&apos;, 06:30 예상은 {pctText(p.h)}이에요</> : p.kind === "pre" ? "08:11에 장전 가격이 나오면 띠 위에 '장전'으로 표시해요" : "장전 가격이 없어 06:30 예상을 유지했어요"}</dd>
       </dl>
       {p.days.length ? <Days days={p.days} hit={p.hit} /> : null}
       <p className="d4-pdis">모델 추정이에요. 실제 시가와 다를 수 있고 투자 권유가 아니에요.</p>
     </div>
-  );
-}
-
-/** 범위 띠(밤사이 종목 창과 같은 모양, 끌기 없음) */
-function Band({ p, avg }: { p: Extract<Pred, { kind: "pre" | "nxt" | "post" }>; avg: number | null }) {
-  const base0 = avg ? avg / p.pc - 1 : null;
-  const m = Math.max(0.01, Math.abs(p.l80), Math.abs(p.u80), Math.abs(p.est), Math.abs(p.h), Math.abs(p.nxt ?? 0), Math.abs(p.y ?? 0)) * 1.25;
-  const W = 342, pad = 10, X = (v: number) => pad + ((v + m) / (2 * m)) * (W - 2 * pad);
-  const near = base0 != null && Math.abs(X(base0) - X(0)) < 44;
-  return (
-    <svg width="100%" viewBox={`0 0 ${W} 62`} className="d4-band" role="img" aria-label={`예상 범위 ${pctText(p.l80)} ~ ${pctText(p.u80)}, 예상 ${pctText(p.est)}`}>
-      <text x={X(0)} y={10} textAnchor="middle" fontSize={10} fill="#66777a">어제 종가</text>
-      <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
-      <rect x={X(p.l80)} y={21} width={Math.max(3, X(p.u80) - X(p.l80))} height={12} rx={6} fill="#FFD970" />
-      <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
-      {base0 != null && Math.abs(base0) <= m ? <>
-        <rect x={X(base0) - 1} y={17} width={2} height={20} fill="#008c82" />
-        <text x={X(base0)} y={near ? 49 : 10} textAnchor="middle" fontSize={10} fontWeight={700} fill="#008c82">평단</text>
-      </> : null}
-      {p.nxt != null ? <rect x={X(p.nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /> : null}
-      {p.y != null ? <circle cx={X(p.y)} cy={27} r={5} fill="#008c82" stroke="#fff" strokeWidth={2} /> : null}
-      <circle cx={X(p.h)} cy={27} r={6} fill="#2f3437" stroke="#fff" strokeWidth={2} />   {/* 검은 점 = 06:30 예상(밤사이 종목 창과 같음, 2026-11-25 팀원 기준) */}
-      <text x={X(p.l80)} y={56} textAnchor="middle" fontSize={11} fill={colorOf(p.l80)}>{pctText(p.l80)}</text>
-      <text x={X(p.u80)} y={56} textAnchor="middle" fontSize={11} fill={colorOf(p.u80)}>{pctText(p.u80)}</text>
-    </svg>
   );
 }
 
@@ -118,7 +95,7 @@ function Days({ days, hit }: { days: PredDay[]; hit: [number, number] | null }) 
         {[0.06, 0, -0.06].map((v) => <g key={v}><line x1={L} x2={W - R + 4} y1={Y(v)} y2={Y(v)} stroke={v === 0 ? "#d8dfe0" : "#eef1f2"} /><text x={W - R + 8} y={Y(v) + 3} fontSize={10} fill="#66777a">{v === 0 ? "0%" : v > 0 ? "+6%" : "−6%"}</text></g>)}
         {days.map((d, i) => (
           <g key={d.t}>
-            <rect x={X(i) - 4} y={Y(d.u80)} width={8} height={Math.max(2, Y(d.l80) - Y(d.u80))} rx={3} fill="#FFD970" />
+            <rect x={X(i) - 4} y={Y(d.u80)} width={8} height={Math.max(2, Y(d.l80) - Y(d.u80))} rx={4} fill="#FFD970" fillOpacity={0.7} />   {/* 기록 46: 끝 둥글게(4) · 노랑 70% */}
             <line x1={X(i) - 6} x2={X(i) + 6} y1={Y(d.h)} y2={Y(d.h)} stroke="#192d31" strokeWidth={1.6} />
             {d.y != null ? (d.in80 ? <circle cx={X(i)} cy={Y(d.y)} r={3.5} fill="#008c82" stroke="#fff" strokeWidth={1} />
               : <circle cx={X(i)} cy={Y(d.y)} r={3.5} fill="#fff" stroke="#b86e12" strokeWidth={1.6} />) : null}

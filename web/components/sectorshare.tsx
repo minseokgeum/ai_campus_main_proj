@@ -25,11 +25,12 @@ export function SectorShare({ holdings, px }: { holdings: { code: string; qty: n
   const top = sorted.slice(0, 4), rest = sorted.slice(4);
   const bars = [...top, ...(rest.length ? [["그 외", { names: rest.flatMap((r) => r[1].names), w: rest.reduce((a, r) => a + r[1].w, 0) }]] as [string, { names: string[]; w: number }][] : [])];
   return (
-    <section className="pcard">
-      <div className="hrow"><b className="pt">업종별 투자 비중</b><span className="masklab"><MaskToggle /> 금액 숨기기</span></div>
+    // 홈에서 지도 옆 장(2026-11-25 사용자 요청): 회색 카드 바탕 없이, 제목·설명 줄을 지도('오늘 아침 내 종목 지도')와 같은 모양으로
+    <section className="sshare">
+      <div className="hrow"><h3>업종별 투자 비중</h3><span className="masklab"><MaskToggle /> 금액 숨기기</span></div>
+      {holdings.length ? <p className="fine">입력한 수량 · 어제 종가 기준</p> : null}
       <p className="ptotal">{holdings.length ? (byValue ? <span className="amt tot">{won(totalValue)}</span> : `보유 ${holdings.length}종목`) : "보유 종목이 없어요"}</p>
       {byValue ? <p className="dayp">어제 <b style={{ color: signColor(dayPnl) }}>{dayPnl > 0 ? "▲" : dayPnl < 0 ? "▼" : ""} <span className="amt">{won(Math.abs(dayPnl))}</span> ({pct((dayPnl / (totalValue - dayPnl || 1)) * 100)})</b></p> : null}
-      {holdings.length ? <p className="fine">입력한 수량 기준</p> : null}
       {bars.map(([s, x], i) => {
         const share = Math.round((x.w / totalW) * 100);
         const color = s === "그 외" ? "#B8C0C3" : SECTOR_COLORS[i] ?? "#B8C0C3";

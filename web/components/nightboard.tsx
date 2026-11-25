@@ -5,9 +5,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BandMini } from "@/components/model";
-import { gradeText, type DirectionGrade } from "@/lib/trust";
+import { type DirectionGrade } from "@/lib/trust";
 import { GradeHelp, NotServiceHelp } from "@/components/helps";
 import { Layer, StickyAccount } from "@/components/sheet";
+import { gradeLine, postLine } from "@/components/bandtext";
 import { StockPanel, colorOf, pctText, swonText, wonText } from "@/components/stockpanel";
 import { NightBars, type BarRow } from "@/components/nightbars";
 
@@ -178,15 +179,15 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
               <>
                 {cur.tier === 2 ? <p className="t2box">모델을 설계할 때 쓰지 않은 종목이에요. 같은 규칙으로 계산했지만, 과거 검증은 설계 종목(코스피 150 + 코스닥 50)으로만 했어요.</p> : null}
                 <StockPanel icon={<span className="ic" style={{ background: tint(cur.sector)[0], color: tint(cur.sector)[1] }}>{cur.name.slice(0, 1)}</span>} phase={phase} qty={qtyOf(cur)} setQty={(q) => setOvr({ ...ovr, [cur.code]: q })} acctAmount={acct.amount} acctValue={acct.value}
-                  s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg }} />
-                <div className="schips">
-                  <span className={cur.grade ? "g tq" : "n"}>{gradeText(cur.grade, cur.p, cur.nxtG, after0811)}<GradeHelp /></span>
-                  {cur.kind === "out" ? <span className="w">{phase === "pre" ? "06:30 예상과 크게 달라짐" : "범위 밖"}</span> : null}
-                  {phase === "post" && cur.in80 != null ? <span className={cur.in80 ? "g" : "w"}>{cur.in80 ? "범위 안에서 시작" : "범위 밖에서 시작"}</span> : null}
-                  <span className="sec">{cur.sector} 업종 · {rows.filter((r) => r.sector === cur.sector).length}종목</span>
-                  {cur.earn ? <span className="w">어제 실적 공시</span> : null}
-                </div>
-                <p className="fine">노란 띠는 06:30 예상 범위(80%)예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{after0811 ? <><br />{cur.nxtG != null ? `06:30 예상 ${pctText(cur.h)} → 08:11 2차 예상 ${pctText(cur.nxtG)} (08:10까지의 마지막 NXT 가격).` : "장전 가격 미확인으로 06:30 예상을 유지했어요."}</> : null}</p>
+                  s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg }}
+                  status={(() => {   // 상태 한 줄(2026-11-25 사용자 시안): 칩·90% 문장 대신. 06:30엔 실적 태그 · 08:11엔 장전 방향 등급 · 채점 뒤엔 띠 안/밖
+                    const earn = cur.earn ? <em className="earn">실적 발표 다음 날 · 평소보다 덜 맞아요</em> : null;
+                    if (phase === "post" && cur.y != null) return <>{postLine(cur.y, cur.nxtG ?? cur.h!, cur.l80!, cur.u80!)}{earn ? <> · {earn}</> : null}</>;
+                    if (after0811) return cur.nxtG == null ? <><span className="mute">장전 거래 없음 · 06:30 예상 유지</span>{earn ? <> · {earn}</> : null}</>
+                      : <><GradeHelp className={`gline ${cur.grade ? "g" : "n"}`} label={gradeLine(cur.grade, cur.p, cur.nxtG)} />{earn ? <> · {earn}</> : null}</>;
+                    return earn;
+                  })()} />
+                <div className="schips"><span className="sec">{cur.sector} 업종 · {rows.filter((r) => r.sector === cur.sector).length}종목</span></div>
               </>
             )}
             <div className="slinks">
