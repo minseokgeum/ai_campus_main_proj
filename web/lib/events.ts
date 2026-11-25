@@ -36,7 +36,7 @@ export async function upcomingEvents(t: string, codes: string[], within = 7): Pr
        where date >= $1::date and date <= $1::date + $2::int and (cardinality(codes) = 0 or codes && $3::text[]) order by date, kind`, [iso, within, codes]);
     for (const r of rows) {
       const d = toDate(r.d), dd = days(start, d);
-      const late = r.kind === "미국 실적(06:00 마감 뒤)";   // 오늘 아침 06:00 뒤 발표라 07:30 예상에 안 들어간 것: 그날만
+      const late = r.kind === "미국 실적(06:00 마감 뒤)";   // 오늘 아침 06:00 뒤 발표라 06:30 예상에 안 들어간 것: 그날만
       const us = r.kind === "미국 실적" || r.kind === "미국 경제 지표";   // 미국 일정은 반영되는 한국 아침 날짜라 내일부터
       if (late ? dd !== 0 : us ? dd < 1 : dd < 0) continue;
       const kind: Ev["kind"] = r.kind.startsWith("미국 실적") ? "earnings" : r.kind === "미국 경제 지표" ? "macro" : "company";

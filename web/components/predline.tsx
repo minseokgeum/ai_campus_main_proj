@@ -27,9 +27,9 @@ export function PredLine({ p, name, qty, avg }: { p: Pred; name: string; qty: nu
   ) : (
     <>
       <span className="t1"><b>오늘 아침 예상</b><b className="v" style={{ color: colorOf(p.est) }}>{p1(p.est)}</b>
-        {p.kind === "nxt" && p.nxt != null ? <span className="nx">08:10 거래 {p1(p.nxt)}</span> : <span className="tag">모델 추정</span>}</span>
+        {p.kind === "nxt" && p.nxt != null ? <span className="nx">06:30 예상 {p1(p.h)}</span> : <span className="tag">모델 추정</span>}</span>
       <span className="t2">{p.kind === "nxt"
-        ? (p.nxt == null ? "오늘은 08:10 장전 거래가 없었어요" : p.nxt >= p.l80 && p.nxt <= p.u80 ? "08:10 장전 거래가 예상 범위 안이에요" : "08:10 장전 거래가 예상 범위 밖이에요")
+        ? (p.nxt == null ? "장전 가격이 없어 06:30 예상을 유지했어요" : p.nxt >= p.l80 && p.nxt <= p.u80 ? "08:11 2차 예상(장전 가격) · 06:30 범위 안" : "08:11 2차 예상(장전 가격) · 06:30 범위 밖")
         : `범위 ${p1(p.l80)} ~ ${p1(p.u80)}${hit ? ` · ${hit}` : ""}`}</span>
     </>
   );
@@ -71,7 +71,7 @@ function PredBody({ p, qty, avg }: { p: Extract<Pred, { kind: "pre" | "nxt" | "p
       </table>
       <dl className="d4-pn">
         {avg ? <><dt>평단</dt><dd><span className="avgwon">{wonText(avg)} · </span>예상 시작가가 평단보다 {pctText(Math.abs(avgGap!)).replace(/^[+−]/, "")} {avgGap! >= 0 ? "높아요" : "낮아요"}</dd></> : null}
-        <dt>08:10</dt><dd>{p.nxt != null ? <>장전 거래 <b style={{ color: colorOf(p.nxt) }}>{pctText(p.nxt)}</b> · 띠 위 빨간 선이에요</> : p.kind === "pre" ? "장전 거래가 나오면 띠 위에 빨간 선으로 보여드려요" : "오늘은 장전 거래가 없었어요"}</dd>
+        <dt>08:11</dt><dd>{p.nxt != null ? <>2차 예상(08:10 장전 가격) <b style={{ color: colorOf(p.nxt) }}>{pctText(p.nxt)}</b> · 띠 위 빨간 선, 검은 점은 06:30 예상 {pctText(p.h)}이에요</> : p.kind === "pre" ? "08:11에 장전 가격이 나오면 2차 예상으로 띠 위에 빨간 선을 그려요" : "장전 가격이 없어 06:30 예상을 유지했어요"}</dd>
       </dl>
       {p.days.length ? <Days days={p.days} hit={p.hit} /> : null}
       <p className="d4-pdis">모델 추정이에요. 실제 시가와 다를 수 있고 투자 권유가 아니에요.</p>
@@ -82,7 +82,7 @@ function PredBody({ p, qty, avg }: { p: Extract<Pred, { kind: "pre" | "nxt" | "p
 /** 범위 띠(밤사이 종목 창과 같은 모양, 끌기 없음) */
 function Band({ p, avg }: { p: Extract<Pred, { kind: "pre" | "nxt" | "post" }>; avg: number | null }) {
   const base0 = avg ? avg / p.pc - 1 : null;
-  const m = Math.max(0.01, Math.abs(p.l80), Math.abs(p.u80), Math.abs(p.est), Math.abs(p.nxt ?? 0), Math.abs(p.y ?? 0)) * 1.25;
+  const m = Math.max(0.01, Math.abs(p.l80), Math.abs(p.u80), Math.abs(p.est), Math.abs(p.h), Math.abs(p.nxt ?? 0), Math.abs(p.y ?? 0)) * 1.25;
   const W = 342, pad = 10, X = (v: number) => pad + ((v + m) / (2 * m)) * (W - 2 * pad);
   const near = base0 != null && Math.abs(X(base0) - X(0)) < 44;
   return (
@@ -97,7 +97,7 @@ function Band({ p, avg }: { p: Extract<Pred, { kind: "pre" | "nxt" | "post" }>; 
       </> : null}
       {p.nxt != null ? <rect x={X(p.nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /> : null}
       {p.y != null ? <circle cx={X(p.y)} cy={27} r={5} fill="#008c82" stroke="#fff" strokeWidth={2} /> : null}
-      <circle cx={X(p.est)} cy={27} r={6} fill="#2f3437" stroke="#fff" strokeWidth={2} />
+      <circle cx={X(p.h)} cy={27} r={6} fill="#2f3437" stroke="#fff" strokeWidth={2} />   {/* 검은 점 = 06:30 예상(밤사이 종목 창과 같음, 2026-11-25 팀원 기준) */}
       <text x={X(p.l80)} y={56} textAnchor="middle" fontSize={11} fill={colorOf(p.l80)}>{pctText(p.l80)}</text>
       <text x={X(p.u80)} y={56} textAnchor="middle" fontSize={11} fill={colorOf(p.u80)}>{pctText(p.u80)}</text>
     </svg>

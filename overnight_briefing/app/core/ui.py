@@ -126,11 +126,26 @@ def band_bar(lo: float, hi: float, point: float, actual: float | None = None, sp
 GRADE_CLASS = {"높음": "hi", "보통": "mid", "낮음": "lo"}
 
 
+def grade_text(level: str | None, p: float | None) -> str:
+    if level not in GRADE_CLASS:
+        return "등급 없음"
+    if p is None or not 0 <= p <= 1:
+        return level
+    # 이전 카드는 등급을 정한 뒤 p를 세 자리로 반올림해 경계와 겹칠 수 있다.
+    percent = round(p * 100, 1)
+    if level == "낮음" and percent >= 75:
+        chance = "75% 미만"
+    elif level == "보통" and percent >= 90:
+        chance = "90% 미만"
+    elif p == 1:
+        chance = "99.9% 이상"
+    else:
+        chance = f"{percent:g}%"
+    return f"{level} ({chance})"
+
+
 def grade_chip(level: str | None, p: float | None) -> str:
-    if not level:
-        return '<span class="chip">08:11에 확인</span>'
-    pp = "" if p is None else (" · 99% 이상" if p >= 0.995 else f" · {p*100:.0f}%")
-    return f'<span class="chip {GRADE_CLASS.get(level, "")}">방향 믿을 정도 {level}{pp}</span>'
+    return f'<span class="chip {GRADE_CLASS.get(level, "")}">방향 믿을 정도 {grade_text(level, p)}</span>'
 
 
 def kpi(col, label: str, value: str, note: str = "", value_class: str = "") -> None:
@@ -141,5 +156,5 @@ def kpi(col, label: str, value: str, note: str = "", value_class: str = "") -> N
 
 
 def legend() -> str:
-    return (f'<div class="legend"><span><i style="background:{BAND};border:1px solid {BAND_EDGE}"></i>예상 범위(과거 10번 중 8번이 이 안)</span>'
-            f'<span>◆ 예상 시가</span><span><i style="background:#1f8a4c;border-radius:50%;width:9px;height:9px"></i>실제 시가(개장 뒤)</span></div>')
+    return (f'<div class="legend"><span><i style="background:{BAND};border:1px solid {BAND_EDGE}"></i>07:30 범위(목표 80%)</span>'
+            f'<span>◆ 07:30 예상 시가</span><span><i style="background:#1f8a4c;border-radius:50%;width:9px;height:9px"></i>실제 시가(개장 뒤)</span></div>')

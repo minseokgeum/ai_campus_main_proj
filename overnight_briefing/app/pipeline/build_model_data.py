@@ -97,7 +97,7 @@ def main() -> None:
             stock_rows.append(dict(T=day, code=s["code"], name=s["name"], H=s["H"],
                                    L80=s["band80"][0], U80=s["band80"][1], L90=s["band90"][0], U90=s["band90"][1],
                                    cautions="|".join(c["kind"] for c in s.get("cautions", [])),
-                                   grade=g.get("level"), p=g.get("p"), nxt_g=g.get("nxt_g"),
+                                   grade=g.get("level"), p=g.get("p"), nxt_g=s.get("nxt_g", g.get("nxt_g")),
                                    y=a.get("y"), in80=a.get("in_band80"), nxt_dir_match=a.get("nxt_dir_match")))
         as1 = as1_for_day(E, x, day, card)
         for name, v in as1.items():

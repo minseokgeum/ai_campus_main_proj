@@ -1,4 +1,4 @@
-// 시장 특별한 날 달력(web/data/special_days.csv). 원본은 overnight_briefing/model/market_calendar/special_days.csv(팀원이 만든 표,
+// 시장 특별한 날 달력(web/data/special_days.csv). 원본은 night_model/market_calendar/special_days.csv(팀원 overnight_briefing/model에서 복사한 우리 운영본, 팀원이 만든 표,
 // 기준은 overnight_briefing/model/README.md 5장)이고, 웹 사본에는 휴장일 이름 두 칸(closed_type 공휴일·휴장, name)과
 // 미국 휴일 이름 한 칸(us_name: 미국 휴장·조기 마감 줄에만, 예: 추수감사절 · 추수감사절 다음 날, 2026-11-25)을 덧붙였다.
 // 평일 하루 한 줄(2024-12 ~ 2027-12). 원본을 다시 만들면 이 사본도 이름 칸 세 개를 붙여 다시 복사한다.

@@ -12,7 +12,7 @@ DAY_CAUTION = {
     "mon": ("월요일 아침이에요", "주말 동안 쌓인 소식이 한꺼번에 반영돼서, 과거 월요일엔 시가가 예상 범위를 벗어난 날이 "
             "더 많았어요. 다른 요일은 10번 중 2번, 월요일은 10번 중 2.6번꼴이에요."),
 }
-NXT_OUT = ("08:10 장전 거래가 이미 예상 범위 {side}에 있어요. 지난 1년 이런 종목은 범위 안에서 열린 경우가 10번 중 3번 남짓이었어요"
+NXT_OUT = ("08:10 장전 거래가 07:30 예상 범위 {side}에 있어요. 지난 1년 이런 종목은 범위 안에서 열린 경우가 10번 중 3번 남짓이었어요"
            "(시가도 장전 거래 쪽으로 벗어난 경우가 10번 중 6~7번). 확인 중인 경고예요.")
 STOCK_CAUTION = {
     "e_earn": "어제 실적 공시가 나온 종목이에요. 공시 다음 날 아침엔 시가가 예상 범위를 벗어난 경우가 절반 정도였어요(평소엔 10번 중 2번).",
@@ -36,6 +36,10 @@ def _today_result(rows, after, as1, changed, acct_name, T, slot) -> None:
         st.markdown('<div class="card"><h4>오늘 결과</h4><div class="sub">이 날은 개장 뒤 실제 시가가 아직 없어요.</div></div>', unsafe_allow_html=True)
         return
     exp = sum(r["H_amt"] for r in got)
+    second = ""
+    if any(r["second"] is not None and r["q"] > 0 for r in got):
+        second_total = sum(r["estimate_amt"] for r in got)
+        second = f'<div class="row"><span class="sub">예상(08:11)</span><span class="mid {ui.tone(second_total)}">{ui.won(second_total)}</span></div>'
     act = sum(r["y_amt"] for r in got)
     inside = sum(bool(after[r["s"]["code"]]["in_band80"]) for r in got)
     dir_rows = [after[r["s"]["code"]] for r in got if after[r["s"]["code"]].get("nxt_dir_match") is not None]
@@ -48,8 +52,9 @@ def _today_result(rows, after, as1, changed, acct_name, T, slot) -> None:
     st.markdown(
         f'<div class="card" style="border-color:#cfdcfb"><h4>오늘 결과 · 09:00 개장</h4>'
         f'<div class="row"><span class="sub">예상(07:30)</span><span class="mid {ui.tone(exp)}">{ui.won(exp)}</span></div>'
+        f'{second}'
         f'<div class="row"><span class="sub">실제 시가 기준</span><span class="big {ui.tone(act)}">{ui.won(act)}</span></div>'
-        f'<div class="row"><span class="tiny">차이</span><span class="tiny">{ui.won(act - exp)}</span></div>'
+        f'<div class="row"><span class="tiny">07:30 예상과 실제 차이</span><span class="tiny">{ui.won(act - exp)}</span></div>'
         f'<div style="margin-top:8px;line-height:2"><span class="chip">범위 안 {inside}/{len(got)}종목</span>'
         + (f'<span class="chip">장전 거래 방향 일치 {dir_ok}/{len(dir_rows)}</span>' if dir_rows else "")
         + f'</div>{acct_line}'
@@ -134,7 +139,10 @@ def render() -> None:
         changed |= q != h["q"]
         value = q * s["base_close"]["value"]
         y = after.get(h["code"], {}).get("y")
-        rows.append(dict(s=s, q=q, value=value, H_amt=value * s["H"],
+        second = data.nxt_gap(s) if slot != "0730" else None
+        estimate = s["H"] if second is None else second
+        rows.append(dict(s=s, q=q, value=value, H_amt=value * s["H"], second=second, estimate=estimate,
+                         estimate_amt=value * estimate,
                          lo=value * s["band80"][0], hi=value * s["band80"][1],
                          y=y, y_amt=None if y is None else value * y))
     stock_value = sum(r["value"] for r in rows)
@@ -198,11 +206,11 @@ def render() -> None:
                           for k, c in (("높음", "#4caf73"), ("보통", "#b7bec9"), ("낮음", "#f0a24b"), ("없음", "#e6e8ec"))
                           for v in [share[k]] if v > 0)
             label = " · ".join(f"{k} {v/stock_value*100:.0f}%" for k, v in share.items() if v > 0)
-            outs = [r["s"]["name"] for r in rows if (r["s"].get("grade_0811") or {}).get("nxt_g") is not None
-                    and not (r["s"]["band80"][0] <= r["s"]["grade_0811"]["nxt_g"] <= r["s"]["band80"][1])]
-            trust = (f'<div class="sub" style="margin-top:10px">장전 거래로 본 방향 믿을 정도(보유 금액 기준)</div>'
+            outs = [r["s"]["name"] for r in rows if r["second"] is not None
+                    and not (r["s"]["band80"][0] <= r["second"] <= r["s"]["band80"][1])]
+            trust = ('<div class="sub" style="margin-top:10px">방향 등급별 보유 금액 비중</div>'
                      f'<div class="stack">{seg}</div><div class="tiny">{label}</div>'
-                     + (f'<div class="caution" style="margin-top:8px">⚠ 장전 거래가 이미 예상 범위 밖: {html.escape(" · ".join(outs))}</div>' if outs else ""))
+                     + (f'<div class="caution" style="margin-top:8px">⚠ 장전 거래가 07:30 예상 범위를 벗어난 종목 · {html.escape(" · ".join(outs))}</div>' if outs else ""))
         else:
             trust = '<div class="tiny" style="margin-top:10px">08:11에 장전 거래(NXT)를 보고 종목별 방향 믿을 정도를 알려 드려요.</div>'
         actual = ""
@@ -210,10 +218,22 @@ def render() -> None:
         if show_outcome and got:   # '오늘 결과' 카드와 같은 계산(보유 수량 × 전일 종가 × 실제 등락률)
             y_amt = sum(r["y_amt"] for r in got)
             actual = f'<div class="sub" style="margin-top:6px">개장 뒤 실제 시가 기준 <b class="{ui.tone(y_amt)}">{ui.won(y_amt)}</b></div>'
+        revised_count = sum(r["q"] > 0 and r["second"] is not None for r in rows)
+        estimate_sum = sum(r["estimate_amt"] for r in rows)
+        estimate_label = "07:30 1차 예상 기준 주식 평가금액 변화"
+        morning_reference = ""
+        if slot != "0730" and revised_count:
+            estimate_label = "08:11 2차 예상 기준 주식 평가금액 변화"
+            morning_reference = (f'<div class="tiny">07:30 1차 예상 {ui.won(H_sum)} · '
+                                 f'{revised_count}종목은 08:10까지의 NXT 마지막 체결가를 적용했어요. '
+                                 '장전 가격 기록이 없는 종목은 1차 예상을 유지해요.</div>')
+        elif slot != "0730":
+            morning_reference = '<div class="tiny">보유 종목의 장전 가격 기록이 없어 07:30 예상을 유지해요.</div>'
         st.markdown(
             f'<div class="card"><h4>{html.escape(acct_name)} · 평가금액 {ui.man(total, sign=False)}</h4>'
-            f'<div class="sub">오늘 시가에 예상되는 주식 평가금액 변화</div>'
-            f'<div class="big {ui.tone(H_sum)}">{ui.won(H_sum)} <span class="mid">({ui.pct(H_sum/stock_value if stock_value else None)})</span></div>'
+            f'<div class="sub">{estimate_label}</div>'
+            f'<div class="big {ui.tone(estimate_sum)}">{ui.won(estimate_sum)} <span class="mid">({ui.pct(estimate_sum/stock_value if stock_value else None)})</span></div>'
+            f'{morning_reference}'
             f'{actual}{rng}{trust}</div>', unsafe_allow_html=True)
 
         # 2) 밤사이 한눈에
@@ -295,10 +315,14 @@ def render() -> None:
         span = max([abs(v) for r in rows for v in (r["s"]["band90"][0], r["s"]["band90"][1])] + [0.01]) * 1.1
         for r in sorted(rows, key=lambda r: -r["value"]):
             s, g, a = r["s"], r["s"].get("grade_0811") or {}, after.get(r["s"]["code"], {})
-            nxt = (f'<span class="tiny">장전 거래 <b class="{ui.tone(g.get("nxt_g"))}">{ui.pct(g.get("nxt_g"))}</b></span>'
-                   if slot in ("0811", "0900") and g.get("nxt_g") is not None else "")
+            ng = r["second"]
+            point_label = "08:11 2차" if ng is not None else "07:30 1차"
+            nxt = ""
+            if ng is not None:
+                nxt = '<span class="tiny">2차 예상은 08:10까지의 NXT 마지막 체결가 기준이에요.</span>'
+            elif slot != "0730":
+                nxt = '<span class="tiny">장전 가격 기록이 없어 07:30 예상을 유지해요.</span>'
             cautions = "".join(f'<div class="caution">⚠ {STOCK_CAUTION.get(c["kind"], c["text"])}</div>' for c in s.get("cautions", []))
-            ng = g.get("nxt_g")
             if slot in ("0811", "0900") and ng is not None and not (s["band80"][0] <= ng <= s["band80"][1]):
                 cautions += f'<div class="caution">⚠ {NXT_OUT.format(side="위" if ng > s["band80"][1] else "아래")}</div>'
             outcome = ""
@@ -306,7 +330,7 @@ def render() -> None:
                 mark = "✓ 범위 안" if a["in_band80"] else "✗ 범위 밖"
                 dirm = "" if a.get("nxt_dir_match") is None else (" · 장전 방향 일치" if a["nxt_dir_match"] else " · 장전 방향 불일치")
                 outcome = (f'<div class="flow"><span>07:30 예상 <b>{ui.pct(s["H"])}</b></span><span>→</span>'
-                           f'<span>08:11 장전 <b>{ui.pct(g.get("nxt_g"))}</b></span><span>→</span>'
+                           f'<span>08:11 2차 <b>{ui.pct(ng)}</b></span><span>→</span>'
                            f'<span>09:00 실제 <b class="{ui.tone(a["y"])}">{ui.pct(a["y"])}</b></span></div>'
                            f'<div class="tiny"><b style="color:{"#1f8a4c" if a["in_band80"] else "#d63b3b"}">{mark}</b>{dirm}'
                            f' · 실제 금액 {ui.won(r["y_amt"])}</div>')
@@ -316,17 +340,19 @@ def render() -> None:
                            + ("" if a.get("nxt_dir_match") is None else f' · 장전 거래 방향 {"일치" if a["nxt_dir_match"] else "불일치"}') + "</div>")
             parts.append(
                 f'<div class="stock"><div class="row"><span class="name">{html.escape(s["name"])}</span>'
-                f'<span class="mid {ui.tone(s["H"])}">{ui.pct(s["H"])}</span></div>'
+                f'<span class="mid {ui.tone(r["estimate"])}"><small>{point_label}</small> {ui.pct(r["estimate"])}</span></div>'
                 f'<div class="row"><span class="tiny">{r["q"]:,}주 · {ui.man(r["value"], sign=False)}</span>'
-                f'<span class="tiny {ui.tone(r["H_amt"])}">{ui.won(r["H_amt"])}</span></div>'
+                f'<span class="tiny {ui.tone(r["estimate_amt"])}">{ui.won(r["estimate_amt"])}</span></div>'
                 + ui.band_bar(s["band80"][0], s["band80"][1], s["H"], a.get("y") if a else None, span=span)
-                + f'<div class="row"><span class="tiny">범위 {ui.pct(s["band80"][0])} ~ {ui.pct(s["band80"][1])}'
+                + f'<div class="row"><span class="tiny">07:30 범위 {ui.pct(s["band80"][0])} ~ {ui.pct(s["band80"][1])}'
                   f' ({ui.won(r["lo"])} ~ {ui.won(r["hi"])})</span></div>'
                 + f'<div style="margin-top:4px">{ui.grade_chip(g.get("level"), g.get("p")) if slot in ("0811", "0900") else ""} {nxt}</div>'
                 + cautions + _us_line(T, s["code"]) + outcome + "</div>")
         for x_ in acct["excluded"]:
             parts.append(f'<div class="stock"><span class="name">{x_["code"]}</span> <span class="tiny">{x_["q"]}주 · {x_["reason"]}</span></div>')
-        st.markdown(f'<div class="card"><h4>보유 종목별 예상 시가</h4>{ui.legend()}{"".join(parts)}'
+        st.markdown(f'<div class="card"><h4>보유 종목별 예상 시가</h4>{ui.legend()}'
+                    + ('<div class="tiny">등급 옆 %는 전일 종가 대비 장전 상승·하락 방향이 정규장 시가에도 이어질 추정 확률이에요.</div>' if slot != "0730" else "")
+                    + f'{"".join(parts)}'
                     f'<div class="tiny" style="margin-top:8px">종목별 범위 금액을 더한 값은 계좌 범위가 아니에요(종목들이 함께 움직이는 정도가 날마다 달라요).</div></div>',
                     unsafe_allow_html=True)
 

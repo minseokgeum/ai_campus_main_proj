@@ -4,11 +4,12 @@
 // 예상 범위 없음 = 회색 빗금. 업종 → 종목 2단계 squarified treemap, 높이 고정. 칸을 누르면 바텀 시트.
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { gradeText, type DirectionGrade } from "@/lib/trust";
 import { Layer } from "@/components/sheet";
 
 export type MapStock = {
   code: string; name: string; sector: string; value: number; pct: number | null;   // pct null = 예상 범위 없음
-  grade: "높음" | "보통" | "낮음" | null; news: number; l80: number | null; u80: number | null;
+  grade: DirectionGrade | null; p: number | null; nxtG: number | null; after0811: boolean; news: number; l80: number | null; u80: number | null;
 };
 
 export const RULES = {
@@ -95,7 +96,7 @@ function sectorCells(stocks: MapStock[], box: Box, sector: string): Cell[] {
 
 const detailHref = (code: string) => `/mine/${code}`;   // 종목 상세
 
-/** idle: 예상이 아직 없을 때(07:30 전 '07:30 공개', 주말 '쉬는 날') 칸에 % 대신 넣는 글(피그마 465:8339 · 465:8516). 크기만 보유 금액 */
+/** idle: 예상이 아직 없을 때(06:30 전 '06:30 공개', 주말 '쉬는 날') 칸에 % 대신 넣는 글(피그마 465:8339 · 465:8516). 크기만 보유 금액 */
 export function TreeMap({ stocks, idle }: { stocks: MapStock[]; idle?: string }) {
   const [open, setOpen] = useState<Cell | null>(null);
   useEffect(() => {
@@ -172,15 +173,14 @@ function Tile({ c, pw, ph, idle, onOpen }: { c: Cell; pw: number; ph: number; id
   );
 }
 
-const DOTS: Record<string, string> = { 높음: "●●●", 보통: "●●○", 낮음: "●○○" };
 
 function StockCard({ s, href, big, idle }: { s: MapStock; href: string; big?: boolean; idle?: string }) {
   const col = s.pct == null ? "#8a9598" : s.pct > 0 ? "#d35d66" : s.pct < 0 ? "#4c6fc3" : "#8a9598";
   return (
     <div className={`tcard ${big ? "big" : ""}`}>
       <div className="tc1"><b>{s.name}</b><span style={{ color: idle ? "#8a9598" : col }}>{idle ?? (s.pct == null ? "범위 없음" : pctT(s.pct))}</span></div>
-      <p className="fine">{idle ? (idle === "쉬는 날" ? "오늘은 장이 열리지 않아요. 다음 거래일 07:30에 예상이 채워져요." : "오늘 예상 범위는 07:30에 채워져요.") : s.pct == null ? "코스닥·ETF·해외 주식처럼 서비스 대상 밖이라 예상 범위를 계산하지 않아요."
-        : `예상 범위 ${s.l80 != null ? pctT(s.l80) : "—"} ~ ${s.u80 != null ? pctT(s.u80) : "—"} · 믿을 정도 ${s.grade ? `${s.grade} ${DOTS[s.grade]}` : "08:11에 나와요"}`}</p>
+      <p className="fine">{idle ? (idle === "쉬는 날" ? "오늘은 장이 열리지 않아요. 다음 거래일 06:30에 예상이 채워져요." : "오늘 예상 범위는 06:30에 채워져요.") : s.pct == null ? "코스닥·ETF·해외 주식처럼 서비스 대상 밖이라 예상 범위를 계산하지 않아요."
+        : `06:30 예상 범위 ${s.l80 != null ? pctT(s.l80) : "—"} ~ ${s.u80 != null ? pctT(s.u80) : "—"} · ${gradeText(s.grade, s.p, s.nxtG, s.after0811)}`}</p>
       <div className="tc2">
         <Link href={`/news?tab=mine&c=${s.code}`}>밤사이 소식 {s.news}건 ›</Link>
         <Link href={`/night?open=${s.code}`}>밤사이 예상 ›</Link>
@@ -195,7 +195,7 @@ export function MapLegend({ idle }: { idle?: boolean }) {
   return (
     <>
       <div className="tleg"><span>−{RULES.range * 100}%</span><span className="sw">{SCALE.map((c) => <i key={c} style={{ background: c }} />)}</span><span>+{RULES.range * 100}%</span><i className="sep" /><span>크기 = 보유 금액</span></div>
-      <div className="tleg"><span className="ti"><i className="dash" />흐릴수록 방향이 불확실해요</span><i className="sep" /><span className="ti"><em>소식</em>밤사이 소식 수</span><i className="sep" /><span className="ti"><i className="hatch" />범위 없음</span></div>
+      <div className="tleg"><span className="ti"><i className="dash" />흐릴수록 방향 유지 확률이 낮아요</span><i className="sep" /><span className="ti"><em>소식</em>밤사이 소식 수</span><i className="sep" /><span className="ti"><i className="hatch" />범위 없음</span></div>
     </>
   );
 }

@@ -10,6 +10,7 @@ data/news/<T>.json           사건 묶음·관계 경로·시장 반응·AI 문
 from __future__ import annotations
 
 import json
+import math
 import os
 from pathlib import Path
 
@@ -19,6 +20,12 @@ import streamlit as st
 DATA = Path(__file__).resolve().parents[1] / "data"
 RESEARCH = Path(os.environ.get("OVERNIGHT_RESEARCH") or Path(__file__).resolve().parents[2] / "model").expanduser()   # 노란띠 엔진 폴더(다른 위치면 환경변수로)
 WEEKDAY = "월화수목금토일"
+
+
+def nxt_gap(stock: dict) -> float | None:
+    """08:10까지의 관측 등락률. 이전 카드에는 등급 안에만 저장돼 있다."""
+    gap = stock.get("nxt_g", (stock.get("grade_0811") or {}).get("nxt_g"))
+    return gap if isinstance(gap, (int, float)) and math.isfinite(gap) else None
 
 
 def day_label(T: str) -> str:
@@ -249,7 +256,7 @@ def _open_rows(after_T: str) -> pd.DataFrame:
                 continue
             lo, hi = s["band80"]
             g = s.get("grade_0811") or {}
-            ng = g.get("nxt_g")
+            ng = nxt_gap(s)
             rows.append(dict(T=T, code=s["code"], name=s["name"], x=x, H=s["H"], L80=lo, U80=hi, y=y, in80=lo <= y <= hi, up=y > hi, down=y < lo,
                              grade=g.get("level"), p=g.get("p"), nxt_g=ng,
                              dir_match=None if ng is None or ng == 0 or y == 0 else (ng > 0) == (y > 0),

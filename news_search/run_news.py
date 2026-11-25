@@ -9,7 +9,7 @@
   sync     : news_to_db만(기사 한국어 한 줄·요약을 DB로)
   collect  : news_collect 연속 수집(구글 뉴스 RSS 검색 → DB). 멈출 때까지 돈다(2026-11-21 맥에서 서버로 옮김)
   relation : news_company_relation(종목–해외 상대 관계 한 문장). 검색어 연결표(news.term_links)가 바뀐 짝만 새로 만든다 → news_to_db. 연결표를 다시 올렸을 때 손으로
-  reason   : news_company_reason(종목마다 밤사이 기사 한 문장, 관계사 기사면 관계 문장) 지금 브리핑 범위로 → news_to_db. cron 06:25에 시작해 그날 07:30 아침 카드가 들어오면 바로 돈다(2026-11-23, 그전엔 07:00).
+  reason   : news_company_reason(종목마다 밤사이 기사 한 문장, 관계사 기사면 관계 문장) 지금 브리핑 범위로 → news_to_db. cron 06:25에 시작해 그날 아침 첫 카드(06:10 계산 · 06:30 공개, DB 칸 이름 0730)가 들어오면 바로 돈다(2026-11-23, 그전엔 07:00).
              summaries처럼 날짜를 붙이면 그날 것을 다시 만든다
   events   : company_events(다가오는 일정: DART 공시 일정·이어진 미국 기업 실적·미국 경제 지표 → DB news.company_events). cron 매일 06:00(2026-11-23)
 extract·track·ko·collect는 서버 systemd가 계속 켜 두고(꺼지면 다시 켬), summaries·sync는 cron이 부른다.
@@ -68,7 +68,7 @@ def brief_window(now=None, day=None):
 
 
 def wait_card(t, minutes=20):
-    """종목 이유는 그날 07:30 아침 카드(model.card_stocks, 보통 06:27쯤 들어옴)의 예상 방향을 쓴다.
+    """종목 이유는 그날 아침 첫 카드(model.card_stocks 칸 이름 0730, 06:10 계산 · 06:30 공개라 보통 06:21쯤 들어옴, 2026-11-25부터)의 예상 방향을 쓴다.
     cron이 06:25에 부르면 카드가 들어올 때까지 30초마다 확인하고, minutes분 안에 안 오면 그냥 돈다(예상 방향 없이). 2026-11-23: 07:00 → 카드 직후로 앞당김"""
     import sqlalchemy as sa
     from pathlib import Path
@@ -87,10 +87,10 @@ def wait_card(t, minutes=20):
             with engine.connect() as con:
                 n = con.execute(sa.text("select count(*) from model.card_stocks where t = :t and slot = '0730'"), {'t': t}).scalar()
             if n:
-                print(f'{t} 07:30 카드 확인({n}종목, {i * 30}초 기다림)', flush=True)
+                print(f'{t} 아침 첫 카드 확인({n}종목, {i * 30}초 기다림)', flush=True)
                 return
             time.sleep(30)
-        print(f'{t} 07:30 카드가 {minutes}분 안에 안 들어와 예상 방향 없이 돈다', flush=True)
+        print(f'{t} 아침 첫 카드가 {minutes}분 안에 안 들어와 예상 방향 없이 돈다', flush=True)
     finally:
         engine.dispose()
 

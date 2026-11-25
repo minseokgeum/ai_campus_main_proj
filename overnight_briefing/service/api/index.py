@@ -151,7 +151,7 @@ def _nxt_hist(T: str, codes: list[str]) -> dict[str, list[int]]:
             if not s:
                 continue
             out[c][1] += 1
-            if ((s.get("grade") or {}).get("g")) is not None:
+            if s.get("nxt_g") is not None:
                 out[c][0] += 1
     return out
 

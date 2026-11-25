@@ -1,4 +1,4 @@
-// 밤사이 시가예측(피그마 밤사이 v4: 보유 448:6559, 장 후 410:6525, 07:30 전 449:2, 주말 461:8369, 보유 없음 449:908, 관심 없음 462:8056,
+// 밤사이 시가예측(피그마 밤사이 v4: 보유 448:6559, 장 후 410:6525, 06:30 전 449:2, 주말 461:8369, 보유 없음 449:908, 관심 없음 462:8056,
 // 월요일 563:697, 연휴 다음 날 461:7929, 미국 휴장 461:7489, 일부 못 받아옴 449:469, 스크롤 448:7077, 필터 결과 462:8306·462:8745).
 // 종목 창·수량 바꾸기는 components/nightboard.tsx(목록 위로 반쯤 올라오는 창). 서버 DB model 영역의 카드·채점을 내 수량으로 계산한다.
 import Link from "next/link";
@@ -16,7 +16,7 @@ import { portfolio } from "@/lib/portfolio";
 import { dayModel, isoDay, modelDates, night as nightOf } from "@/lib/model";
 import { account, buildRows, bySector, nightHref, ordered, P, SORT_LABEL, type NQ, type Phase, type Row } from "@/lib/night";
 import { byStock, foldStories, groupByVerdict, impactFor, nightNews, verdictsOf } from "@/lib/news";
-import { addDays, isWeekend, kstNow, minutesTo0730, weekday } from "@/lib/calendar";
+import { addDays, isWeekend, kstNow, minutesToOpen, weekday } from "@/lib/calendar";
 import { afterHoliday, checkTime, closedName, closedReason, etToKstHour, marketDay, nameIra, nextOpenDay, usNight } from "@/lib/marketdays";
 import { dateLabel, pct } from "@/lib/format";
 import { appNow } from "@/lib/clock";
@@ -78,7 +78,7 @@ function dayInfo(t: string, checkedAt: string | null = null) {
 const toB = (r: Row, nNews: number, avg: number | null = null, v?: { neg: number; pos: number; neu: number }): BRow => ({
   code: r.code, name: r.name, sector: r.sector, tier: r.tier, kind: r.kind, side: r.side, qty: r.qty,
   pc: r.s?.pc ?? null, h: r.s?.h ?? null, l80: r.s?.l80 ?? null, u80: r.s?.u80 ?? null, l90: r.s?.l90 ?? null, u90: r.s?.u90 ?? null,
-  grade: r.s?.grade ?? null, gap: r.s?.gap ?? null, hb: r.s?.hb ?? null, lb: r.s?.lb ?? null, ub: r.s?.ub ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
+  grade: r.s?.grade ?? null, p: r.s?.p ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
 });
 
 export default async function Night({ searchParams }: { searchParams: Promise<Q> }) {
@@ -88,10 +88,10 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   const nowDate = await appNow();
   const now = kstNow(nowDate);
   const today = now.ymd;
-  const before0730 = now.hour < 7 || (now.hour === 7 && now.minute < 30);
+  const before0630 = now.hour < 6 || (now.hour === 6 && now.minute < 30);
   const pick = sp.d && dates.includes(sp.d) ? sp.d : undefined;
 
-  // 날짜를 고르지 않았을 때: 주말·휴장일 / 07:30 전(오늘 카드 공개 전) 화면
+  // 날짜를 고르지 않았을 때: 주말·휴장일 / 06:30 전(오늘 카드 공개 전) 화면
   if (!pick && !sp.open) {
     const last = dates[0];
     const hol = closedName(today);   // 평일 휴장일(special_days.csv)
@@ -101,29 +101,29 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
       return (
         <Shell>
           <DateLine label={dateLabel(isoDay(today))} sub={hol ? `오늘은 장이 열리지 않아요 · ${hol[0] === "공휴일" ? "공휴일" : "증시 휴장"} · ${hol[1]}` : "오늘은 장이 열리지 않아요"} prev={last} />
-          <WaitState kicker={hol ? `${closedReason(today)} 장이 열리지 않아요` : "주말이라 장이 열리지 않아요"} title={`다음 예상 ${dateLabel(isoDay(next))} 07:30`}
+          <WaitState kicker={hol ? `${closedReason(today)} 장이 열리지 않아요` : "주말이라 장이 열리지 않아요"} title={`다음 예상 ${dateLabel(isoDay(next))} 06:30`}
             body={hol ? `${dateLabel(isoDay(next))} 아침에는 ${dateLabel(isoDay(last ?? today))} 밤 야간 거래 결과를 반영해요.` : `${wd(next)}요일 아침에는 ${wd(last ?? today)}요일 밤 야간 거래 결과를 반영해요.`}
             link={last ? { href: `/night?d=${last}`, label: `${dateLabel(isoDay(last)).replace(/ \(.\)/, "")} 결과 보기` } : undefined}
             night={prevNight} nightNote={`${wd(last ?? today)}요일 밤 야간 거래 결과 · ${wd(addDays(last ?? today, 1))}요일 06:00 마감`} />
         </Shell>
       );
     }
-    if (last !== today || before0730) {
+    if (last !== today || before0630) {
       const D = now.hour >= 18 ? today : addDays(today, -1);
       const nightNow = await nightOf(D).catch(() => null);
-      const mins = minutesTo0730(today, nowDate);
+      const mins = minutesToOpen(today, nowDate);
       const closed = now.hour >= 6;
       const hm = `${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")}`;
-      const late = !before0730;   // 07:30이 지났는데 오늘 카드가 없음 = 늦어지는 중(배포용 변경 기록 08, 피그마 784:1573)
+      const late = !before0630;   // 06:30이 지났는데 오늘 카드가 없음 = 늦어지는 중(배포용 변경 기록 08, 피그마 784:1573)
       return (
         <Shell>
-          <DateLine label={dateLabel(isoDay(today))} sub={late ? `${hm} · 늦어지는 중 · 준비되면 알려드려요` : `${hm} · 준비 중 · 07:30에 공개돼요`} prev={last}
+          <DateLine label={dateLabel(isoDay(today))} sub={late ? `${hm} · 늦어지는 중 · 준비되면 알려드려요` : `${hm} · 준비 중 · 06:30에 공개돼요`} prev={last}
             right={<div className="pp"><span className="on">장전</span><span className="dis">장후</span></div>} />
           <ProgressSheet stage={closed ? 1 : 0} details={progressDetails(closed ? 1 : 0, { 높음: 0, 보통: 0, 낮음: 0, 대상아님: 0 }, null, dayInfo(today))} chk={dayInfo(today).next}
-            slotTitle={closed ? "야간 거래 마감 · 06:00" : "야간 거래 진행 중"} slotSub={late ? "마감 데이터가 늦게 들어와 계산이 늦어지고 있어요" : closed ? "예상 범위를 계산했어요 · 07:30에 공개" : "마감되면 예상 범위를 계산해요"} />
+            slotTitle={closed ? "야간 거래 마감 · 06:00" : "야간 거래 진행 중"} slotSub={late ? "마감 데이터가 늦게 들어와 계산이 늦어지고 있어요" : closed ? "예상 범위를 계산했어요 · 06:30에 공개" : "마감되면 예상 범위를 계산해요"} />
           {pf.holdings.length ? (
             <WaitState kicker={late ? "오늘 예상이 조금 늦어지고 있어요" : "오늘 시가 예상을 준비하고 있어요"} title={late ? "준비 중" : mins > 0 ? `${mins >= 60 ? `${Math.floor(mins / 60)}시간 ` : ""}${mins % 60}분 후 공개` : "곧 공개"}
-              body={late ? "야간 거래 데이터가 늦게 들어와 07:30에 공개하지 못했어요. 준비되면 알림으로 알려드릴게요." : "야간 거래가 06:00에 끝나서 내 종목의 오늘 예상 시가 범위를 계산하고 있어요."} link={last ? { href: `/night?d=${last}`, label: `${last === addDays(today, -1) ? "어제" : "지난 거래일"}(${Number(last.slice(4, 6))}/${Number(last.slice(6))}) 기록 보기` } : undefined}
+              body={late ? "야간 거래 데이터가 늦게 들어와 06:30에 공개하지 못했어요. 준비되면 알림으로 알려드릴게요." : "야간 거래가 06:00에 끝나서 내 종목의 오늘 예상 시가 범위를 계산하고 있어요."} link={last ? { href: `/night?d=${last}`, label: `${last === addDays(today, -1) ? "어제" : "지난 거래일"}(${Number(last.slice(4, 6))}/${Number(last.slice(6))}) 기록 보기` } : undefined}
               night={nightNow} nightNote={closed ? "어젯밤 18:00 ~ 오늘 06:00 · 어제 마감 대비" : `어젯밤 18:00부터 · ${hm} 현재(진행 중)`}
               seg={<><Link href="/night" className={sp.v !== "watch" ? "on" : ""}>보유 {pf.holdings.length}</Link><Link href="/night?v=watch" className={sp.v === "watch" ? "on" : ""}>관심 {pf.watch.length}</Link></>}
               after={<SkeletonList title={sp.v === "watch" ? `관심 ${pf.watch.length}종목` : `보유 ${pf.holdings.length}종목`} n={sp.v === "watch" ? pf.watch.length : pf.holdings.length} late={late} />} />
@@ -148,7 +148,9 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   const { articles } = await nightNews(isoDay(m.t));
   const news = byStock(articles, [...new Set([...items.map((x) => x.code), ...holdItems.map((x) => x.code)])]);
   const i = dates.indexOf(m.t);
-  const graded = card.slot === "0811" && (marketDay(m.t)?.premarket ?? true);   // 개장 전 거래가 없는 날(수능일·새해 첫날)의 08:11 카드는 등급이 없어 07:30과 같다
+  const graded = card.slot === "0811" && (marketDay(m.t)?.premarket ?? true);   // 개장 전 거래가 없는 날(수능일·새해 첫날)의 08:11 카드는 등급이 없어 06:30과 같다
+  const after0811 = m.t < today || now.hour * 100 + now.minute >= 811;
+  const hasUpdate = holdRows.some((r) => r.s?.nxtG != null);
   const noGrade = graded && ![...m.stocks.values()].some((s) => s.grade);   // 08:11 카드인데 그날 장전 거래 자료가 없어 믿을 정도를 못 낸 날
   const grades = { 높음: 0, 보통: 0, 낮음: 0, 대상아님: holdRows.filter((r) => r.kind === "notservice").length };
   for (const r of holdRows) if (r.s?.grade) grades[r.s.grade]++;
@@ -159,7 +161,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
     return (
       <Shell>
         <DateLine label={dateLabel(isoDay(m.t))} sub={card.reasonText ?? "오늘은 예상 범위를 내지 않았어요"} prev={dates[i + 1]} next={dates[i - 1]} />
-        <WaitState kicker={card.status === "holiday" ? "휴장일이라 장이 열리지 않아요" : "오늘은 예상 범위를 내지 않았어요"} title={card.status === "holiday" ? `다음 예상 ${dateLabel(isoDay(nextOpenDay(m.t)))} 07:30` : "예상 범위 없음"}
+        <WaitState kicker={card.status === "holiday" ? "휴장일이라 장이 열리지 않아요" : "오늘은 예상 범위를 내지 않았어요"} title={card.status === "holiday" ? `다음 예상 ${dateLabel(isoDay(nextOpenDay(m.t)))} 06:30` : "예상 범위 없음"}
           body={card.reasonText ?? ""} link={dates[i + 1] ? { href: `/night?d=${dates[i + 1]}`, label: "이전 거래일 결과 보기" } : undefined} night={m.night} nightNote="어젯밤 18:00 ~ 오늘 06:00 · 어제 마감 대비" />
       </Shell>
     );
@@ -177,14 +179,14 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   const partial = holdRows.filter((r) => r.kind === "nocalc" && !(phase === "post" && r.s)).length;
   const md = marketDay(m.t), di = dayInfo(m.t, m.check?.checkedAt ?? null), chk = di.chk, next = di.next;   // 그날 개장 시각·채점 시각(수능일·새해 첫날은 10:00 개장, 08:11 업데이트 없음)
   const timeLine = phase === "post" ? `${chk} 기준 · 장 시작 후 · 채점 완료`
-    : graded ? `08:11 기준 · 장 시작 전 · 다음 갱신 ${next}` : `07:30 기준 · 장 시작 전 · 다음 갱신 ${di.premarket ? "08:11" : next}`;
+    : graded ? `08:11 기준 · 장 시작 전 · 다음 갱신 ${next}` : `06:30 기준 · 장 시작 전 · 다음 갱신 ${di.premarket ? "08:11" : next}`;
   const stage = (phase === "post" || graded ? 3 : 2) as 2 | 3;
   const progress = phase === "post"
     ? { t: `${chk} 실제 시가로 채점 완료`, s: `${nScored}종목 중 ${nIn}종목이 범위 안에서 시작 · 기록 저장됨` }
-    : !di.premarket ? { t: "07:30 예상 범위 공개", s: `개장 전 거래가 없는 날이라 08:11 업데이트 없음 · ${next} 채점` }
-    : noGrade ? { t: "08:11 믿을 정도를 내지 못했어요", s: `그날 장전 거래 자료가 없어요 · ${next} 채점` }
-      : graded ? { t: "08:11 믿을 정도 반영 완료", s: `높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음} · ${next} 채점` }
-      : { t: "07:30 예상 범위 공개", s: "다음 08:11 장전 거래로 믿을 정도 반영" };
+    : !di.premarket ? { t: "06:30 예상 범위 공개", s: `개장 전 거래가 없는 날이라 08:11 업데이트 없음 · ${next} 채점` }
+    : noGrade ? { t: "08:11 방향 등급 미산출", s: `산출된 방향 등급이 없어요 · ${next} 채점` }
+      : graded ? { t: "08:11 방향 유지 등급", s: `높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음} · ${next} 채점` }
+      : { t: "06:30 예상 범위 공개", s: "08:11에 장전 가격과 방향 등급 공개" };
   const x = m.night?.last ?? card.x;
   const banners: ("mon" | "hol" | "us" | "nonight")[] = [];
   if (afterHoliday(m.t)) banners.push("hol");
@@ -215,7 +217,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
     title: phase === "post" ? "종목별 오늘 결과" : "종목별 오늘 예상",
     note: phase === "post" ? `${chk} 채점 · 범위 안 ${ranged.filter((r) => r.c?.in80).length}/${ranged.length}` : `${view === "hold" ? "보유" : "관심"} ${all.length}종목${all.length > 5 ? " · 옆으로 넘겨 보기 ›" : ""}`,
     rows: bars.map((r) => ({ code: r.code, name: r.name, l: r.kind === "notservice" ? null : r.s?.l80 ?? null, u: r.kind === "notservice" ? null : r.s?.u80 ?? null,
-      line: r.s ? (r.s.hb ?? r.s.h) : null, open: r.c?.y ?? null, in80: r.c?.in80 ?? null })),
+      line: r.s ? (r.s.nxtG ?? r.s.h) : null, open: r.c?.y ?? null, in80: r.c?.in80 ?? null })),
   } : null;
   // 종목 창 '밤사이 소식' 창 안 기사 줄(변경 기록 29): 뉴스 브리핑과 같은 판정 순서(부정 → 긍정 → 엇갈림 → 중립 → 표시 없음, 안에서는 최신 순),
   // 같은 소식은 한 줄로 접고 '같은 소식 n건'만 적는다. 20줄까지, 나머지는 뉴스 브리핑에서. 기사 상세에서 뒤로 가면 이 종목 창으로
@@ -231,7 +233,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
     </>;
   }
   const fTitle = f === "out" ? { title: `범위 밖 종목 ${nOut}`, sub: phase === "post" ? "실제 시가가 예상 범위를 벗어난 종목이에요" : "장전 거래 가격이 예상 범위를 벗어난 종목이에요" }
-    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nLow}`, sub: "장전 거래가 보합 근처라 오를지 내릴지 바뀔 수 있어요" } : null;
+    : f === "low" ? { title: `방향 유지 등급 낮은 종목 ${nLow}`, sub: "전일 종가 대비 장전 방향이 시가까지 이어질 추정 확률이 75% 미만이에요" } : null;
 
   return (
     <Shell>
@@ -248,10 +250,10 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
 
       <ProgressSheet stage={stage} details={progressDetails(stage, grades, m.check ? { scored: nScored, inN: nIn } : null, di)} chk={m.check ? chk : next} slotTitle={progress.t} slotSub={progress.s} />
 
-      <NightBoard t={m.t} phase={phase} view={view} sortLabel={SORT_LABEL(sp.o)} initialOpen={sp.open}
+      <NightBoard after0811={after0811} t={m.t} phase={phase} view={view} sortLabel={SORT_LABEL(sp.o)} initialOpen={sp.open}
         chart={chart} chartRows={bars.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))} newsBy={newsBy}
         rows={rows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))} holdRows={holdRows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))}
-        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : "오늘 시가에 예상되는 내 주식 변화"}
+        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : graded && hasUpdate ? "오늘 시가 예상 · 08:11 장전 가격 반영" : "오늘 시가에 예상되는 내 주식 변화"}
         accountHead={<><MaskToggle /><SectorSheet rows={holdRows} acct={acct} count={pf.holdings.length} label={label} /></>}
         accountBelow={<>
           {sectors.length ? (
@@ -308,16 +310,16 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
                 {sectors.map((g) => <Link key={g.sector} href={nightHref(base, { f: `s:${g.sector}` })} className={f === `s:${g.sector}` ? "on" : ""}>{g.sector} {g.list.length}</Link>)}
               </div>
               {f === "t3" || f === "t2" ? <div className="quiet">{f === "t3" ? "서비스 대상(코스피 전체 + 코스닥150) 밖의 종목은 예상 시가를 계산하지 않아요." : "모델을 설계할 때 쓰지 않은 종목이에요. 같은 규칙으로 계산했어요."} <NotServiceHelp label="자세히" /></div> : null}
-              {phase === "pre" && graded && !noGrade ? <p className="gline"><span className="tq">믿을 정도<GradeHelp /></span> 높음 {grades.높음} · 보통 {grades.보통} · 낮음 {grades.낮음}</p> : null}
+              {phase === "pre" && graded && !noGrade ? <p className="gline"><span className="tq">방향 유지 등급<GradeHelp /></span> 높음 {grades.높음} · 보통 {grades.보통} · 낮음 {grades.낮음}</p> : null}
               {!rows.length ? <p className="state">조건에 맞는 종목이 없어요. <Link href={nightHref(base, { f: undefined })} className="addlink">필터 해제</Link></p> : null}
             </>
           )}
         </>}
         attention={fTitle ?? (nAtt ? (phase === "post"
           ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 — 눌러서 자세히 보세요" }
-          : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `07:30 예상과 크게 달라진 종목 ${nOut} — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
+          : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `06:30 예상과 크게 달라진 종목 ${nOut} — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
         rest={{ title: nAtt ? `나머지 ${rows.length - nAtt}종목` : `${view === "hold" ? "보유" : "관심"} 종목`, sub: "누르면 아래에서 자세히 열려요" }}
-        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래로 예상을 한 번 더 계산해요(2차 예측). 07:30 예상과 크게 달라진 종목은 위로 올려 펼쳐 둬요. 믿을 정도는 8시 장전 흐름이 9시 시가까지 이어질 가능성이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
+        footer={items.length ? <p className="fine">06:30 노란 띠는 실제 시가가 들어올 것으로 예상한 80% 범위예요. 08:11에는 08:10까지 확인한 마지막 NXT 가격을 2차 예상 시가로 써요. 장전 가격 자료가 없는 종목은 06:30 예상을 유지해요. 등급 옆 %는 전일 종가 대비 장전 등락 방향이 시가까지 이어질 추정 확률이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
       />
     </Shell>
   );

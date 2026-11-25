@@ -5,6 +5,14 @@ export const toneP = (v, d = 1) => tone(v == null ? v : Math.round(v * 10 ** (d 
 const sign = (v) => (v > 0 ? "+" : v < 0 ? "−" : "");
 export const pct = (v, d = 1) => (v == null ? "–" : sign(round(v * 100, d)) + Math.abs(v * 100).toFixed(d) + "%");
 export const pct2 = (v) => pct(v, 2);
+export function gradeText(g) {
+  if (!Number.isFinite(g?.p) || g.p < 0 || g.p > 1) return g?.level ?? "등급 없음";
+  // 기존 카드는 정밀한 p로 등급을 나눈 뒤 소수 세 자리까지 저장했다.
+  if (g.level === "낮음" && g.p === 0.75) return "낮음 (75% 미만)";
+  if (g.level === "보통" && g.p === 0.9) return "보통 (90% 미만)";
+  if (g.p === 1) return `${g.level} (99.9% 이상)`;
+  return `${g.level} (${Number((100 * g.p).toFixed(1))}%)`;
+}
 const round = (x, d) => Math.round(x * 10 ** d) / 10 ** d;
 /** 11/20: 금액 가리기(지하철 등). 켜면 원 단위 금액만 ••••로, %는 그대로 */
 export const MASK = { on: false };

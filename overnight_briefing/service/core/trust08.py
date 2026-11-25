@@ -1,19 +1,23 @@
-"""08:11 해석 규칙(E107) — 정본은 overnight_briefing/model/workbench/trust_0811.py. 서비스는 따로 배포되어 같은 식을 여기 둔다.
-숫자를 바꾸면 정본과 web/lib/trust.ts를 함께 바꾼다(tests/smoke_front.py가 정본과 같은지 확인)."""
+"""장전 마지막 체결가를 08:11 예상으로 표시한다. 노란띠는 07:30 기준으로 유지한다."""
 import math
 
-CUTS, W, K = (0.5, 1.0), 0.9, 0.632
+
+def _num(v):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
 
 
 def t08(H, L80, U80, g):
-    """07:30 예상 믿을 정도(trust)·08:11 보정 예상(Hb)·보정 범위(adj). 장전 거래(g)가 없으면 None."""
-    try:
-        H, L80, U80, g = float(H), float(L80), float(U80), float(g)
-    except (TypeError, ValueError):
+    """장전 관측치와 07:30 예상의 거리. 등급·범위 결측과 무관하게 유효한 관측치를 표시한다."""
+    g = _num(g)
+    if g is None:
         return None
-    if not all(map(math.isfinite, (H, L80, U80, g))) or U80 <= L80:
-        return None
-    hw = (U80 - L80) / 2
-    z = abs(g - H) / hw
-    hb = H + W * (g - H)
-    return dict(trust="높음" if z <= CUTS[0] else "보통" if z <= CUTS[1] else "낮음", Hb=round(hb, 6), adj=[round(hb - K * hw, 6), round(hb + K * hw, 6)])
+    H, L80, U80 = map(_num, (H, L80, U80))
+    distance = None
+    if None not in (H, L80, U80) and U80 > L80:
+        z = abs(g - H) / ((U80 - L80) / 2)
+        distance = "높음" if z <= 0.5 else "보통" if z <= 1 else "낮음"
+    return dict(trust=distance, Hb=g, adj=None)

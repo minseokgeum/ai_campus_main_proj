@@ -1,4 +1,4 @@
-// 화면의 "지금" 시각. 시연 계정(user1~10, guest, 사람마다 만드는 체험 계정 guest_…)은 피그마의 시간대별 상태(07:30 전·장 전·장 후·주말·야간 진행 중·월요일)를
+// 화면의 "지금" 시각. 시연 계정(user1~10, guest, 사람마다 만드는 체험 계정 guest_…)은 피그마의 시간대별 상태(06:30 전·장 전·장 후·주말·야간 진행 중·월요일)를
 // 지난 시각으로 돌려 볼 수 있다(쿠키 demo_at, /demo-time에서 고름). 지금보다 뒤 시각은 받지 않는다(공개 전 예상이 보이지 않게).
 import "server-only";
 import { cache } from "react";
@@ -67,8 +67,8 @@ export async function demoPresets(): Promise<{ key: string; label: string; sub: 
     const d = days.find((x) => test(x) && past(x, h));
     if (d) out.push({ key, label, sub, at: `${d}${String(h).padStart(4, "0")}` });
   };
-  pick("early", "07:30 전 · 준비 중", "야간장이 끝나고 예상 공개 전(06:00)", 600);
-  pick("pre", "장 전 · 08:11 믿을 정도 반영", "장전 거래가 반영된 때(08:11)", 811);
+  pick("early", "06:30 전 · 준비 중", "야간장이 끝나고 예상 공개 전(06:00)", 600);
+  pick("pre", "장 전 · 08:11 장전 가격·방향 등급", "장전 거래가 반영된 때(08:11)", 811);
   const chk = await checkMinutes();
   const dPost = days.find((x) => past(x, Number(checkAt(x, chk)[1])));
   if (dPost) { const [lab, val] = checkAt(dPost, chk); out.push({ key: "post", label: "장 후 · 채점", sub: `채점이 끝난 때(${lab})`, at: `${dPost}${val}` }); }

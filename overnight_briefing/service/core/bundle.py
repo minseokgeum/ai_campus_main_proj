@@ -186,6 +186,7 @@ def _universe(c8: dict, c7: dict) -> dict:
     out = {}
     for s in c8["stocks"]:
         g = s.get("grade_0811") or {}
+        nxt = _f(s.get("nxt_g", g.get("nxt_g")))
         a = after8.get(s["code"]) or {}
         sg = segmap.get(s["code"], ("", ""))
         out[s["code"]] = dict(
@@ -193,8 +194,8 @@ def _universe(c8: dict, c7: dict) -> dict:
             b80=[_f(v) for v in s["band80"]], b90=[_f(v) for v in s["band90"]], in0730=s["code"] in in7,
             cautions=[dict(kind=c["kind"], title=STOCK_CAUTION.get(c["kind"], ("확인할 점", c.get("text", "")))[0],
                            body=STOCK_CAUTION.get(c["kind"], ("", c.get("text", "")))[1]) for c in s.get("cautions", [])],
-            grade=dict(level=g.get("level"), p=_f(g.get("p"), 3), g=_f(g.get("nxt_g"))) if g.get("level") else None,   # 방향 유지(카드 grade_0811)
-            t08=_t08(s["H"], s["band80"][0], s["band80"][1], g.get("nxt_g")),                                          # 07:30 예상 믿을 정도·08:11 보정(E107)
+            nxt_g=nxt, grade=dict(level=g["level"], p=_f(g.get("p"), 3), g=nxt) if g.get("level") else None,
+            t08=_t08(s["H"], *s["band80"], nxt),
             y=_f(a.get("y")), inb=a.get("in_band80"), dir=a.get("nxt_dir_match"), seg=sg[0], group=sg[1])
     return out
 

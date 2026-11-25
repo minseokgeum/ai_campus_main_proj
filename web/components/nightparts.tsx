@@ -15,11 +15,11 @@ export function progressDetails(stage: number, grades: { 높음: number; 보통:
   day: { openAt: string; chk: string; next: string; premarket: boolean } = { openAt: "09:00", chk: "09:05", next: "09:00 개장 직후", premarket: true }): [string, string, boolean][] {
   return [
     ["06:00 야간 마감", "야간선물 거래가 06:00에 끝나면 지난밤 움직임으로 종목별 예상 시가를 계산해요.", stage > 0],
-    ["07:30 예상 범위 고정", "지난 비슷한 아침의 기록으로 종목마다 예상 범위(노란 띠)를 정해 공개해요.", stage > 1],
-    !day.premarket ? ["08:11 믿을 정도 확인", `오늘은 개장 전 거래(NXT)가 없는 날이라 08:11 업데이트가 없어요. ${day.openAt} 시가가 나오면 바로 채점해요.`, stage > 2]
-      : ["08:11 믿을 정도 확인", stage > 2 ? `장 시작 전 거래(NXT 08:00~08:10)를 보고 높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음}${grades.대상아님 ? ` · 서비스 대상 아님 ${grades.대상아님}` : ""}`
-      : "장 시작 전 거래(NXT 08:00~08:10)를 보고 종목마다 믿을 정도를 정해요.", stage > 2],
-    [`${check ? day.chk : day.next} 실제 시가로 채점`, check ? `${check.scored}종목 중 ${check.inN}종목이 범위 안에서 시작했어요.` : `${day.openAt} 시가가 나오면 바로 예상 범위 안에 들었는지 채점해요.`, !!check],
+    ["06:30 예상 범위 고정", "지난 비슷한 아침의 기록으로 종목마다 예상 범위(노란 띠)를 정해 공개해요.", stage > 1],
+    !day.premarket ? ["08:11 장전 가격·방향 등급", `오늘은 개장 전 거래(NXT)가 없는 날이라 08:11 업데이트가 없어요. ${day.openAt} 시가가 나오면 바로 채점해요.`, stage > 2]
+      : ["08:11 장전 가격·방향 등급", stage > 2 ? `장전 등락 방향이 시가까지 이어질 확률 · 높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음}${grades.대상아님 ? ` · 서비스 대상 아님 ${grades.대상아님}` : ""}`
+      : "08:10까지 확인한 NXT 가격을 2차 예상으로 쓰고, 같은 방향으로 개장할 확률을 등급으로 표시해요.", stage > 2],
+    [`${check ? day.chk : day.next} 실제 시가로 채점`, check ? `${check.scored}종목 중 ${check.inN}종목이 06:30 범위 안에서 시작했어요.` : `${day.openAt} 시가가 나오면 바로 예상 범위 안에 들었는지 채점해요.`, !!check],
   ];
 }
 
@@ -75,20 +75,20 @@ export function Banner({ kind, n, total, title, body }: { kind: "mon" | "hol" | 
   );
 }
 
-/** 07:30 전 목록 자리(피그마 449:2): 종목 줄 대신 회색 막대 */
-export function SkeletonList({ title, n, late }: { title: string; n: number; late?: boolean }) {   // late: 07:30이 지났는데 아직 예상이 없음(피그마 784:1573)
+/** 06:30 전 목록 자리(피그마 449:2): 종목 줄 대신 회색 막대 */
+export function SkeletonList({ title, n, late }: { title: string; n: number; late?: boolean }) {   // late: 06:30이 지났는데 아직 예상이 없음(피그마 784:1573)
   return (
     <>
       <div className="lhead"><b>{title}</b><span className="linkish dis">금액 변화 큰 순 ▾</span></div>
       {Array.from({ length: Math.min(3, Math.max(1, n)) }, (_, k) => (
         <div key={k} className="skrow" aria-hidden><i className="c" /><span><i /><i /></span><i className="r" /></div>
       ))}
-      <p className="fine skfine">{late ? "준비되면" : "07:30에"} 종목별 예상 범위가 채워져요</p>
+      <p className="fine skfine">{late ? "준비되면" : "06:30에"} 종목별 예상 범위가 채워져요</p>
     </>
   );
 }
 
-/** 07:30 전·주말·휴장일 화면의 큰 카드와 야간선물 흐름(피그마 449:2 · 461:8369) */
+/** 06:30 전·주말·휴장일 화면의 큰 카드와 야간선물 흐름(피그마 449:2 · 461:8369) */
 export function WaitState({ kicker, title, body, link, night, nightNote, seg, after }: {
   kicker: string; title: string; body: string; link?: { href: string; label: string }; night: Night | null; nightNote: string;
   seg?: React.ReactNode; after?: React.ReactNode;   // 카드 안 보유/관심 전환(피그마 449:2), 야간선물 아래 내용

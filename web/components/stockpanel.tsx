@@ -13,8 +13,6 @@ export const colorOf = (v: number) => (v > 0 ? "#d35d66" : v < 0 ? "#4c6fc3" : "
 export type PanelStock = {
   code: string; name: string; qty: number; pc: number; h: number; l80: number; u80: number; l90: number; u90: number;
   nxtG: number | null; y: number | null; open: number | null; avg?: number | null;
-  adj?: [number, number] | null;   // 08:11 보정 범위(lib/trust.ts). 있으면 h는 보정 예상 시가이고, 노란 띠는 07:30 예상 범위 그대로
-  h0730?: number | null;           // 07:30 예상 시가(보정 전 위치를 회색 점으로)
 };
 
 /** qty·setQty는 목록(NightBoard)이 쥐고 있다. acctAmount·acctValue는 바뀐 수량까지 넣은 계좌 값 */
@@ -29,7 +27,8 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
   useEffect(() => setWhat(null), [s.code]);
   const closeHint = () => { setHint(false); try { localStorage.setItem("hint-drag", "1"); } catch { /* 무시 */ } };
 
-  const base = phase === "post" && s.y != null ? s.y : s.h;
+  const nxt = phase === "pre" ? s.nxtG : null;
+  const base = phase === "post" && s.y != null ? s.y : nxt ?? s.h;
   const r = what ?? base;
   // 장후 금액은 수량 × (실제 시가 − 어제 종가)(2026-11-24, 등락률 y는 잘린 값). 계산은 정확히, 표시할 때만 1원 반올림
   const exact = phase === "post" && s.y != null && s.open != null;
@@ -42,11 +41,9 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
   const price = what == null && exact ? s.open! : s.pc * (1 + r);
   const base0 = s.avg ? s.avg / s.pc - 1 : null;   // 평단을 어제 종가 대비 %로(띠 위 '내 기준선')
 
-  const adj = phase === "pre" ? s.adj ?? null : null;
-  const m = Math.max(0.01, Math.abs(s.l90), Math.abs(s.u90), Math.abs(base), Math.abs(s.nxtG ?? 0), Math.abs(adj?.[0] ?? 0), Math.abs(adj?.[1] ?? 0)) * 1.2;
+  const m = Math.max(0.01, Math.abs(s.l90), Math.abs(s.u90), Math.abs(base), Math.abs(s.nxtG ?? 0), Math.abs(s.h)) * 1.2;
   const W = 342, pad = 10, X = (v: number) => pad + ((v + m) / (2 * m)) * (W - 2 * pad);
-  const nxt = phase === "pre" ? s.nxtG : null;
-  // 08:10 라벨과 띠 양 끝 %가 겹치면 %를 바깥쪽으로 비킨다
+  // 08:11 라벨과 띠 양 끝 %가 겹치면 %를 바깥쪽으로 비킨다
   const lx = nxt != null && Math.abs(X(s.l80) - X(nxt)) < 34 ? Math.max(18, X(nxt) - 34) : X(s.l80);
   const ux = nxt != null && Math.abs(X(s.u80) - X(nxt)) < 34 ? Math.min(W - 18, X(nxt) + 34) : X(s.u80);
   const svg = useRef<SVGSVGElement>(null);
@@ -80,7 +77,7 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
         <button type="button" aria-label="1주 늘리기" onClick={() => setQty(qty + 1)}>+</button>
       </div>
 
-      <p className="slabel">{what != null ? "이 가격이면?" : phase === "post" ? "오늘 실제 시가" : adj ? "오늘 예상 시가 · 08:11 2차 예측" : "오늘 예상 시가 범위"}</p>
+      <p className="slabel">{what != null ? "이 가격이면?" : phase === "post" ? "오늘 실제 시가" : nxt != null ? "08:11 2차 예상 시가 · NXT 가격" : "06:30 예상 시가"}</p>
       <div className="sbig" style={{ color: colorOf(r) }}>
         <b>{pctText(r)}</b>
         <span>{what != null ? `가정 ${wonText(price)}` : phase === "post" && s.open ? `시가 ${wonText(s.open)}` : `예상 ${wonText(price)}`} · 어제 {wonText(s.pc)}</span>
@@ -102,8 +99,6 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
           <text x={X(0)} y={10} textAnchor="middle" fontSize={10} fill="#66777a">어제 종가</text>
           <rect x={pad} y={23} width={W - 2 * pad} height={8} rx={4} fill="#eef1f2" />
           <rect x={X(s.l80)} y={21} width={Math.max(3, X(s.u80) - X(s.l80))} height={12} rx={6} fill="#FFD970" />
-          {adj ? <rect x={X(adj[0])} y={18} width={Math.max(3, X(adj[1]) - X(adj[0]))} height={18} rx={7} fill="none" stroke="#008c82" strokeWidth={1.6} /> : null}
-          {adj && s.h0730 != null && what == null ? <circle cx={X(s.h0730)} cy={27} r={3.5} fill="#b8c0c3" /> : null}
           {/* 세로선 셋을 색·모양으로 구분(배포용 변경 기록 12·05): 어제 종가 회색 점선, 평단 청록 실선, 08:10 실제 거래 빨간 실선 */}
           <line x1={X(0)} x2={X(0)} y1={15} y2={39} stroke="#8a9598" strokeWidth={1.5} strokeDasharray="3 3" />
           {base0 != null && Math.abs(base0) <= m ? <>
@@ -112,15 +107,15 @@ export function StockPanel({ s, icon, phase, qty, setQty, acctAmount, acctValue 
           </> : base0 != null ? (
             <text x={base0 < 0 ? pad : W - pad} y={10} textAnchor={base0 < 0 ? "start" : "end"} fontSize={10} fontWeight={700} fill="#008c82">{base0 < 0 ? `◀ 평단 ${pctText(base0)}` : `평단 ${pctText(base0)} ▶`}</text>
           ) : null}
-          {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={49} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:10</text></> : null}
-          {what != null ? <circle cx={X(base)} cy={27} r={4} fill="#b8c0c3" /> : null}
-          <circle cx={X(r)} cy={27} r={what != null ? 9 : 6} fill={what != null ? "rgba(0,140,130,.25)" : "#2f3437"} stroke={what != null ? "#008c82" : "#fff"} strokeWidth={2} />
+          {nxt != null ? <><rect x={X(nxt) - 1} y={16} width={2} height={22} fill="#d35d66" /><text x={X(nxt)} y={49} textAnchor="middle" fontSize={10} fontWeight={700} fill="#d35d66">08:11</text></> : null}
+          <circle cx={X(nxt != null ? s.h : base)} cy={27} r={5} fill="#2f3437" stroke="#fff" strokeWidth={2} />
+          {what != null ? <circle cx={X(what)} cy={27} r={9} fill="rgba(0,140,130,.25)" stroke="#008c82" strokeWidth={2} /> : null}
           <text x={lx} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.l80)}>{pctText(s.l80)}</text>
           <text x={ux} y={54} textAnchor="middle" fontSize={11} fill={colorOf(s.u80)}>{pctText(s.u80)}</text>
         </svg>
       </div>
 
-      <p className="blegend"><span><i className="ldot" />{adj ? "08:11 2차 예측" : "모델 예상"}</span>{nxt != null ? <span><i className="lnxt" />08:10 실제 거래</span> : null}{adj ? <span>노란 띠 07:30 범위 · 청록 테두리 2차 예측 범위</span> : null}</p>
+      <p className="blegend"><span><i className="ldot" />{phase === "post" ? "실제 시가" : "06:30 예상"}</span>{nxt != null ? <span><i className="lnxt" />08:11 2차 예상</span> : null}<span>노란 띠 · 06:30 예상 범위</span></p>
       {s.avg ? (
         <div className="avgline"><span>평단 <span className="avgwon">{wonText(s.avg)} </span>대비</span>
           <b><span style={{ color: colorOf(s.pc * (1 + s.l80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.l80) / s.avg - 1)}</span> ~ <span style={{ color: colorOf(s.pc * (1 + s.u80) / s.avg - 1) }}>{pctText(s.pc * (1 + s.u80) / s.avg - 1)}</span></b></div>

@@ -1,0 +1,18 @@
+# night_model: 날짜별 자료·매일 결과·가상환경은 git에 넣지 않는다(서버 ~/overnight/night_model에만, DB에 모두 있음)
+workbench/live/
+workbench/runs/*
+!workbench/runs/claude_band_design_r1/
+!workbench/runs/claude_live_r1/
+workbench/runs/claude_live_r1/*
+!workbench/runs/claude_live_r1/check_open.py
+.venv/
+__pycache__/
+*.pyc
+# 저장소 전체 *.csv 막기의 예외: 기준 자료
+!data/*.csv
+!market_calendar/*.csv
+!workbench/corrected_data_v2/*.csv
+# 저장소 전체 *.json 막기의 예외: 고정 규칙 설정·설계 기록(카드가 해시를 대조한다)
+!workbench/*.json
+!workbench/corrected_data_v2/*.json
+!workbench/runs/claude_band_design_r1/*.json

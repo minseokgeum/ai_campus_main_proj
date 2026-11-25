@@ -22,14 +22,15 @@ function model() {
   const d = S.day, account = d.accounts[0];
   const showAct = S.slot === "0900" && d.has_open;
   const rows = account.holdings.filter((h) => d.stocks[h.code]).map((h) => {
-    // 08:11 해석 규칙(E107, core/trust08.py): 08:11에는 장전 거래 쪽으로 보정한 예상(H)을 쓰고, 07:30 값은 H0730·노란띠(b80)로 남긴다
-    const s0 = d.stocks[h.code], s = S.slot === "0811" && s0.t08 && s0.t08.Hb != null ? { ...s0, H: s0.t08.Hb, H0730: s0.H, adj: s0.t08.adj } : s0;
+    const original = d.stocks[h.code];
+    const s = S.slot === "0811" && original.nxt_g != null
+      ? { ...original, H: original.nxt_g, H0730: original.H } : original;
     const q = S.qty[key(h.code)] ?? h.q, value = q * s.pc;
     let pin = S.pin[key(h.code)]; if (S.live && S.live.code === h.code) pin = S.live.v;
     return { s, h, q, value, pin, changed: q !== h.q, Hamt: value * s.H, lo: value * s.b80[0], hi: value * s.b80[1], yAmt: showAct && s.y != null ? value * s.y : null };
   }).sort((a, b) => b.h.q * b.s.pc - a.h.q * a.s.pc);
   const sum = (f) => rows.reduce((a, r) => a + f(r), 0);
-  const vals = rows.flatMap((r) => [r.s.b80[0], r.s.b80[1], r.s.H, ...(r.s.adj && !showAct ? r.s.adj : []), S.slot !== "0730" && r.s.grade && !showAct ? r.s.grade.g : null, showAct ? r.s.y : null, S.pin[key(r.s.code)]]).filter((v) => v != null);
+  const vals = rows.flatMap((r) => [r.s.b80[0], r.s.b80[1], r.s.H, r.s.H0730, S.slot !== "0730" && !showAct ? r.s.nxt_g : null, showAct ? r.s.y : null, S.pin[key(r.s.code)]]).filter((v) => v != null);
   const codes = new Set(rows.map((r) => r.s.code)), newsBy = {};
   d.news.forEach((n) => n.stocks.forEach((s) => { if (codes.has(s.code)) newsBy[s.code] = (newsBy[s.code] || 0) + 1; }));
   const briefBy = {}; Object.entries((d.brief && d.brief.stocks) || {}).forEach(([c, v]) => (briefBy[c] = (v.news || []).length));

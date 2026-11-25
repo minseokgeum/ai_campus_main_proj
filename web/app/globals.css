@@ -804,7 +804,7 @@ button.ibox { border: 0; cursor: pointer; }
 .tc2 { display: flex; gap: 12px; flex-wrap: wrap; }
 .tc2 a { font-size: 13px; font-weight: 700; color: var(--teal); min-height: 32px; display: flex; align-items: center; }
 
-/* 07:30 전 목록 자리(피그마 449:2) */
+/* 06:30 전 목록 자리(피그마 449:2) */
 .skrow { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .skrow i { display: block; background: #eef1f2; border-radius: 6px; }
 .skrow i.c { width: 28px; height: 28px; border-radius: 14px; flex: none; }

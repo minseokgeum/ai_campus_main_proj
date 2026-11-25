@@ -86,7 +86,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
             ) : (
               <>
                 <section className="pcard">
-                  <div className="rowh"><b>그날 아침 정리</b><span>{m?.card ? `${m.card.slot === "0811" ? "08:11" : "07:30"} 기준 · 저장된 그대로` : ""}</span></div>
+                  <div className="rowh"><b>그날 아침 정리</b><span>{m?.card ? `${m.card.slot === "0811" ? "08:11" : "06:30"} 기준 · 저장된 그대로` : ""}</span></div>
                   {ai?.title ? <p className="mtitle">{ai.title}</p> : null}
                   {ai?.macro.length ? ai.macro.map((l, k) => (
                     <p key={k} className="mline"><b>{ai.headings[k] ?? `핵심 ${k + 1}`}</b>{l}</p>

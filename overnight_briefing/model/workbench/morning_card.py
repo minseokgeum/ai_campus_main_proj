@@ -141,9 +141,16 @@ def build_card(z, n, dev, codes, day, accounts=None, with_outcome=False, signal=
         card = status_card(day, "no_signal", "no_eligible_stocks", D=D)
         card.update(slot=slot or "0730", dropped=dropped)
         return card
-    gr = pd.DataFrame(columns=["code", "g", "p", "level", "imputed_features"]) if slot == "0730" or not allow_current_grade else grade(n, design, day)
-    slot = slot or ("0811" if not gr.empty else "0730")
-    band = band.merge(gr, on="code", how="left")
+    quotes = n.iloc[:0][["code", "g"]]
+    if slot != "0730" and allow_current_grade:
+        quotes = n.loc[(n["T"] == day) & np.isfinite(n.g), ["code", "g"]]
+    slot = slot or ("0811" if not quotes.empty else "0730")
+    band = band.merge(quotes, on="code", how="left", validate="one_to_one")
+    if quotes.g.ne(0).any():
+        grades = grade(n, design, day)
+        band = band.merge(grades.drop(columns="g"), on="code", how="left", validate="one_to_one")
+    else:
+        band = band.assign(p=np.nan, level=None, imputed_features=None)
     mon = bool(band["mon"].iloc[0] > 0)
     D = str(z.loc[z["T"] == day, "D"].iloc[0])
     stocks = []
@@ -156,7 +163,7 @@ def build_card(z, n, dev, codes, day, accounts=None, with_outcome=False, signal=
             H=round(float(r.H), 6),
             band80=[round(float(r.L80), 6), round(float(r.U80), 6)], band90=[round(float(r.L90), 6), round(float(r.U90), 6)],
             target_coverage=0.8, eligibility_status="ok",
-            cautions=caut,
+            cautions=caut, nxt_g=round(float(r.g), 6) if pd.notna(r.g) else None,
             grade_0811=None if pd.isna(r.level) else dict(level=str(r.level), p=round(float(r.p), 3), nxt_g=round(float(r.g), 6),
                                                        imputed_features=r.imputed_features, imputation_method="training_median",
                                                        kind="NXT 08:10 관측으로 계산한 등급"),
@@ -334,7 +341,7 @@ def main():
     ap.add_argument("--date", required=True)
     ap.add_argument("--out", help="저장 경로. 없으면 --out-dir/card_<T>_<slot>.json. 같은 이름이 있으면 _v2…를 붙여 새로 저장")
     ap.add_argument("--out-dir", default=str(ROOT / "workbench/runs/claude_live_r1"))
-    ap.add_argument("--slot", choices=("0730", "0811"), help="실제 날짜 자료(--root)는 필수. 과거 재생에서만 생략 시 NXT 등급 유무로 자동 선택")
+    ap.add_argument("--slot", choices=("0730", "0811"), help="실제 날짜 자료(--root)는 필수. 과거 재생에서만 생략 시 NXT 관측 유무로 자동 선택")
     ap.add_argument("--with-outcome", action="store_true")
     ap.add_argument("--root", help="실제 날짜용 자료 폴더(data/ 아래 같은 파일 이름). 없으면 연구 패널 재생")
     ap.add_argument("--events", help="--root와 함께: DART 공시 목록 CSV")
@@ -365,7 +372,8 @@ def main():
                 if a.slot == "0811":
                     grade_state = grade_readiness(refresh, a.date, n)
                 card = build_card(z, n, dev, codes, a.date, ACCOUNTS, a.with_outcome, signal=signal, slot=a.slot,
-                                  allow_current_grade=grade_state["status"] == "collection_gate_passed")
+                                  allow_current_grade=(grade_state["status"] == "collection_gate_passed" or
+                                                       grade_state["reason"] == "no_valid_nxt_direction"))
                 if grade_state["status"] == "collection_gate_passed":
                     count = sum(s["grade_0811"] is not None for s in card["stocks"])
                     reason = None if count else "grade_not_estimable" if card["status"] == "ok" else "band_unavailable"

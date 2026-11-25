@@ -1,4 +1,4 @@
-// 알림(피그마 465:8273): 오늘·어제의 아침 모델 소식(07:30 예상, 08:11 범위 밖, 09:05 채점)을 내 보유 종목 기준으로 모아 보여 준다.
+// 알림(피그마 465:8273): 오늘·어제의 아침 모델 소식(06:30 예상, 08:11 범위 밖, 09:05 채점)을 내 보유 종목 기준으로 모아 보여 준다.
 // 휴대폰 푸시는 보내지 않는다(사용자 결정). 알림 설정 화면은 모양만 있다.
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
@@ -35,7 +35,7 @@ export default async function Alerts() {
     const out = pre.filter((r) => r.kind === "out");
     if (m.card.slot === "0811" && out.length)
       notes.push({ at: "08:11", icon: "warn", title: `NXT 체결가가 범위 밖인 종목이 ${out.length}개예요`, body: `${out.slice(0, 3).map((r) => r.name).join(" · ")} — 시가 주문 전에 확인해 보세요`, href: `/night?d=${t}&f=out`, fresh: t === today });
-    notes.push({ at: "07:30", icon: "star", title: "오늘 시가 예상이 나왔어요", body: `오늘 시가 예상 ${swon(a.amount)} (${pct(P(a.pct))})`, href: `/night?d=${t}`, fresh: t === today });
+    notes.push({ at: "06:30", icon: "star", title: "오늘 시가 예상이 나왔어요", body: `오늘 시가 예상 ${swon(a.amount)} (${pct(P(a.pct))})`, href: `/night?d=${t}`, fresh: t === today });
     days.push({ label: t === today ? "오늘" : t === addDays(today, -1) ? "어제" : dateLabel(isoDay(t)), notes });
   }
   return (

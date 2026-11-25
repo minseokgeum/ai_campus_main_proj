@@ -1,5 +1,5 @@
 // LLM이 채울 자리 목록과, 지금 그 자리를 채우는 규칙 문장. 규칙 문장은 화면에 이미 있는 숫자만 다시 말한다(원인·권유·전망 없음).
-import { pct, won, man, num, tick } from "./fmt.js";
+import { gradeText, pct, won, man, num, tick } from "./fmt.js";
 
 export const SLOTS = [
   { id: "1", tab: "brief", name: "밤사이 한 줄", where: "브리핑 › 맨 위 카드 아래 한 줄",
@@ -40,8 +40,8 @@ export function summary(m, d, slot) {
     out.push(`${head} 금액 변화가 가장 큰 종목은 ${josa(top.s.name, "으로", "로")} ${won(top.Hamt)}이에요.`);
   }
   if (slot !== "0730") {
-    const g = m.rows.filter((r) => r.s.grade && r.s.grade.g != null), inb = g.filter((r) => r.s.b80[0] <= r.s.grade.g && r.s.grade.g <= r.s.b80[1]);
-    if (g.length) out.push(`08:10 개장 전 거래는 ${g.length}종목 중 ${inb.length}종목이 예상대로예요.` + (g.length - inb.length ? ` 벗어난 종목: ${g.filter((r) => !inb.includes(r)).map((r) => r.s.name).join("·")}.` : ""));
+    const g = m.rows.filter((r) => r.s.nxt_g != null), inb = g.filter((r) => r.s.b80[0] <= r.s.nxt_g && r.s.nxt_g <= r.s.b80[1]);
+    if (g.length) out.push(`08:10 개장 전 거래는 ${g.length}종목 중 ${inb.length}종목이 07:30 예상 범위 안이에요.` + (g.length - inb.length ? ` 벗어난 종목: ${g.filter((r) => !inb.includes(r)).map((r) => r.s.name).join("·")}.` : ""));
   }
   if (slot === "0900" && m.showAct) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb);
@@ -76,9 +76,9 @@ export function glance(m, d, slot, evs) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb), miss = got.filter((r) => !r.s.inb);
     if (got.length) out.push({ ic: "9시", cls: "", act: 'data-act="tab" data-tab="record"', t: `${got.length}종목 중 ${ok.length}종목이 예상대로 시작했어요`, s: miss.length ? `벗어난 종목: ${miss.map((r) => r.s.name).join("·")}` : "지난 기록 탭에 쌓여요." });
   } else if (slot !== "0730") {
-    const g = m.rows.filter((r) => r.s.grade && r.s.grade.g != null), outb = g.filter((r) => !(r.s.b80[0] <= r.s.grade.g && r.s.grade.g <= r.s.b80[1]));
-    if (g.length) out.push({ ic: "8시", cls: "", act: 'data-act="info" data-info="nxtout"', t: outb.length ? `개장 전 거래가 예상을 벗어난 종목: ${outb.map((r) => r.s.name).join("·")}` : `개장 전 거래는 ${g.length}종목 모두 예상대로예요`,
-      s: outb.length ? "08:10 가격이 이미 예상을 벗어나면, 과거에는 시작가도 벗어난 날이 더 많았어요." : "08:00~08:10에 실제로 거래된 가격이 아침 예상과 크게 다르지 않아요." });
+    const g = m.rows.filter((r) => r.s.nxt_g != null), outb = g.filter((r) => !(r.s.b80[0] <= r.s.nxt_g && r.s.nxt_g <= r.s.b80[1]));
+    if (g.length) out.push({ ic: "8시", cls: "", act: 'data-act="info" data-info="nxtout"', t: outb.length ? `개장 전 거래가 07:30 예상 범위를 벗어난 종목: ${outb.map((r) => r.s.name).join("·")}` : `개장 전 거래는 ${g.length}종목 모두 07:30 예상 범위 안이에요`,
+      s: outb.length ? "08:10 가격이 07:30 범위 밖이면, 과거에는 시작가도 그 범위 밖에서 열린 날이 더 많았어요." : "08:00~08:10에 실제로 거래된 가격이 아침 예상과 크게 다르지 않아요." });
   }
   if (d.brief) {
     const codes = [...m.codes, ...m.account.excluded.map((x) => x.code)], all = codes.flatMap((c) => (((d.brief.stocks || {})[c] || {}).news || []).map((n) => ({ n, c })));
@@ -96,8 +96,9 @@ export function glance(m, d, slot, evs) {
 
 export function stockNote(r, slot, nNews) {
   const s = r.s, p = tick(s.pc * (1 + s.H));
-  let t = `예상 시작가는 어제 종가보다 ${pct(Math.abs(s.H)).replace("+", "")} ${s.H < 0 ? "낮은" : "높은"} ${num(p)}원이에요. 지난 비슷한 아침 10번 중 8번은 ${num(tick(s.pc * (1 + s.b80[0])))}원~${num(tick(s.pc * (1 + s.b80[1])))}원 사이에서 열렸어요.`;
-  if (slot !== "0730" && s.grade) t += ` 08:10 개장 전 거래는 ${pct(s.grade.g)}이고, 이 방향이 9시 시작가까지 이어질 가능성(믿을 정도)은 ‘${s.grade.level}’이에요.`;
+  let t = `예상 시작가는 ${num(p)}원으로, 어제 종가 대비 ${pct(s.H)}예요. 07:30 예상 범위는 ${num(tick(s.pc * (1 + s.b80[0])))}원~${num(tick(s.pc * (1 + s.b80[1])))}원 사이예요.`;
+  if (slot !== "0730" && s.nxt_g != null) t += ` 08:10까지 마지막 NXT 체결가는 전일 종가 대비 ${pct(s.nxt_g)}예요.`;
+  if (slot !== "0730" && s.grade) t += ` 정규장 시가도 같은 방향으로 열릴 가능성은 ${gradeText(s.grade)}이에요.`;
   if (nNews) t += ` 밤사이 이어진 미국 기사가 ${nNews}건 있어요.`;
   return t;
 }

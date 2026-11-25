@@ -81,7 +81,7 @@ def main() -> None:
             g = s.get("grade_0811") or {}
             stock_rows.append(dict(T=T, code=s["code"], name=s["name"], x=x, H=s["H"], L80=s["band80"][0], U80=s["band80"][1],
                                    y=r["y"], in80=r["in_band80"], up=r["y"] > s["band80"][1], down=r["y"] < s["band80"][0],
-                                   grade=g.get("level"), p=g.get("p"), nxt_g=g.get("nxt_g"), dir_match=r.get("nxt_dir_match"),
+                                   grade=g.get("level"), p=g.get("p"), nxt_g=s.get("nxt_g", g.get("nxt_g")), dir_match=r.get("nxt_dir_match"),
                                    cautions="|".join(c["kind"] for c in s.get("cautions", []))))
         acct += account_rows(card, z, T)
         day_rows.append(dict(T=T, status="채점", group="확정 후" if T >= FREEZE else "확정 전", x=x, monday=bool(card["market"]["cautions"])))

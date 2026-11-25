@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BandMini } from "@/components/model";
+import { gradeText, type DirectionGrade } from "@/lib/trust";
 import { GradeHelp, NotServiceHelp } from "@/components/helps";
 import { Layer, StickyAccount } from "@/components/sheet";
 import { StockPanel, colorOf, pctText, swonText, wonText } from "@/components/stockpanel";
@@ -13,17 +14,16 @@ import { NightBars, type BarRow } from "@/components/nightbars";
 export type BRow = {
   code: string; name: string; sector: string; tier: 1 | 2 | 3; kind: "ok" | "out" | "low" | "nocalc" | "notservice"; side: "up" | "down" | null;
   qty: number; pc: number | null; h: number | null; l80: number | null; u80: number | null; l90: number | null; u90: number | null;
-  grade: "높음" | "보통" | "낮음" | null; gap: "높음" | "보통" | "낮음" | null; hb: number | null; lb: number | null; ub: number | null; nxtG: number | null; earn: boolean; y: number | null; open: number | null; in80: boolean | null; nNews: number; v?: { neg: number; pos: number; neu: number };   // v: 밤사이 소식의 이 종목 기준 판정 개수
+  grade: DirectionGrade | null; p: number | null; nxtG: number | null; earn: boolean; y: number | null; open: number | null; in80: boolean | null; nNews: number; v?: { neg: number; pos: number; neu: number };   // v: 밤사이 소식의 이 종목 기준 판정 개수
   avg: number | null;   // 평단(보유 종목에 넣었을 때)
 };
 
 const TINTS: [string, string][] = [["rgba(241,163,60,0.18)", "#b86e12"], ["rgba(139,111,214,0.18)", "#6a4fb8"], ["rgba(0,140,130,0.14)", "#008c82"],
   ["rgba(76,111,195,0.14)", "#4c6fc3"], ["rgba(214,51,108,0.14)", "#d6336c"], ["rgba(154,164,168,0.18)", "#5e6e72"]];
 const tint = (sector: string) => TINTS[[...sector].reduce((a, ch) => a + ch.charCodeAt(0), 0) % TINTS.length];
-const DOTS: Record<string, string> = { 높음: "●●●", 보통: "●●○", 낮음: "●○○" };
 
-export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountTitle, accountHead, accountBelow, listHead, futures, stickySeg, attention, rest, footer, initialOpen, chart, chartRows, newsBy }: {
-  t: string; phase: "pre" | "post"; view: "hold" | "watch"; rows: BRow[]; holdRows: BRow[]; sortLabel: string;
+export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabel, accountTitle, accountHead, accountBelow, listHead, futures, stickySeg, attention, rest, footer, initialOpen, chart, chartRows, newsBy }: {
+  t: string; after0811: boolean; phase: "pre" | "post"; view: "hold" | "watch"; rows: BRow[]; holdRows: BRow[]; sortLabel: string;
   accountTitle: string; accountHead: ReactNode; accountBelow: ReactNode; listHead: ReactNode; futures: ReactNode; stickySeg: ReactNode; footer: ReactNode;
   attention: { title: string; sub: string } | null; rest: { title: string; sub: string } | null; initialOpen?: string;
   chart?: { title: string; note: string; rows: BarRow[] } | null;   // 종목별 오늘 예상 세로 막대(필터와 상관없이 보유/관심 전체)
@@ -46,10 +46,10 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
   }, [open, newsOpen]);
 
   const qtyOf = (r: BRow) => ovr[r.code] ?? r.qty;
-  // 금액 원칙(2026-11-24): 계산은 정확히, 화면에 찍을 때만 1원 반올림. 장전은 홈·종목 창과 같은 예상(08:11이면 2차 예측 hb),
+  // 금액 원칙(2026-11-24): 계산은 정확히, 화면에 찍을 때만 1원 반올림. 장전은 홈·종목 창과 같은 예상(08:11이면 NXT 가격),
   // 장후는 수량 × (실제 시가 − 어제 종가)(DB 등락률 y는 잘린 값이라 금액에 쓰지 않는다)
-  const pctOf = (r: BRow) => (phase === "post" ? r.y : r.hb ?? r.h);
-  const amtOf = (r: BRow, q: number) => (r.pc == null ? null : phase === "post" ? (r.open != null ? q * (r.open - r.pc) : null) : (r.hb ?? r.h) != null ? q * r.pc * (r.hb ?? r.h)! : null);
+  const pctOf = (r: BRow) => (phase === "post" ? r.y : r.nxtG ?? r.h);
+  const amtOf = (r: BRow, q: number) => (r.pc == null ? null : phase === "post" ? (r.open != null ? q * (r.open - r.pc) : null) : (r.nxtG ?? r.h) != null ? q * r.pc * (r.nxtG ?? r.h)! : null);
   const acct = useMemo(() => {
     const all = new Map(holdRows.map((r) => [r.code, r]));
     for (const r of rows) if (ovr[r.code] != null && !all.has(r.code)) all.set(r.code, r);
@@ -57,7 +57,7 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
     for (const r of all.values()) {
       const q = qtyOf(r), a = amtOf(r, q);
       if (r.pc == null || a == null) continue;
-      value += q * r.pc; amount += a; pre += q * r.pc * (r.hb ?? r.h ?? 0);
+      value += q * r.pc; amount += a; pre += q * r.pc * (r.nxtG ?? r.h ?? 0);
     }
     return { value, amount, pre, after: value + amount, pct: value ? amount / value : 0 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -178,16 +178,15 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
               <>
                 {cur.tier === 2 ? <p className="t2box">모델을 설계할 때 쓰지 않은 종목이에요. 같은 규칙으로 계산했지만, 과거 검증은 설계 종목(코스피 150 + 코스닥 50)으로만 했어요.</p> : null}
                 <StockPanel icon={<span className="ic" style={{ background: tint(cur.sector)[0], color: tint(cur.sector)[1] }}>{cur.name.slice(0, 1)}</span>} phase={phase} qty={qtyOf(cur)} setQty={(q) => setOvr({ ...ovr, [cur.code]: q })} acctAmount={acct.amount} acctValue={acct.value}
-                  s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: phase === "pre" && cur.hb != null ? cur.hb : cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg,
-                    adj: phase === "pre" && cur.lb != null && cur.ub != null ? [cur.lb, cur.ub] : null, h0730: cur.h }} />
+                  s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg }} />
                 <div className="schips">
-                  {cur.grade ? <span className="g tq">믿을 정도 {cur.grade} {DOTS[cur.grade]}<GradeHelp /></span> : <span className="n">믿을 정도는 08:11에 나와요</span>}
-                  {cur.kind === "out" ? <span className="w">{phase === "pre" ? "07:30 예상과 크게 달라짐" : "범위 밖"}</span> : null}
+                  <span className={cur.grade ? "g tq" : "n"}>{gradeText(cur.grade, cur.p, cur.nxtG, after0811)}<GradeHelp /></span>
+                  {cur.kind === "out" ? <span className="w">{phase === "pre" ? "06:30 예상과 크게 달라짐" : "범위 밖"}</span> : null}
                   {phase === "post" && cur.in80 != null ? <span className={cur.in80 ? "g" : "w"}>{cur.in80 ? "범위 안에서 시작" : "범위 밖에서 시작"}</span> : null}
                   <span className="sec">{cur.sector} 업종 · {rows.filter((r) => r.sector === cur.sector).length}종목</span>
                   {cur.earn ? <span className="w">어제 실적 공시</span> : null}
                 </div>
-                <p className="fine">노란 띠는 07:30 예상 범위(80%)예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{phase === "pre" && cur.nxtG != null ? <><br />08:10 장전 거래 가격은 {pctText(cur.nxtG)}이에요.</> : null}{phase === "pre" && cur.hb != null && cur.lb != null && cur.ub != null ? <><br />08:11 2차 예측 {pctText(cur.hb)} · 2차 예측 범위 {pctText(cur.lb)} ~ {pctText(cur.ub)}(07:30 예상 {pctText(cur.h)}, 장전 거래로 다시 계산).</> : null}</p>
+                <p className="fine">노란 띠는 06:30 예상 범위(80%)예요. 90% 범위는 {pctText(cur.l90)} ~ {pctText(cur.u90)}.{after0811 ? <><br />{cur.nxtG != null ? `06:30 예상 ${pctText(cur.h)} → 08:11 2차 예상 ${pctText(cur.nxtG)} (08:10까지의 마지막 NXT 가격).` : "장전 가격 미확인으로 06:30 예상을 유지했어요."}</> : null}</p>
               </>
             )}
             <div className="slinks">

@@ -124,7 +124,7 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
 <section class="tiles" aria-label="현재 상태 요약">
   <div class="tile">
     <h3>돌아가는 것</h3>
-    <p>사건 연결 데모는 과거 두 밤을 수집부터 카드까지 다시 만듭니다. 시가 숫자는 아침 카드(07:30 노란띠·주의 문구, 08:11 믿을 정도, 내 금액)까지 만들고, 규칙을 고정한 뒤 처음 보는 5일도 다시 계산했습니다(띠 안 82.9%). <a href="morning_brief_screen_design.html">목업</a></p>
+    <p>사건 연결 데모는 과거 두 밤을 수집부터 카드까지 다시 만듭니다. 시가 숫자는 아침 카드(06:30 노란띠·주의 문구, 08:11 믿을 정도, 내 금액)까지 만들고, 규칙을 고정한 뒤 처음 보는 5일도 다시 계산했습니다(띠 안 82.9%). <a href="morning_brief_screen_design.html">목업</a></p>
   </div>
   <div class="tile gap">
     <h3>아직 안 이어진 것</h3>
@@ -197,7 +197,7 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
         <text class="t-title" x="274" y="260">06시 참고값 H</text>
         <text class="t-chip fc-research" x="458" y="258" text-anchor="end">연구</text>
         <text class="t-sub" x="274" y="280">종목별 과거 민감도 회귀</text>
-        <text class="t-sub" x="274" y="297">+ 07:30 노란띠(S1), 과거 기준 통과</text>
+        <text class="t-sub" x="274" y="297">+ 06:30 노란띠(S1), 과거 기준 통과</text>
 
         <!-- 4행 08시 -->
         <rect class="box research" x="16" y="336" width="196" height="72" rx="6"/>
@@ -252,7 +252,7 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
         <rect class="box mock" x="746" y="236" width="282" height="72" rx="6"/>
         <text class="t-title" x="758" y="260">종목 줄</text>
         <text class="t-chip fc-mock" x="1018" y="258" text-anchor="end">시안</text>
-        <text class="t-sub" x="758" y="280">06시 참고값 + 07:30 노란띠, 내 금액</text>
+        <text class="t-sub" x="758" y="280">06시 참고값 + 06:30 노란띠, 내 금액</text>
         <text class="t-sub" x="758" y="297">08:11 NXT 위치, 만약에(띠 위 표식)</text>
 
         <rect class="box research" x="746" y="316" width="282" height="72" rx="6"/>
@@ -346,8 +346,8 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
       <thead><tr><th>시각</th><th>쓰는 자료</th><th>화면에 나오는 것</th><th>계좌 평균 오차</th></tr></thead>
       <tbody>
         <tr><td class="nowrap">안 볼 때</td><td>전일 종가 그대로</td><td>비교 기준</td><td class="num">1.98%p</td></tr>
-        <tr><td class="nowrap">06:00 자료, 07:30 화면</td><td>야간선물, 과거 민감도, 밤사이 사건</td><td>사건 카드, 06시 참고값, 노란띠, 내 금액, 주의 문구(실적 공시·월요일)</td><td class="num">1.07%p</td></tr>
-        <tr><td class="nowrap">08:11 전후</td><td>NXT 체결가와 가격 폭</td><td>07:30 노란띠는 그대로 두고 NXT 08:10 위치와 믿을 정도 등급을 더합니다(아침 카드 구현). NXT 중심 08시 범위로 바꿀지는 팀 결정입니다.</td><td class="num">0.71%p</td></tr>
+        <tr><td class="nowrap">06:00 자료, 06:30 화면</td><td>야간선물, 과거 민감도, 밤사이 사건</td><td>사건 카드, 06시 참고값, 노란띠, 내 금액, 주의 문구(실적 공시·월요일)</td><td class="num">1.07%p</td></tr>
+        <tr><td class="nowrap">08:11 전후</td><td>NXT 체결가와 가격 폭</td><td>06:30 노란띠는 그대로 두고 NXT 08:10 위치와 믿을 정도 등급을 더합니다(아침 카드 구현). NXT 중심 08시 범위로 바꿀지는 팀 결정입니다.</td><td class="num">0.71%p</td></tr>
         <tr><td class="nowrap">08:49</td><td>NXT 체결가</td><td>새 판본 표시 후보. 발송 시각은 미정입니다.</td><td class="num">0.38%p</td></tr>
         <tr><td class="nowrap">09:00 개장 뒤</td><td>사전에 정한 시가 관측</td><td>사전 저장한 범위 안팎을 기록합니다. 범위는 움직이지 않습니다.</td><td class="num">평가 대상</td></tr>
       </tbody>
@@ -368,7 +368,7 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
         <tr><td class="nowrap">화면·API</td><td>카드와 근거 → FastAPI + React</td><td><code>4Digit-solo/server/app.py</code>, <code>web/</code></td><td><span class="chip demo">데모</span></td></tr>
         <tr><td class="nowrap">06시 참고값</td><td>x, 전일 종가, 과거 상태 → H</td><td><code>workbench/i24_panel.py</code></td><td><span class="chip research">연구</span></td></tr>
         <tr><td class="nowrap">80% 범위</td><td><code>T, code, g, sd08, rng, dis</code> → 중심과 반폭</td><td><code>workbench/frozen_range.py</code></td><td><span class="chip research">연구</span></td></tr>
-        <tr><td class="nowrap">07:30 띠·08시 등급</td><td>패널, DART 공시 → S1 띠, D08 등급, 주의 문구</td><td><code>workbench/e62_band.py</code></td><td><span class="chip research">연구</span></td></tr>
+        <tr><td class="nowrap">06:30 띠·08시 등급</td><td>패널, DART 공시 → S1 띠, D08 등급, 주의 문구</td><td><code>workbench/e62_band.py</code></td><td><span class="chip research">연구</span></td></tr>
         <tr><td class="nowrap">아침 카드</td><td>패널, 보유 종목 → 화면 데이터 JSON(과거 평가로 선택한 규칙)</td><td><code>workbench/morning_card.py</code></td><td><span class="chip research">연구</span></td></tr>
         <tr><td class="nowrap">실제 날짜 입력</td><td>KIS·FDR·DART → 자료 폴더 → 연구와 같은 패널</td><td><code>workbench/live_refresh.py</code>, <code>live_panel.py</code></td><td><span class="chip zero">장 전 실행 0건</span></td></tr>
         <tr><td class="nowrap">아침 카드 목업</td><td>E74 카드 숫자, 예시 계좌 → 설명용 화면</td><td><a href="morning_brief_screen_design.html">목업 페이지</a></td><td><span class="chip mock">시안</span></td></tr>
@@ -392,9 +392,9 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
         <tr><td>장초반 흔들림 예보와 장전 시가띠는 별도 목표입니다</td><td>실제 Claude의 E91 인계: 09:00–09:30 흔들림 예보의 날짜 평균 오차가 직전 60일 중앙값 B보다 종목 199개·253일에서 0.070%p, 예시 계좌 A·C·D·E·250일에서 0.052%p 작았습니다. M0′는 E24와 달리 H·sd08을 쓰고 나스닥·특수일을 뺀 모형이며 평가는 2025-09-24부터입니다. 이 결과로 장전 계좌 시가띠의 숫자 보류를 해제하지 않습니다.</td><td class="nowrap"><a href="../../research/overnight_backtest/workbench/runs/claude_creon_usb_r1/README.md">E91 인계</a></td></tr>
         <tr><td>조용한 날이라고 화면을 줄이지 않습니다</td><td>조용하다고 표시한 날의 30%가 실제 1% 이상 변화</td><td class="nowrap">E56</td></tr>
         <tr><td>먼저 볼 종목에 혼자 움직임순을 쓰지 않습니다</td><td>포착 비율 보유 금액순 73.6, 혼자 움직임순 68.4</td><td class="nowrap">E59</td></tr>
-        <tr><td>07:30 종목 띠는 밤 크기로 폭을 조절합니다(S1)</td><td>봉인 93종목·54일 포함률 79.08%, 폭 3.69%p, 단순 띠 89.08%·4.73%p. 조용한 구간에서도 유지. 세부 설정 10가지를 바꿔도 대체로 유지(계단식 폭만 조용한 밤 74.6%)</td><td class="nowrap">E62 E65 E86</td></tr><tr><td>계좌 띠는 종목 띠를 더하지 않습니다</td><td>더하면 27~33% 넓어집니다. 공동오차 규칙 AS1은 봉인 조용한 밤 72.2%로 기준 75% 미달. 사후 진단에서는 연구 대상 종목의 평균 오차(y−H)가 약 −0.5~−1.6%p였던 6일에 미달이 몰렸습니다. 예상보다 낮다는 뜻이며 전일보다 하락했다는 뜻은 아닙니다. 같은 자료의 NXT 방향 일치 관찰은 원인이나 독립 예측력의 증거가 아닙니다</td><td class="nowrap">E63 E85</td></tr>
+        <tr><td>06:30 종목 띠는 밤 크기로 폭을 조절합니다(S1)</td><td>봉인 93종목·54일 포함률 79.08%, 폭 3.69%p, 단순 띠 89.08%·4.73%p. 조용한 구간에서도 유지. 세부 설정 10가지를 바꿔도 대체로 유지(계단식 폭만 조용한 밤 74.6%)</td><td class="nowrap">E62 E65 E86</td></tr><tr><td>계좌 띠는 종목 띠를 더하지 않습니다</td><td>더하면 27~33% 넓어집니다. 공동오차 규칙 AS1은 봉인 조용한 밤 72.2%로 기준 75% 미달. 사후 진단에서는 연구 대상 종목의 평균 오차(y−H)가 약 −0.5~−1.6%p였던 6일에 미달이 몰렸습니다. 예상보다 낮다는 뜻이며 전일보다 하락했다는 뜻은 아닙니다. 같은 자료의 NXT 방향 일치 관찰은 원인이나 독립 예측력의 증거가 아닙니다</td><td class="nowrap">E63 E85</td></tr>
         <tr><td>계좌 후속 후보 세 가지를 같은 기준으로 비교했습니다</td><td>재사용 54일·31,290개 계좌-날의 고정 1회 결과입니다. 조용한 밤 15일의 포함률은 연결 대조 AS1-M 72.09% → 비대칭 A 73.23%, 공동 표준화 RMS B 71.65%, 결합 C 73.60%. 모두 기존 75% 하한 미달입니다. A는 아래쪽 이탈을 23.93% → 21.53%로 줄였지만 전체 점수의 개선은 불확실하며, B/C는 전체 점수가 악화했습니다. 원 AS1 판정은 보존합니다.</td><td class="nowrap"><a href="../../research/overnight_backtest/workbench/runs/codex_e87_r1/summary.json">E87 저장 결과</a></td></tr>
-        <tr><td>믿을 정도는 띠와 별도 등급으로 표시합니다</td><td>08시 방향 봉인 높음 96.7%, 보통 84.0%, 낮음 64.4%. 처음 보는 5일에도 높음 96% 이상. 이벤트·VIX·나스닥을 더한 이득 없음. 등급은 사실상 NXT 갭 크기가 정하고, 재료 3개는 확률 숫자 보정에 씀(유지). 경계·벌점 세기를 바꿔도 순서 유지</td><td class="nowrap">E61 E64 E74 E83 E86</td></tr><tr><td>주의 문구는 확인된 것만 붙입니다</td><td>월요일에는 06시 추정치의 오차가 평소보다 컸습니다. 단순 기준 구간(R0)의 포함률은 월요일 74.2%, 다른 요일 80.0%였습니다. FOMC·CPI·연휴·전날 하루 급변·밤사이 국내 기사 양은 차이 없음</td><td class="nowrap">E67 E72 E73</td></tr><tr><td>07:30 띠 뒤에 08:11 갱신을 둡니다</td><td>덜 맞은 아침의 결정적 소식(휴전 속보, 대형주 아침 잠정실적)은 대부분 07:30 뒤에 나옴</td><td class="nowrap">E72</td></tr><tr><td>흔들림이 이어지는 날은 후보 신호로 지켜봅니다</td><td>최근 5일 변동성 높음 76.6 vs 80.4%, 어제 시가 크게 빗나감 72.0 vs 82.3%(띠 안). 새 계약으로 다시 시험</td><td class="nowrap">E73</td></tr><tr><td>실적 공시 다음 아침은 주의 문구를 답니다</td><td>세 구간 모두 평소보다 크게 빗나가고 띠 안 비율이 낮음(봉인 S1 49.5 vs 79.3%)</td><td class="nowrap">E64 E65</td></tr><tr><td>범위 포함률 감시 기준은 모형별로 정합니다(미결)</td><td>10월 66.36%는 우연과 구분 안 됨. 19거래일 하한 72.9%는 08:11 NXT 중심 범위 후보의 과거 변동으로 계산한 예시이며, S1의 운영 중단값으로 채택하지 않았습니다. S1은 날짜별 변동으로 감시 범위를 다시 계산해 확정해야 합니다</td><td class="nowrap">E54</td></tr>
+        <tr><td>믿을 정도는 띠와 별도 등급으로 표시합니다</td><td>08시 방향 봉인 높음 96.7%, 보통 84.0%, 낮음 64.4%. 처음 보는 5일에도 높음 96% 이상. 이벤트·VIX·나스닥을 더한 이득 없음. 등급은 사실상 NXT 갭 크기가 정하고, 재료 3개는 확률 숫자 보정에 씀(유지). 경계·벌점 세기를 바꿔도 순서 유지</td><td class="nowrap">E61 E64 E74 E83 E86</td></tr><tr><td>주의 문구는 확인된 것만 붙입니다</td><td>월요일에는 06시 추정치의 오차가 평소보다 컸습니다. 단순 기준 구간(R0)의 포함률은 월요일 74.2%, 다른 요일 80.0%였습니다. FOMC·CPI·연휴·전날 하루 급변·밤사이 국내 기사 양은 차이 없음</td><td class="nowrap">E67 E72 E73</td></tr><tr><td>06:30 띠 뒤에 08:11 갱신을 둡니다</td><td>덜 맞은 아침의 결정적 소식(휴전 속보, 대형주 아침 잠정실적)은 대부분 06:30 뒤에 나옴</td><td class="nowrap">E72</td></tr><tr><td>흔들림이 이어지는 날은 후보 신호로 지켜봅니다</td><td>최근 5일 변동성 높음 76.6 vs 80.4%, 어제 시가 크게 빗나감 72.0 vs 82.3%(띠 안). 새 계약으로 다시 시험</td><td class="nowrap">E73</td></tr><tr><td>실적 공시 다음 아침은 주의 문구를 답니다</td><td>세 구간 모두 평소보다 크게 빗나가고 띠 안 비율이 낮음(봉인 S1 49.5 vs 79.3%)</td><td class="nowrap">E64 E65</td></tr><tr><td>범위 포함률 감시 기준은 모형별로 정합니다(미결)</td><td>10월 66.36%는 우연과 구분 안 됨. 19거래일 하한 72.9%는 08:11 NXT 중심 범위 후보의 과거 변동으로 계산한 예시이며, S1의 운영 중단값으로 채택하지 않았습니다. S1은 날짜별 변동으로 감시 범위를 다시 계산해 확정해야 합니다</td><td class="nowrap">E54</td></tr>
       </tbody>
     </table>
   </div>
@@ -419,10 +419,10 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
     <table class="t-min">
       <thead><tr><th>안건</th><th>추천</th><th>이유</th></tr></thead>
       <tbody>
-        <tr><td class="nowrap">08:11 띠 처리</td><td>07:30 띠를 유지하고 NXT 위치·등급을 더함(지금 구현). NXT 중심 08시 범위로 바꾸는 안은 사용자 시험 뒤 결정</td><td>띠가 아침에 두 번 바뀌면 무엇이 바뀌었는지 헷갈립니다. NXT 중심 범위는 과거 구간점수가 2.92% 좋았지만(E39) MVP는 한 가지 띠로 단순하게 시작합니다.</td></tr>
+        <tr><td class="nowrap">08:11 띠 처리</td><td>06:30 띠를 유지하고 NXT 위치·등급을 더함(지금 구현). NXT 중심 08시 범위로 바꾸는 안은 사용자 시험 뒤 결정</td><td>띠가 아침에 두 번 바뀌면 무엇이 바뀌었는지 헷갈립니다. NXT 중심 범위는 과거 구간점수가 2.92% 좋았지만(E39) MVP는 한 가지 띠로 단순하게 시작합니다.</td></tr>
         <tr><td class="nowrap">다음 실제 실행</td><td>11/6은 팀 목표였으며 별도 실행 합의는 없습니다. 사용자 요청에 따라 밀린 작업 팔로업을 먼저 마무리합니다.</td><td>11/2 L1은 미실행으로 보존했습니다. 새 실행일 미지정, 계약으로 확인한 사전 기록은 0건입니다. 날짜를 바꾸어 재실행하거나 자동 예약하지 않습니다.</td></tr>
         <tr><td class="nowrap">화면 순서</td><td>사건 연결 → 계좌 합계 → 종목 줄</td><td>점 숫자만으로는 야간선물에 비중을 곱한 값과 차이가 작습니다. 야간선물이 주지 못하는 것은 내 종목과 이어지는 이유와 얼마나 벗어날 수 있는지(노란띠)입니다.</td></tr>
-        <tr><td class="nowrap">계좌 띠 표시</td><td>지원 종목의 원화 변화액과 ‘만약에’ 합계를 우선합니다. 여러 종목의 계좌 80% 범위는 값을 비웁니다.</td><td>07:30 공통 오차를 분리한 후보(E96)와 전날 저녁 가격을 반영한 후보(E97)는 조용한 밤 포함률이 각각 88.12%, 90.44%로 허용 상한 85%를 넘었습니다. 다시 검토할 조건은 모델 설계서 §5.6에 있습니다.</td></tr>
+        <tr><td class="nowrap">계좌 띠 표시</td><td>지원 종목의 원화 변화액과 ‘만약에’ 합계를 우선합니다. 여러 종목의 계좌 80% 범위는 값을 비웁니다.</td><td>06:30 공통 오차를 분리한 후보(E96)와 전날 저녁 가격을 반영한 후보(E97)는 조용한 밤 포함률이 각각 88.12%, 90.44%로 허용 상한 85%를 넘었습니다. 다시 검토할 조건은 모델 설계서 §5.6에 있습니다.</td></tr>
         <tr><td class="nowrap">보조 표시</td><td>과거 재생 화면에서 먼저 시험하고, 실시간은 저녁 가격 수신을 확인한 뒤 결정</td><td>혼자 움직인 종목의 벗어남 방향 일치는 65~70%지만 새 표본이 25일뿐입니다.</td></tr>
         <tr><td class="nowrap">사용자 테스트</td><td>같은 과거 아침을 야간선물 + 비중 곱셈 화면과 우리 화면으로 비교, 반도체 외 보유자 포함</td><td>연결의 가치가 아직 측정되지 않았습니다. 우리 화면이 못 이기면 메인을 다시 정해야 합니다.</td></tr>
       </tbody>
@@ -430,13 +430,13 @@ footer { font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--lin
   </div>
 </section>
 
-<p class="note"><b>사건 연결 화면(C) 읽기 과제.</b> 6월 25일의 두 장면을 같은 가정 계좌표와 출처 설명으로 재구성했습니다. 다섯 문항은 화면에서 확인되는 사실과 ‘알 수 없음’이 맞는 경우를 구분합니다. 참여자 모집 전입니다. <a href="../../research/overnight_backtest/workbench/presentation/c_reading/0730.png">07:30 C</a> · <a href="../../research/overnight_backtest/workbench/presentation/c_reading/0811.png">08:11 C</a> · <a href="model_design.html">문항·채점 근거, 설계서 §11.6</a></p>
+<p class="note"><b>사건 연결 화면(C) 읽기 과제.</b> 6월 25일의 두 장면을 같은 가정 계좌표와 출처 설명으로 재구성했습니다. 다섯 문항은 화면에서 확인되는 사실과 ‘알 수 없음’이 맞는 경우를 구분합니다. 참여자 모집 전입니다. <a href="../../research/overnight_backtest/workbench/presentation/c_reading/0730.png">06:30 C</a> · <a href="../../research/overnight_backtest/workbench/presentation/c_reading/0811.png">08:11 C</a> · <a href="model_design.html">문항·채점 근거, 설계서 §11.6</a></p>
 <p class="note"><b>E87·E92 계좌 띠 비교(11/5~11/6).</b> E87은 AS1의 밤 크기 조절은 그대로 두고 폭을 정하는 방법만 바꾼 세 후보를 검증 표본 54일에서 비교했습니다. 조용한 밤 포함률은 기준 72.09%, 후보 A·B·C 73.23·71.65·73.60%로 모두 75%에 못 미쳤습니다. E92는 보유 종목의 08:10 NXT 갭을 비중대로 평균한 값 G를 중심으로 둔 조건부 폭 GC를, 중심만 바꾼 G0, G 중심의 단순 순위 폭 GR0와 비교했습니다. 개발 표본 86일에서 GC는 G0보다 23.77% 좋았지만 GR0보다 낫다는 것은 확인되지 않았고(1.62%, 신뢰구간이 0 포함), 조용한 밤이 14일뿐이라 전체 판정은 불가입니다. 검증 표본의 조용한 밤에서는 G0가 아래로 벗어난 비율을 22.80%에서 11.41%로 줄였지만, 포함률이 87.40%로 너무 넓어 그대로 쓸 수 없습니다. 보유 종목 모두의 NXT 관측이 있어야 계산되므로 결과는 그런 계좌·일에만 해당합니다(10종목 계좌는 비교 가능한 행이 10.55%). <a href="../../research/overnight_backtest/workbench/runs/codex_e87_r1/summary.json">E87 결과</a> · <a href="../../research/overnight_backtest/workbench/runs/codex_e92_r1/summary.json">E92 결과</a> · 자세한 수치는 설계서 §8.5·§8.7</p>
 
 <p class="note"><b>장중 지속과 장 초반 흔들림(E90·E91, 11/5).</b> 크레온 1분봉으로 과거 실험을 넓혀 보니, 시가 뒤 갭 방향으로 더 간다고 볼 근거가 없다는 결론이 2년치에서도 유지됐습니다(처음 보는 해의 이어짐 비율 43.2%). 장 초반 09:00~09:30 흔들림 예보는 199종목과 예시 계좌 4개에서 직전 60일 중앙값보다 나았습니다. 두 결과는 계좌 시가 예측구간과 목표가 달라 계좌 숫자 보류를 바꾸지 않습니다. 자세한 내용은 설계서 §8.6에 있습니다.</p>
 <p class="note"><b>입력·코드 교차 검증(E81·E88·E89, 11/5).</b> 팀 저장소의 KRX 백테스트(반도체 15종목)와 맞춰 보니 14종목·2025-06-11~2026-10-26의 시가·전일 종가·시가갭 3,864행, 야간 수익률 327/333일, 06시 계산 함수가 모두 일치했습니다. 빠진 6일은 선물 만기 다음 날로, 수집기가 만기일 밤의 다음 계약을 받지 않는 문제(E82와 같음)였습니다. 크레온 1분봉 대조로는 한국투자증권 과거 NXT 분봉이 시작 시각 표기이고 받은 날 기준 수정주가라는 점을 사후에 확인했고, 저장 자료의 기업 행사일 가짜 갭은 없었습니다. 크레온으로 2025-07~10의 NXT 값을 채워 보니 08:11 등급과 시장 몫 분해가 처음 보는 74일에서도 기준을 통과했습니다. 모두 과거 자료 검증이며 실시간 수신·미래 성능의 증거가 아닙니다. <a href="../../research/overnight_backtest/workbench/runs/claude_krx_crosscheck_r1/README.md">E81 README</a> · <a href="../../research/overnight_backtest/workbench/runs/claude_creon_usb_r1/README.md">E88~E91 README</a></p>
 
-<p><b>11/5 아침 카드 교정(Codex).</b> 07:30 카드가 같은 날 08:10 NXT 정보를 쓰지 않게 막았고, NXT 갭이 0이거나 비정상인 종목에는 등급을 내지 않습니다. 비어 있는 등급 재료를 과거 중앙값으로 채운 경우와 카드를 목표 시각보다 늦게 만든 경우를 카드에 표시합니다. 계좌 금액은 반올림 전 값으로 계산·합산한 뒤 표시만 반올림하고, 지원 종목만 합한 값과 계좌 전체 값을 구분합니다. 가격을 모르는 제외 종목이 있으면 계좌 전체 값은 비웁니다. 실제 날짜 카드는 자료를 받은 시각을 먼저 확인해, 야간 자료는 그 밤이 끝난 다음 날 06:05 이후, NXT 등급 자료는 그날 08:11 이후에 받은 것만 씁니다. 이 확인을 통과했다고 실제 수신이나 장 전 봉인이 증명되는 것은 아닙니다. 관련 시험 45개가 통과했습니다.</p>
+<p><b>11/5 아침 카드 교정(Codex).</b> 06:30 카드가 같은 날 08:10 NXT 정보를 쓰지 않게 막았고, NXT 갭이 0이거나 비정상인 종목에는 등급을 내지 않습니다. 비어 있는 등급 재료를 과거 중앙값으로 채운 경우와 카드를 목표 시각보다 늦게 만든 경우를 카드에 표시합니다. 계좌 금액은 반올림 전 값으로 계산·합산한 뒤 표시만 반올림하고, 지원 종목만 합한 값과 계좌 전체 값을 구분합니다. 가격을 모르는 제외 종목이 있으면 계좌 전체 값은 비웁니다. 실제 날짜 카드는 자료를 받은 시각을 먼저 확인해, 야간 자료는 그 밤이 끝난 다음 날 06:05 이후, NXT 등급 자료는 그날 08:11 이후에 받은 것만 씁니다. 이 확인을 통과했다고 실제 수신이나 장 전 봉인이 증명되는 것은 아닙니다. 관련 시험 45개가 통과했습니다.</p>
 <footer>당일 매매자 기능은 보유자 기능과 검증을 분리합니다. 시가 숫자의 정확도를 시가 이후 매매 가치의 근거로 쓰지 않습니다.</footer>
 
 </div>

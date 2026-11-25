@@ -4,7 +4,7 @@
 
 | 폴더 | 무엇 | 안내 |
 |---|---|---|
-| `model/` | **노란띠 모델**: 고정 규칙(2026-11-02 15:17), 자료 이어 받기, 07:30·08:11 카드, 개장 직후 채점, 규칙 확정 뒤 기록, 특별한 날 달력. 하루 실행기 두 가지(파일 `run_day.sh`, 서버 DB `run_model.py`) | [`model/README.md`](model/README.md) |
+| `model/` | **노란띠 모델**(팀원 원본. 서버 운영·수정은 저장소 루트 `night_model/`에서, 2026-11-25부터): 고정 규칙(2026-11-02 15:17), 자료 이어 받기, 06:30·08:11 카드, 개장 직후 채점, 규칙 확정 뒤 기록, 특별한 날 달력. 하루 실행기 두 가지(파일 `run_day.sh`, 서버 DB `run_model.py`) | [`model/README.md`](model/README.md) |
 | `service/` | 1차 데모 화면·API·배포(https://4digit-demo.vercel.app). 수연 버전 `/`, 원래 버전 `/orig/` | [`service/README.md`](service/README.md) |
 | `app/` | 화면 자료 만들기(`app/pipeline`: 카드·채점·야간 1분봉 → 날짜 파일)와 Streamlit 검증 화면. `service/`가 `app/core`의 읽기 함수를 그대로 쓴다 | [`app/README.md`](app/README.md) |
 | `nightly_prompt/` | 밤사이 AI 브리핑(뉴스 처리 결과 + 노란띠 → 종목별 한 줄) | [`nightly_prompt/README.md`](nightly_prompt/README.md) |

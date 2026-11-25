@@ -25,7 +25,7 @@ async function doLogout() {
 export default async function My() {
   const user = await requireUser();
   const pf = await portfolio(user.id);
-  // 시연 계정만: 피그마의 시간대별 상태를 지난 시각으로 돌려 보기(07:30 전·장 전·장 후·저녁·월요일·주말)
+  // 시연 계정만: 피그마의 시간대별 상태를 지난 시각으로 돌려 보기(06:30 전·장 전·장 후·저녁·월요일·주말)
   const [demo, presets, at] = await Promise.all([isDemoUser(), demoPresets(), demoAt()]);
   const days = demo ? await demoDays() : [];
   const real = kstNow();
@@ -66,7 +66,7 @@ export default async function My() {
           <Link href="/mine">보유·관심 종목 관리<span>보유 {pf.holdings.length} · 관심 {pf.watch.length} ›</span></Link>
           <Link href="/mine/add">종목 추가<span>›</span></Link>
           <h3>알림</h3>
-          <Link href="/settings/alerts">알림 설정<span>07:30 · 08:11 · 09:05 ›</span></Link>
+          <Link href="/settings/alerts">알림 설정<span>06:30 · 08:11 · 09:05 ›</span></Link>
           <h3>서비스 정보</h3>
           <Link href="/docs/terms">이용약관<span>›</span></Link>
           <Link href="/docs/privacy">개인정보 처리방침<span>›</span></Link>

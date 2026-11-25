@@ -1,4 +1,4 @@
-// 밤사이 계산: 카드 값 × 내 수량 → 종목 줄·계좌 합계. 장전은 예상 시가(07:30은 H, 08:11은 장전 거래로 보정한 값), 장후는 실제 시가 채점(07:30 범위 기준).
+// 밤사이 계산: 카드 값 × 내 수량 → 종목 줄·계좌 합계. 장전은 예상 시가(06:30은 H, 08:11은 08:10까지의 마지막 NXT 가격), 장후는 실제 시가 채점(06:30 범위 기준).
 import "server-only";
 import type { CardStock, CheckRow, DayModel } from "@/lib/model";
 import { tierOf } from "@/lib/model";
@@ -18,7 +18,6 @@ export type Row = {
 };
 
 export function buildRows(m: DayModel | null, items: { code: string; qty: number }[], phase: Phase): Row[] {
-  const graded = m?.card?.slot === "0811";
   return items.map(({ code, qty }) => {
     const u = uStock(code);
     const tier = tierOf(code);
@@ -33,10 +32,10 @@ export function buildRows(m: DayModel | null, items: { code: string; qty: number
       const side = c.y > s.u80 ? "up" : c.y < s.l80 ? "down" : null;
       return { ...base, value, pct: c.y, amount: qty * (c.open - s.pc), kind: side ? "out" : "ok", side };
     }
-    const nxtOut = graded && s.nxtG != null && (s.nxtG > s.u80 || s.nxtG < s.l80);
+    const nxtOut = s.nxtG != null && (s.nxtG > s.u80 || s.nxtG < s.l80);
     const side = nxtOut ? (s.nxtG! > s.u80 ? "up" : "down") : null;
-    const kind: RowKind = nxtOut ? "out" : "ok";   // 믿을 정도 낮음 = 장전 거래 가격이 07:30 예상 범위 밖(E107). 따로 묶지 않는다
-    const pct = graded && s.hb != null ? s.hb : s.h; // 08:11: 장전 거래를 반영한 보정 예상 시가(lib/trust.ts)
+    const kind: RowKind = nxtOut ? "out" : "ok";   // 06:30 범위 밖 표시는 방향 등급과 별개다
+    const pct = s.nxtG ?? s.h; // 장전 가격을 확인한 종목만 2차로 갱신한다
     return { ...base, value, pct, amount: value * pct, kind, side };
   });
 }
