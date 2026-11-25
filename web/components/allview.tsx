@@ -4,23 +4,26 @@
 // ①·④의 조작(띠 누르기·끌기, 수량 −/+, 되돌리기, 순서, 보유·관심 나눠 보기)은 components/allplay.tsx(2026-11-24).
 // 모양은 피그마 버전(globals.css의 카드·색·글자)을 쓴다. 숫자는 모두 계산값이고, 소식은 예상 계산에 넣지 않는다(원인 단정 금지).
 import Link from "next/link";
-import { Avatar, StockNews } from "@/components/ui";
-import { MaskToggle } from "@/components/sheet";
+import { AiMark, Avatar, StockNews } from "@/components/ui";
+import { MaskToggle, Sheet } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { FuturesCard } from "@/components/futcard";
-import { FuturesHelp } from "@/components/helps";
+import { FuturesHelp, GradeHelp } from "@/components/helps";
 import { P, type Row } from "@/lib/night";
 import { AllPlay, type PlayCard } from "@/components/allplay";
 import { impactFor, verdictsOf, type Article } from "@/lib/news";
 import type { Night } from "@/lib/model";
 import type { UsDay } from "@/lib/market";
-import { md, US } from "@/lib/market";
+import { usHead } from "@/lib/market";
+import { UsChips, type UsItem } from "@/components/ussheet";
 import { pct, swon, won } from "@/lib/format";
 import type { CardStock } from "@/lib/model";
 import type { Reason } from "@/lib/summary";
 import type { Ev } from "@/lib/events";
 
 const DOTS: Record<string, string> = { 높음: "●●●", 보통: "●●○", 낮음: "●○○" };
+// 문장 속 계좌 금액: '금액 숨기기'를 누르면 이 부분만 ●●●●원으로(2026-11-24. 예전엔 문장 글자에 섞여 가려지지 않았다). 1주 가격(주가)은 가리지 않는다
+const A = (v: number) => <span className="amt">{swon(v)}</span>;
 
 type Props = {
   t: string;                 // 카드 날짜(YYYYMMDD). 바꾼 수량 저장 칸 이름(밤사이 종목 창과 같은 칸)
@@ -40,6 +43,7 @@ type Props = {
   lines: Map<string, { line: string | null }>;   // 종목 한 줄(hot_company): 이유 문장이 없을 때
   record: { inN: number; n: number } | null;     // 지난 20거래일 내 종목 범위 안
   us: Map<string, UsDay>;
+  usList: UsItem[];          // 미국 시장 칸 4개 + 누르면 올라오는 창(2026-11-24)
   night: Night | null;
   buckets: number[];
   nightLive: boolean;
@@ -68,25 +72,28 @@ function readTogether(dir: Reason["dir"], s: CardStock): string {
   if (dir === "엇갈림") return "이어진 소식들의 방향이 서로 엇갈려요.";
   return "이 종목에 좋은 쪽인지 나쁜 쪽인지는 기사만으로 가리기 어려워요.";
 }
-function Combined({ s, x, y, reason, arts }: { s: CardStock; x: number | null; y: number | null; reason?: Reason; arts: Article[] }) {
+function Combined({ s, code, x, y, reason, arts }: { s: CardStock; code: string; x: number | null; y: number | null; reason?: Reason; arts: Article[] }) {
   const head = <><b className="cb-h">예상과 밤사이 소식, 같이 읽기</b><p className="cb-band">{bandWords(s, x, y)}</p></>;
   if (!arts.length && !reason) return <div className="combined plain">{head}<p className="mute">밤사이 이 종목과 이어진 미국 기사는 없었어요.</p></div>;
-  const n = arts.length || 1;
+  const n = arts.length;
   const outlets = reason?.outlets ?? null;
-  const meta = `직접 이어진 소식 ${n}건${outlets && outlets > 1 ? ` · 대표 소식은 매체 ${outlets}곳` : ""} · ${NOTE}`;
+  // 카드에 이어진 기사가 없는데 AI 문장만 있으면(기사 속 이름으로 고른 소식) 건수는 쓰지 않는다(2026-11-24, 전엔 '1건'으로 셌다)
+  const meta = [n ? `직접 이어진 소식 ${n}건` : "", outlets && outlets > 1 ? `대표 소식은 매체 ${outlets}곳` : "", NOTE].filter(Boolean).join(" · ");
   if (reason) {
     return (
       <div className="combined">{head}
-        <p><span className="ai">AI</span>{reason.line}{reason.relation ? ` ${reason.relation}` : ""}</p>
+        <p><AiMark small />{reason.line}{reason.relation ? ` ${reason.relation}` : ""}</p>
         <p className="cb-read">{readTogether(reason.dir, s)}</p>
         <div className="cb-meta">{meta}</div>
       </div>
     );
   }
-  const top = arts.find((a) => a.ko) ?? arts[0];
+  // AI 문장이 아직 없을 때(아침 카드 직후 몇 분·LLM 오류 등): 이 종목 판정이 붙은 기사 → 종목과 가까운 검색어 순(arts 순서)으로 대표 기사 하나를 문장으로(2026-11-24)
+  const top = arts.find((a) => a.stock[code] && a.ko) ?? arts.find((a) => a.ko) ?? arts[0];
+  const said = (top.ko ?? top.title).trim().replace(/[.。]+$/, "");
   return (
     <div className="combined">{head}
-      <p>직접 이어진 미국 기사가 {n}건 있어요. 대표 소식: {top.ko ?? top.title}</p>
+      <p>밤사이 직접 이어진 미국 기사가 {n}건 있어요. 그중 대표 기사는 ‘{said}’{jo(said, "이에요", "예요").slice(said.length)}.</p>
       <div className="cb-meta">{meta}</div>
     </div>
   );
@@ -145,9 +152,9 @@ function FirstLook(p: Props & { shown: Set<string> }) {
   const dn = held.filter((r) => (r.pct ?? r.s!.h) < 0).length;
   const dirTxt = done ? "" : dn === n ? `${n}종목 모두 어제보다 낮게 시작할 것으로 보여요.` : dn === 0 ? `${n}종목 모두 어제보다 높게 시작할 것으로 보여요.` : `${n}종목 중 ${dn}종목은 낮게, ${n - dn}종목은 높게 보여요.`;
   const [lo, hi] = band(top);
-  const t1 = done ? `${jo(top.name, "이", "가")} 가장 크게 움직였어요 · ${swon(top.amount!)}` : `${jo(top.name, "이", "가")} 가장 크게 움직여요 · 예상 ${swon(top.amount!)}`;
-  const s1 = done ? `07:30 예상 ${swon(h730(top))}, 노란 막대(${swon(lo)} ~ ${swon(hi)}) ${top.s!.l80 <= top.c!.y && top.c!.y <= top.s!.u80 ? "안에서" : "밖에서"} 시작했어요.`
-    : `노란 막대 안에서 시작하면 이 종목 금액 변화는 ${swon(lo)} ~ ${swon(hi)}이에요. ${dirTxt}`;
+  const t1 = done ? <>{jo(top.name, "이", "가")} 가장 크게 움직였어요 · {A(top.amount!)}</> : <>{jo(top.name, "이", "가")} 가장 크게 움직여요 · 예상 {A(top.amount!)}</>;
+  const s1 = done ? <>07:30 예상 {A(h730(top))}, 노란 막대({A(lo)} ~ {A(hi)}) {top.s!.l80 <= top.c!.y && top.c!.y <= top.s!.u80 ? "안에서" : "밖에서"} 시작했어요.</>
+    : <>노란 막대 안에서 시작하면 이 종목 금액 변화는 {A(lo)} ~ {A(hi)}이에요. {dirTxt}</>;
 
   // ② 확인할 때
   const ic2 = post ? "9시" : p.noPre ? "개장" : "8시";
@@ -157,12 +164,12 @@ function FirstLook(p: Props & { shown: Set<string> }) {
     const tot = held.reduce((a, r) => a + Math.abs(h730(r)), 0);
     const sh = tot ? Math.round((100 * nxr.reduce((a, r) => a + Math.abs(h730(r)), 0)) / tot) : 0;
     const h730sum = held.reduce((a, r) => a + h730(r), 0), hsum = held.reduce((a, r) => a + r.amount!, 0);
-    const why = nxr.length ? `${jo(nxr.map((r) => r.name).join("·"), "은", "는")} 개장 전 거래가 07:30 예상과 크게 달라요(아침 예상 금액 변화의 ${sh}%). 08:11 계좌 예상은 개장 전 거래로 다시 계산했어요(2차 예측: 07:30 ${swon(h730sum)} → ${swon(hsum)}). 이런 종목은 오차가 평소보다 클 수 있어 주의해서 보세요.`
+    const why = nxr.length ? <>{jo(nxr.map((r) => r.name).join("·"), "은", "는")} 개장 전 거래가 07:30 예상과 크게 달라요(아침 예상 금액 변화의 {sh}%). 08:11 계좌 예상은 개장 전 거래로 다시 계산했어요(2차 예측: 07:30 {A(h730sum)} → {A(hsum)}). 이런 종목은 오차가 평소보다 클 수 있어 주의해서 보세요.</>
       : post ? "예상 가격대 밖에서 시작한 종목이에요." : "믿을 정도가 낮으면(장전 거래가 보합 근처) 시작가가 장전 거래와 다른 방향으로 열리는 날이 많았어요.";
-    b2 = <><b>확인할 표시 {ck.length}종목</b><small>{why + evTxt}</small>
+    b2 = <><b>확인할 표시 {ck.length}종목</b><small>{why}{evTxt}</small>
       {ck.slice(0, 3).map((x) => (
         <a key={x.r.code} className="mini" href={`#ac-${x.r.code}`}><span><b>{x.r.name}</b> <span className={x.strong ? "lo" : ""}>{x.why}</span></span>
-          <b style={{ color: signColor(x.nxo ? x.r.s!.nxtG! : x.r.amount!) }}>{x.nxo ? `개장 전 ${pct(P(x.r.s!.nxtG!))}` : swon(x.r.amount!)}</b></a>
+          <b style={{ color: signColor(x.nxo ? x.r.s!.nxtG! : x.r.amount!) }}>{x.nxo ? `개장 전 ${pct(P(x.r.s!.nxtG!))}` : A(x.r.amount!)}</b></a>
       ))}
       {ck.length > 3 ? <small className="fl-more">{ck.slice(3).map((x) => x.r.name).join("·")} 더</small> : null}</>;
   } else if (post) {
@@ -183,7 +190,7 @@ function FirstLook(p: Props & { shown: Set<string> }) {
     const mix = ["높음", "보통", "낮음"].map((k) => (lv(k) ? `${k} ${lv(k)}` : "")).filter(Boolean).join(" · ");
     const noneR = held.filter((r) => r.s!.nxtG == null);
     const noneTxt = !noneR.length ? "" : noneR.every((r) => nxtNone(r.code)) ? ` ${jo(noneR.map((r) => r.name).join("·"), "은", "는")} 평소에도 개장 전 거래가 없는 종목이라 새 숫자는 08:50 거래소 예상체결가부터예요.` : ` 개장 전 거래가 없던 ${noneR.length}종목은 07:30 예상 그대로예요.`;
-    b2 = gr.length ? <><b>개장 전 거래가 있던 {gr.length}종목 모두 예상대로예요</b><small>{`아침 예상 가격대 안에서 거래되고 있어요. 믿을 정도(8시 흐름이 9시까지 이어질 가능성): ${mix}. 08:11 2차 예측으로 다시 계산했어요(07:30 ${swon(h730s)} → ${swon(hs)}).${noneTxt}` + evTxt}</small></>
+    b2 = gr.length ? <><b>개장 전 거래가 있던 {gr.length}종목 모두 예상대로예요</b><small>아침 예상 가격대 안에서 거래되고 있어요. 믿을 정도(8시 흐름이 9시까지 이어질 가능성): {mix}. 08:11 2차 예측으로 다시 계산했어요(07:30 {A(h730s)} → {A(hs)}).{noneTxt}{evTxt}</small></>
       : <><b>개장 전 거래가 있었던 종목이 없어요</b><small>{"07:30 예상 그대로예요." + evTxt}</small></>;
   }
 
@@ -204,7 +211,7 @@ function FirstLook(p: Props & { shown: Set<string> }) {
         <div className="l3"><span className={`ic ${tn.length ? "y" : ""}`}>소식</span><span className="bd">
           {tn.length ? tn.map((x, i) => (
             <Link key={x.a.key} className={i ? "mini nw" : "nw0"} href={`/news/a/${encodeURIComponent(x.a.key)}`}>
-              <span className="who">{x.r.name} · {who(x.rank)}</span><b>{x.a.ko ? <span className="ai">AI</span> : null}{x.a.ko ?? x.a.title}</b>{x.a.source ? <small>{x.a.source}</small> : null}
+              <span className="who">{x.r.name} · {who(x.rank)}</span><b>{x.a.ko ? <AiMark small /> : null}{x.a.ko ?? x.a.title}</b>{x.a.source ? <small>{x.a.source}</small> : null}
             </Link>
           )) : <><b>밤사이 내 종목과 이어진 미국 기사가 없어요.</b><small>시장 전체 소식은 아래 &apos;밤사이 시장&apos;에서 볼 수 있어요.</small></>}
         </span><span /></div>
@@ -237,8 +244,11 @@ export function AllView(p: Props) {
       s, c: r.c, pct: r.pct ?? s.h, nxt, y: p.post ? r.c?.y ?? null : null,
       icon: <Avatar name={r.name} size={30} />,
       chips: <>
-        {p.slot0811 && s.grade ? <span className="g">믿을 정도 {s.grade} {DOTS[s.grade]}</span> : <span className="n">믿을 정도는 08:11에 나와요</span>}
-        {vd.neg || vd.pos ? <span className="n">{vd.neg ? `부정 ${vd.neg}` : ""}{vd.neg && vd.pos ? " · " : ""}{vd.pos ? `긍정 ${vd.pos}` : ""}</span> : <span className="n">{nArt ? `소식 ${nArt}건` : "소식 없음"}</span>}
+        {/* 믿을 정도 칩을 누르면 설명 창(원래 버전처럼, 2026-11-24). 08:11 전 칩도 같은 창 */}
+        {p.slot0811 && s.grade ? <GradeHelp className="g" label={<>믿을 정도 {s.grade} {DOTS[s.grade]}</>} /> : <GradeHelp className="n" label="믿을 정도는 08:11에 나와요" />}
+        {/* 소식 칩을 누르면 그 종목의 밤사이 기사 목록 창(2026-11-24). 소식 없음은 그대로 */}
+        {nArt ? <NewsSheet name={r.name} code={r.code} list={p.news.get(r.code) ?? []}
+          label={vd.neg || vd.pos ? <>{vd.neg ? `부정 ${vd.neg}` : ""}{vd.neg && vd.pos ? " · " : ""}{vd.pos ? `긍정 ${vd.pos}` : ""}</> : `소식 ${nArt}건`} /> : <span className="n">소식 없음</span>}
         {s.earn ? <span className="w">어제 실적 공시</span> : null}
       </>,
       flow: p.post && r.c ? (() => {   // 개장 뒤: 예상 → 개장 전 → 실제(원래 버전 stock-flow)
@@ -264,8 +274,8 @@ export function AllView(p: Props) {
           </>
         );
       })() : null,
-      combined: <Combined s={s} x={p.x} y={p.post && r.c ? r.c.y : null} reason={p.reasons.get(r.code)} arts={p.news.get(r.code) ?? []} />,
-      links: <div className="ac-links"><Link href={watch ? `/night?v=watch&open=${r.code}` : `/night?open=${r.code}`}>종목 창 ›</Link>{nArt ? <Link href={`/news?tab=mine&c=${r.code}`}>밤사이 소식 {nArt}건 ›</Link> : null}<Link href={`/mine/${r.code}`}>종목 상세 ›</Link></div>,
+      combined: <Combined s={s} code={r.code} x={p.x} y={p.post && r.c ? r.c.y : null} reason={p.reasons.get(r.code)} arts={p.news.get(r.code) ?? []} />,
+      links: <div className="ac-links"><Link href={watch ? `/night?v=watch&open=${r.code}` : `/night?open=${r.code}`}>종목 창 ›</Link>{nArt ? <NewsSheet className="ac-news" name={r.name} code={r.code} list={p.news.get(r.code) ?? []} label={<>밤사이 소식 {nArt}건 ›</>} /> : null}<Link href={`/mine/${r.code}`}>종목 상세 ›</Link></div>,
     };
   });
   const none = all.filter((x) => !can(x.r));
@@ -285,14 +295,13 @@ export function AllView(p: Props) {
         </section>
       ) : null}
 
-      {p.briefSlot ? <section className="allsec"><div className="hrow"><h3>밤사이 뉴스 요약 <span className="aimark">AI</span></h3><Link href="/news" className="linkish teal">뉴스 브리핑 ›</Link></div>{p.briefSlot}</section> : null}
+      {p.briefSlot ? <section className="allsec"><div className="hrow"><h3>밤사이 뉴스 요약 <AiMark /></h3><Link href="/news" className="linkish teal">뉴스 브리핑 ›</Link></div>{p.briefSlot}</section> : null}
 
       {/* ⑥ 밤사이 시장 */}
       <section className="allsec">
-        <div className="hrow"><h3>밤사이 시장</h3><span className="fine">{(() => { const d = p.us.get("^GSPC")?.usDate; return d ? `${md(d)} 16:00 마감 (미 동부)` : "자료 준비 중"; })()}</span></div>
-        <div className="uschips">
-          {US.map((u) => { const d = p.us.get(u.sym); return <Link key={u.sym} href={`/us?s=${encodeURIComponent(u.sym)}`} className="uschip"><span>{u.short}</span><b style={{ color: signColor(d?.chg ?? 0) }}>{d ? pct(P(d.chg)) : "—"}</b></Link>; })}
-        </div>
+        <div className="hrow"><h3>밤사이 시장</h3><span className="fine">{usHead(p.us, p.t).head}</span></div>
+        <UsChips items={p.usList} />
+        {usHead(p.us, p.t).note ? <p className="usnight">{usHead(p.us, p.t).note}</p> : null}
         {p.night?.points.length ? <FuturesCard night={p.night} live={p.nightLive} buckets={p.buckets} />
           : <div className="futbar off"><span className="nm"><b className="tq">코스피200 야간선물<FuturesHelp /></b><small>어젯밤 18:00 ~ 06:00</small></span><span className="chg"><b>거래 없음</b></span></div>}
         <p className="fine">야간선물이 밤사이 미국 시장과 소식이 모이는 한국 쪽 가격이에요. 오늘 예상 범위는 06:00 마감 변화로 계산했어요.</p>
@@ -313,5 +322,24 @@ export function AllView(p: Props) {
         </section>
       ) : null}
     </div>
+  );
+}
+
+/** 종목 카드의 소식 칩 → 밤사이 기사 목록 창(2026-11-24). 부정 → 긍정 → 중립 → 판정 없음 묶음, 묶음 안은 최신 순.
+ *  카드 아래 '밤사이 소식 n건 ›'도 같은 창(2026-11-24). 기사 상세에서 뒤로 가면 홈으로(back=/) */
+const NEWS_GROUPS: [string | null, string][] = [["negative", "부정"], ["positive", "긍정"], ["neutral", "중립"], [null, "판정 없음"]];
+function NewsSheet({ name, code, list, label, className = "n" }: { name: string; code: string; list: Article[]; label: React.ReactNode; className?: string }) {   // className: 칩(n) · 카드 아래 링크 줄(ac-news)
+  const groupOf = (a: Article) => { const i = impactFor(a, code); return i === "negative" || i === "positive" ? i : i ? "neutral" : null; };
+  const groups = NEWS_GROUPS.map(([k, t]) => ({ k, t, xs: list.filter((a) => groupOf(a) === k).sort((a, b) => b.published.localeCompare(a.published)) })).filter((g) => g.xs.length);
+  return (
+    <Sheet className={className} title={`${name} 밤사이 소식 ${list.length}건`} trigger={label}>
+      {groups.map((g) => (
+        <section key={g.t} className="nsgroup">
+          <p className="nsg-h">{g.t} <b>{g.xs.length}</b></p>
+          {g.xs.map((a) => <StockNews key={a.key} a={a} impact={impactFor(a, code)} back="/?view=all" />)}
+        </section>
+      ))}
+      <Link href={`/news?tab=mine&c=${code}`} className="linkish teal nsmore">뉴스 브리핑에서 더 보기 ›</Link>
+    </Sheet>
   );
 }

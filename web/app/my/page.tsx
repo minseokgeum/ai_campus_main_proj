@@ -3,12 +3,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/ui";
 import { Sheet } from "@/components/sheet";
-import { logout, requireUser } from "@/lib/auth";
+import { logout, requireUser, switchDemoUser } from "@/lib/auth";
 import { portfolio } from "@/lib/portfolio";
 import { demoAt, demoDays, demoPresets, isDemoUser } from "@/lib/clock";
 import { kstNow } from "@/lib/calendar";
 import { DemoPicker } from "@/components/demopicker";
-import { guestSet } from "@/lib/demo";
+import { DEMO_SETS, guestSet } from "@/lib/demo";
+
+async function doSwitch(form: FormData) {   // 시연 계정 바로 바꾸기(user1~3). 바꾼 뒤 홈으로
+  "use server";
+  await switchDemoUser(String(form.get("u") ?? ""));
+  redirect("/");
+}
 
 async function doLogout() {
   "use server";
@@ -29,6 +35,19 @@ export default async function My() {
       <main className="sheet">
         <div className="shead"><Link href="/" aria-label="뒤로">‹</Link><span className="ttl">마이</span></div>
         <section className="prof"><span className="pic">{user.username.slice(0, 1).toUpperCase()}</span><div><b>{user.username.startsWith("guest") ? "둘러보기" : user.username} 님</b><small>{user.username.startsWith("guest") ? `둘러보기 계정${guestSet(user.username) ? ` · 계좌 ${guestSet(user.username)!.key} 복사본` : ""} · 바꾼 종목은 나에게만 보여요` : "아이디 로그인"}</small></div></section>
+        {demo ? (
+          <section className="demotime demoacct">
+            <h3>시연 계정 <small>시연 계정만 · 비밀번호 없이 바로 바꾸기</small></h3>
+            {DEMO_SETS.map((d) => (
+              <form key={d.user} action={doSwitch}>
+                <input type="hidden" name="u" value={d.user} />
+                <button type="submit" className={user.username === d.user ? "on" : ""} disabled={user.username === d.user}>
+                  <b>{d.user} · 계좌 {d.key}{user.username === d.user ? " (지금)" : ""}</b><small>{d.title} · 보유 {d.holdings.length} · 관심 {d.watch.length}</small>
+                </button>
+              </form>
+            ))}
+          </section>
+        ) : null}
         {demo ? (
           <section className="demotime">
             <h3>시연 시각 <small>시연 계정만 · 지난 시각으로 화면 보기</small></h3>

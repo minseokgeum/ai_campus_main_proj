@@ -124,6 +124,20 @@ export async function login(username: string, password: string): Promise<boolean
   return true;
 }
 
+/** 시연 계정 바로 바꾸기(2026-11-25, 마이 화면): 지금 로그인한 계정이 시연 계정일 때만, 비밀번호 없이 user1~user3 중 하나로 세션을 바꾼다.
+ *  시연 시각(demo_at 쿠키)은 그대로 둔다. 바꾸면 true */
+export async function switchDemoUser(target: string): Promise<boolean> {
+  const { isDemoName } = await import("@/lib/clock");
+  const me = await currentUser();
+  if (!me || !isDemoName(me.username) || !["user1", "user2", "user3"].includes(target) || me.username === target) return false;
+  const { rows } = await appdb().query("select id from app.users where username = $1", [target]);
+  if (!rows[0]) return false;
+  const old = (await cookies()).get(COOKIE)?.value;
+  if (old) await appdb().query("delete from app.sessions where id = $1", [old]);
+  await startSession(rows[0].id);
+  return true;
+}
+
 export async function logout(): Promise<void> {
   const jar = await cookies();
   const sid = jar.get(COOKIE)?.value;

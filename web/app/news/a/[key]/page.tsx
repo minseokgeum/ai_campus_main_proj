@@ -3,7 +3,7 @@
 // AI 요약 칸은 추출 결과의 comparison_summary를 한국어 줄글 한 단락으로 번역한 text(2026-11-20 정함).
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BottomNav } from "@/components/ui";
+import { AiMark, BottomNav } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
 import { db } from "@/lib/db";
@@ -132,7 +132,7 @@ export default async function NewsDetail({ params, searchParams }: { params: Pro
         <h1 className="ntitle">{x?.short_summary ?? a.title}</h1>
         <div className="foot"><span className="src">{a.source || a.outlet} · {fullTime(a.published_utc)}</span><a className="go" href={a.link} target="_blank" rel="noreferrer noopener" aria-label="원문 보기"><ExtLink /></a></div>
         <section className="ai">
-          <div className="top"><span className="badge">AI 요약</span></div>
+          <div className="top"><span className="badge"><AiMark label="요약" /></span></div>
           {k?.text ? <p className="para">{k.text}</p>
             : <p className="pending">{whyNoSummary(x?.status, !!x?.extracted)}</p>}
           {k?.impact_note || impact || myLinked.length ? (

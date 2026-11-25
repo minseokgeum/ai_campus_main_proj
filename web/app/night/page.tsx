@@ -2,9 +2,10 @@
 // 월요일 563:697, 연휴 다음 날 461:7929, 미국 휴장 461:7489, 일부 못 받아옴 449:469, 스크롤 448:7077, 필터 결과 462:8306·462:8745).
 // 종목 창·수량 바꾸기는 components/nightboard.tsx(목록 위로 반쯤 올라오는 창). 서버 DB model 영역의 카드·채점을 내 수량으로 계산한다.
 import Link from "next/link";
-import { BottomNav } from "@/components/ui";
+import { BottomNav, StockNews } from "@/components/ui";
 import { NightChart, signColor } from "@/components/model";
 import { MaskToggle } from "@/components/sheet";
+import { FuturesFlow } from "@/components/futcard";
 import { ProgressSheet } from "@/components/progress";
 import { FuturesHelp, GradeHelp, NotServiceHelp } from "@/components/helps";
 import { NightBoard, type BRow } from "@/components/nightboard";
@@ -14,9 +15,9 @@ import { requireUser } from "@/lib/auth";
 import { portfolio } from "@/lib/portfolio";
 import { dayModel, isoDay, modelDates, night as nightOf } from "@/lib/model";
 import { account, buildRows, bySector, nightHref, ordered, P, SORT_LABEL, type NQ, type Phase, type Row } from "@/lib/night";
-import { byStock, nightNews, verdictsOf } from "@/lib/news";
+import { byStock, foldStories, groupByVerdict, impactFor, nightNews, verdictsOf } from "@/lib/news";
 import { addDays, isWeekend, kstNow, minutesTo0730, weekday } from "@/lib/calendar";
-import { afterHoliday, checkTime, closedName, closedReason, marketDay, nextOpenDay } from "@/lib/marketdays";
+import { afterHoliday, checkTime, closedName, closedReason, etToKstHour, marketDay, nameIra, nextOpenDay, usNight } from "@/lib/marketdays";
 import { dateLabel, pct } from "@/lib/format";
 import { appNow } from "@/lib/clock";
 
@@ -194,7 +195,10 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   const dayBanners: [string, string][] = [];
   if (md?.kinds.includes("exam_day")) dayBanners.push(["수능일이라 10:00에 열어요", `개장 전 거래가 없어 08:11 업데이트가 없고, 10:00 시가가 나오면 바로 채점해요. 마감은 ${md.closeAt}이에요.`]);
   if (md?.kinds.includes("first_day")) dayBanners.push(["새해 첫 거래일이라 10:00에 열어요", `개장 전 거래가 없어 08:11 업데이트가 없고, 10:00 시가가 나오면 바로 채점해요. 마감은 ${md.closeAt}이에요.`]);
-  if (md?.kinds.includes("us_early_close")) dayBanners.push(["어젯밤 미국 증시가 일찍 닫았어요", "미국 동부 13:00(한국 새벽 3시)에 마감해서 평소보다 거래 시간이 짧았어요."]);
+  // 미국 휴장·조기 마감 띠: 휴일 이름은 제목이 두 줄로 넘지 않게 설명 문장 앞에(2026-11-25, 달력 us_name 칸). 조기 마감 한국 시각은 서머타임에 따라 3시(겨울)·2시(여름)
+  const usn = usNight(m.t);
+  const usBody = usn?.kind === "closed" ? nameIra(usn.name) : undefined;
+  if (usn?.kind === "early") dayBanners.push(["어젯밤 미국 증시가 일찍 닫았어요", `${nameIra(usn.name)}미국 동부 ${usn.closeEt}(한국 새벽 ${etToKstHour(usn.usDate, usn.closeEt)}시)에 마감해서 평소보다 거래 시간이 짧았어요.`]);
   const nEarn = holdRows.filter((r) => r.s?.earn).length;
   const label = phase === "post" ? "실제" : "예상";
   const nNews = (c: string) => news.get(c)?.length ?? 0;
@@ -204,6 +208,28 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
     <Link href={nightHref(base, { v: "watch", f: undefined })} className={view === "watch" ? "on" : ""}>관심 {pf.watch.length}</Link>
   </>;
   // 필터를 걸면 위 묶음 이름도 그 필터로(피그마 462:8306 '범위 밖 종목 2')
+  // 종목별 오늘 예상 세로 막대(변경 기록 45): 필터와 상관없이 보유/관심 전체. 보유는 보유 금액 큰 순, 관심은 목록 순서
+  const bars = (view === "hold" ? [...all].sort((a, b) => (b.qty * (b.s?.pc ?? 0)) - (a.qty * (a.s?.pc ?? 0))) : ordered(all, sp.o));
+  const ranged = all.filter((r) => r.kind !== "notservice" && r.s?.l80 != null && r.s?.u80 != null && r.c);
+  const chart = items.length ? {
+    title: phase === "post" ? "종목별 오늘 결과" : "종목별 오늘 예상",
+    note: phase === "post" ? `${chk} 채점 · 범위 안 ${ranged.filter((r) => r.c?.in80).length}/${ranged.length}` : `${view === "hold" ? "보유" : "관심"} ${all.length}종목${all.length > 5 ? " · 옆으로 넘겨 보기 ›" : ""}`,
+    rows: bars.map((r) => ({ code: r.code, name: r.name, l: r.kind === "notservice" ? null : r.s?.l80 ?? null, u: r.kind === "notservice" ? null : r.s?.u80 ?? null,
+      line: r.s ? (r.s.hb ?? r.s.h) : null, open: r.c?.y ?? null, in80: r.c?.in80 ?? null })),
+  } : null;
+  // 종목 창 '밤사이 소식' 창 안 기사 줄(변경 기록 29): 뉴스 브리핑과 같은 판정 순서(부정 → 긍정 → 엇갈림 → 중립 → 표시 없음, 안에서는 최신 순),
+  // 같은 소식은 한 줄로 접고 '같은 소식 n건'만 적는다. 20줄까지, 나머지는 뉴스 브리핑에서. 기사 상세에서 뒤로 가면 이 종목 창으로
+  const SHEET_ROWS = 20;
+  const newsBy: Record<string, React.ReactNode> = {};
+  for (const [c, list] of news) {
+    if (!list.length) continue;
+    const folded = foldStories(groupByVerdict(list, (a) => impactFor(a, c)).flatMap((g) => g.xs));
+    const back = `${nightHref(base, {})}${nightHref(base, {}).includes("?") ? "&" : "?"}open=${c}`;
+    newsBy[c] = <>
+      {folded.slice(0, SHEET_ROWS).map(({ head, rest }) => <StockNews key={head.key} a={head} impact={impactFor(head, c)} back={back} more={rest.length ? ` · 같은 소식 ${rest.length}건` : null} />)}
+      {folded.length > SHEET_ROWS ? <p className="fine nn-rest">나머지 소식 {folded.length - SHEET_ROWS}개는 뉴스 브리핑에서 볼 수 있어요</p> : null}
+    </>;
+  }
   const fTitle = f === "out" ? { title: `범위 밖 종목 ${nOut}`, sub: phase === "post" ? "실제 시가가 예상 범위를 벗어난 종목이에요" : "장전 거래 가격이 예상 범위를 벗어난 종목이에요" }
     : f === "low" ? { title: `믿을 정도 낮은 종목 ${nLow}`, sub: "장전 거래가 보합 근처라 오를지 내릴지 바뀔 수 있어요" } : null;
 
@@ -215,7 +241,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
           {m.check ? <Link href={nightHref(base, { p: "post" })} className={phase === "post" ? "on" : ""}>장후</Link> : <span className="dis">장후</span>}
         </div>} />
 
-      {banners.map((b) => <Banner key={b} kind={b} />)}
+      {banners.map((b) => <Banner key={b} kind={b} body={b === "us" ? usBody : undefined} />)}
       {dayBanners.map(([title, body]) => <Banner key={title} kind="day" title={title} body={body} />)}
       {nEarn && phase === "pre" ? <Banner kind="earn" n={nEarn} /> : null}
       {partial ? <Banner kind="partial" n={partial} total={acct.n} /> : null}
@@ -223,8 +249,9 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
       <ProgressSheet stage={stage} details={progressDetails(stage, grades, m.check ? { scored: nScored, inN: nIn } : null, di)} chk={m.check ? chk : next} slotTitle={progress.t} slotSub={progress.s} />
 
       <NightBoard t={m.t} phase={phase} view={view} sortLabel={SORT_LABEL(sp.o)} initialOpen={sp.open}
+        chart={chart} chartRows={bars.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))} newsBy={newsBy}
         rows={rows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))} holdRows={holdRows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))}
-        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : graded && !noGrade ? "오늘 시가 예상 · 08:11 2차 예측" : "오늘 시가에 예상되는 내 주식 변화"}
+        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : "오늘 시가에 예상되는 내 주식 변화"}
         accountHead={<><MaskToggle /><SectorSheet rows={holdRows} acct={acct} count={pf.holdings.length} label={label} /></>}
         accountBelow={<>
           {sectors.length ? (
@@ -241,10 +268,12 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
         stickySeg={<div className="seg2">{seg}</div>}
         futures={m.night ? (
             <div className="fut">
-              <div className="fh"><b className="tq">코스피200 야간선물<FuturesHelp /></b><Link href={nightHref({ d: sp.d }, {}, "/night/futures")} className="futgo"><span style={{ color: signColor(x ?? 0) }}>{x != null ? pct(P(x)) : "—"}</span><em>›</em></Link></div>
-              <p className="fine">어젯밤 18:00 ~ 오늘 06:00 · 어제 마감 대비</p>
-              <Link href={nightHref({ d: sp.d }, {}, "/night/futures")}><NightChart night={m.night} /></Link>
-              <div className="axis"><span>18:00</span><span>23:30 미국 개장</span><span>06:00 마감</span></div>
+              <FuturesFlow night={m.night} sub="어젯밤 18:00 ~ 오늘 06:00">
+                <div className="fh"><b className="tq">코스피200 야간선물<FuturesHelp /></b><span className="futgo"><span style={{ color: signColor(x ?? 0) }}>{x != null ? pct(P(x)) : "—"}</span><em>›</em></span></div>
+                <p className="fine">어젯밤 18:00 ~ 오늘 06:00 · 어제 마감 대비</p>
+                <NightChart night={m.night} />
+                <div className="axis"><span>18:00</span><span>23:30 미국 개장</span><span>06:00 마감</span></div>
+              </FuturesFlow>
               <div className="cmp">
                 <span>시장 <b style={{ color: signColor(x ?? 0) }}>{x != null ? pct(P(x)) : "—"}</b></span>
                 <i />
@@ -273,6 +302,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
                 <Link href={nightHref(base, { f: undefined })} className={!f ? "on" : ""}>전체 {all.length}</Link>
                 {phase === "post" ? <Link href={nightHref(base, { f: "in" })} className={f === "in" ? "on" : ""}>범위 안 {count((r) => r.kind === "ok" && r.c != null)}</Link> : null}
                 <Link href={nightHref(base, { f: "out" })} className={f === "out" ? "on" : ""}>범위 밖 {nOut}</Link>
+                {phase === "pre" && graded && !noGrade ? <Link href={nightHref(base, { f: "low" })} className={f === "low" ? "on" : ""}>믿을 정도 낮음 {nLow}</Link> : null}
                 {count((r) => r.tier === 2) ? <Link href={nightHref(base, { f: "t2" })} className={f === "t2" ? "on" : ""}>모델 설계 밖 {count((r) => r.tier === 2)}</Link> : null}
                 {count((r) => r.kind === "notservice") ? <Link href={nightHref(base, { f: "t3" })} className={f === "t3" ? "on" : ""}>서비스 대상 아님 {count((r) => r.kind === "notservice")}</Link> : null}
                 {sectors.map((g) => <Link key={g.sector} href={nightHref(base, { f: `s:${g.sector}` })} className={f === `s:${g.sector}` ? "on" : ""}>{g.sector} {g.list.length}</Link>)}
@@ -284,7 +314,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
           )}
         </>}
         attention={fTitle ?? (nAtt ? (phase === "post"
-          ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 · 기록 탭에 저장됐어요" }
+          ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 — 눌러서 자세히 보세요" }
           : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `07:30 예상과 크게 달라진 종목 ${nOut} — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
         rest={{ title: nAtt ? `나머지 ${rows.length - nAtt}종목` : `${view === "hold" ? "보유" : "관심"} 종목`, sub: "누르면 아래에서 자세히 열려요" }}
         footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래로 예상을 한 번 더 계산해요(2차 예측). 07:30 예상과 크게 달라진 종목은 위로 올려 펼쳐 둬요. 믿을 정도는 8시 장전 흐름이 9시 시가까지 이어질 가능성이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}

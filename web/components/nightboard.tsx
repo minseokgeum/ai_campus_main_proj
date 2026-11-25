@@ -8,6 +8,7 @@ import { BandMini } from "@/components/model";
 import { GradeHelp, NotServiceHelp } from "@/components/helps";
 import { Layer, StickyAccount } from "@/components/sheet";
 import { StockPanel, colorOf, pctText, swonText, wonText } from "@/components/stockpanel";
+import { NightBars, type BarRow } from "@/components/nightbars";
 
 export type BRow = {
   code: string; name: string; sector: string; tier: 1 | 2 | 3; kind: "ok" | "out" | "low" | "nocalc" | "notservice"; side: "up" | "down" | null;
@@ -21,23 +22,28 @@ const TINTS: [string, string][] = [["rgba(241,163,60,0.18)", "#b86e12"], ["rgba(
 const tint = (sector: string) => TINTS[[...sector].reduce((a, ch) => a + ch.charCodeAt(0), 0) % TINTS.length];
 const DOTS: Record<string, string> = { 높음: "●●●", 보통: "●●○", 낮음: "●○○" };
 
-export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountTitle, accountHead, accountBelow, listHead, futures, stickySeg, attention, rest, footer, initialOpen }: {
+export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountTitle, accountHead, accountBelow, listHead, futures, stickySeg, attention, rest, footer, initialOpen, chart, chartRows, newsBy }: {
   t: string; phase: "pre" | "post"; view: "hold" | "watch"; rows: BRow[]; holdRows: BRow[]; sortLabel: string;
   accountTitle: string; accountHead: ReactNode; accountBelow: ReactNode; listHead: ReactNode; futures: ReactNode; stickySeg: ReactNode; footer: ReactNode;
   attention: { title: string; sub: string } | null; rest: { title: string; sub: string } | null; initialOpen?: string;
+  chart?: { title: string; note: string; rows: BarRow[] } | null;   // 종목별 오늘 예상 세로 막대(필터와 상관없이 보유/관심 전체)
+  chartRows?: BRow[];   // 막대에서 연 종목이 필터로 목록에 없을 때 창을 열 자료
+  newsBy?: Record<string, ReactNode>;   // 종목 창 '밤사이 소식' 창 안 기사 줄(서버에서 그려 넘김)
 }) {
   const key = `qty:${t}`;
   const [ovr, setOvr] = useState<Record<string, number>>({});
   const [open, setOpen] = useState<string | null>(initialOpen ?? null);
+  const [newsOpen, setNewsOpen] = useState(false);   // 종목 창 위에 뜨는 그 종목 밤사이 소식 창(변경 기록 29)
+  useEffect(() => setNewsOpen(false), [open]);
   useEffect(() => { try { setOvr(JSON.parse(sessionStorage.getItem(key) ?? "{}")); } catch { /* 저장소 없으면 처음 수량 */ } }, [key]);
   useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(ovr)); } catch { /* 무시 */ } }, [key, ovr]);
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(null);
+    const esc = (e: KeyboardEvent) => { if (e.key !== "Escape") return; if (newsOpen) setNewsOpen(false); else setOpen(null); };
     document.addEventListener("keydown", esc);
     return () => { document.body.style.overflow = ""; document.removeEventListener("keydown", esc); };
-  }, [open]);
+  }, [open, newsOpen]);
 
   const qtyOf = (r: BRow) => ovr[r.code] ?? r.qty;
   // 금액 원칙(2026-11-24): 계산은 정확히, 화면에 찍을 때만 1원 반올림. 장전은 홈·종목 창과 같은 예상(08:11이면 2차 예측 hb),
@@ -71,8 +77,10 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
 
   const att = rows.filter((r) => r.kind === "out" || r.kind === "low");
   const others = rows.filter((r) => r.kind !== "out" && r.kind !== "low");
-  const k = open ? rows.findIndex((r) => r.code === open) : -1;
-  const cur = k >= 0 ? rows[k] : null;
+  // 막대 그래프에서 연 종목이 필터로 목록에 없으면, 창은 보유/관심 전체 순서로 넘긴다
+  const nav = open && !rows.some((r) => r.code === open) && chartRows?.some((r) => r.code === open) ? chartRows : rows;
+  const k = open ? nav.findIndex((r) => r.code === open) : -1;
+  const cur = k >= 0 ? nav[k] : null;
 
   const rowView = (r: BRow) => {
     const [bg, fg] = tint(r.sector);
@@ -136,6 +144,7 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
         </div>
         {accountBelow}
       </section>
+      {chart ? <NightBars rows={chart.rows} post={phase === "post"} title={chart.title} note={chart.note} onPick={setOpen} /> : null}
       {listHead}
       {attention && att.length ? <div className="ghead"><b><i />{attention.title}</b><span>{attention.sub}</span></div> : null}
       {att.map(rowView)}
@@ -150,9 +159,9 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
           <section className="sheet-box stocksheet" role="dialog" aria-modal="true" aria-label={`${cur.name} 종목 창`} onClick={(e) => e.stopPropagation()}>
             <i className="grab" />
             <div className="shead">
-              <button type="button" disabled={k <= 0} onClick={() => setOpen(rows[k - 1].code)} aria-label="이전 종목">‹</button>
-              <span className="pos">{k + 1} / {rows.length} · {sortLabel}</span>
-              <button type="button" disabled={k >= rows.length - 1} onClick={() => setOpen(rows[k + 1].code)} aria-label="다음 종목">›</button>
+              <button type="button" disabled={k <= 0} onClick={() => setOpen(nav[k - 1].code)} aria-label="이전 종목">‹</button>
+              <span className="pos">{k + 1} / {nav.length} · {nav === rows ? sortLabel : "보유 금액 큰 순"}</span>
+              <button type="button" disabled={k >= nav.length - 1} onClick={() => setOpen(nav[k + 1].code)} aria-label="다음 종목">›</button>
               <button type="button" className="close" onClick={() => setOpen(null)} aria-label="닫기">✕</button>
             </div>
             {cur.kind === "notservice" || cur.pc == null || cur.h == null || cur.l80 == null || cur.u80 == null || cur.l90 == null || cur.u90 == null ? (
@@ -182,9 +191,25 @@ export function NightBoard({ t, phase, view, rows, holdRows, sortLabel, accountT
               </>
             )}
             <div className="slinks">
-              <Link href={`/news?tab=mine&c=${cur.code}`}>밤사이 소식 <b>{cur.nNews}건</b> ›</Link>
+              {cur.nNews && newsBy?.[cur.code] ? <button type="button" onClick={() => setNewsOpen(true)}>밤사이 소식 <b>{cur.nNews}건</b> ›</button> : <span className="off">밤사이 소식 없음</span>}
               <Link href={`/mine/${cur.code}`}>종목 상세 ›</Link>
             </div>
+          </section>
+        </div></Layer>
+      ) : null}
+
+      {cur && newsOpen && newsBy?.[cur.code] ? (
+        <Layer><div className="sheet-back" onClick={() => setNewsOpen(false)}>
+          <section className="sheet-box nnsheet" role="dialog" aria-modal="true" aria-label={`${cur.name} 밤사이 소식`} onClick={(e) => e.stopPropagation()}>
+            <i className="grab" />
+            <div className="nn-head">
+              <span className="ic" style={{ background: tint(cur.sector)[0], color: tint(cur.sector)[1] }}>{cur.name.slice(0, 1)}</span>
+              <b>{cur.name} 밤사이 소식</b>
+              <button type="button" className="x" aria-label="닫기" onClick={() => setNewsOpen(false)}>✕</button>
+            </div>
+            <p className="nn-sub">뉴스 {cur.nNews}건{cur.v?.neg ? <> · <b className="neg">부정</b> {cur.v.neg}</> : null}{cur.v?.pos ? <> · <b className="pos">긍정</b> {cur.v.pos}</> : null} · 어젯밤 18:00 ~ 06:00</p>
+            <div className="nn-list">{newsBy[cur.code]}</div>
+            <Link href={`/news?tab=mine&c=${cur.code}`} className="nn-more">뉴스 브리핑 내 종목에서 보기 ›</Link>
           </section>
         </div></Layer>
       ) : null}

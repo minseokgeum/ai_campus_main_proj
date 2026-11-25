@@ -690,18 +690,6 @@
 "theme": ""
 },
 {
-"term": "\"Nvidia\"",
-"code": "017670",
-"kind": "해외 상대",
-"theme": ""
-},
-{
-"term": "\"Nvidia\" \"Nvidia NVLink Fusion\"",
-"code": "017670",
-"kind": "해외 상대",
-"theme": ""
-},
-{
 "term": "\"Rebellions ATOM-Max\"",
 "code": "017670",
 "kind": "원자재·지표",
@@ -2265,6 +2253,168 @@
 "term": "\"Zymfentra\"",
 "code": "068270",
 "kind": "브랜드",
+"theme": ""
+},
+{
+"term": "\"Micron\"",
+"code": "000660",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Micron\"",
+"code": "042700",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Micron\"",
+"code": "222800",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"HBM\"",
+"code": "000660",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"HBM\"",
+"code": "042700",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"HBM\"",
+"code": "222800",
+"kind": "구체 제품",
+"theme": ""
+},
+{
+"term": "\"Boeing\"",
+"code": "003490",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Lockheed Martin\"",
+"code": "012450",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Lockheed Martin\"",
+"code": "064350",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"LNG\"",
+"code": "042660",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"LNG\"",
+"code": "009540",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"oil prices\"",
+"code": "010950",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"oil prices\"",
+"code": "003490",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"Take-Two\"",
+"code": "259960",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Johnson & Johnson\"",
+"code": "000100",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Ulta Beauty\"",
+"code": "278470",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Ulta Beauty\"",
+"code": "257720",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"skincare\"",
+"code": "278470",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"skincare\"",
+"code": "257720",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"data center power\"",
+"code": "010120",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"data center power\"",
+"code": "103590",
+"kind": "넓은 제품",
+"theme": ""
+},
+{
+"term": "\"GE Vernova\"",
+"code": "103590",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"General Motors\"",
+"code": "005380",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Volkswagen\"",
+"code": "005380",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Tesla\"",
+"code": "005380",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Tesla\"",
+"code": "006400",
+"kind": "해외 상대",
+"theme": ""
+},
+{
+"term": "\"Stellantis\"",
+"code": "006400",
+"kind": "해외 상대",
 "theme": ""
 }
 ]

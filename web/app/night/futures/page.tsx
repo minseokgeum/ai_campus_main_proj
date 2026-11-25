@@ -36,7 +36,7 @@ export default async function Futures({ searchParams }: { searchParams: Promise<
             <p className="fine">ⓘ 어제 마감보다 위는 빨강, 아래는 파랑으로 칠했어요</p>
             <div className="ohlc">
               <span>시작가</span><b>{lvl(pts[0]?.r ?? 0)}</b><span>어제 마감</span><b>{n.dayClose.toFixed(2)}</b>
-              <span>고가</span><b style={{ color: "#d35d66" }}>{lvl(hi.r)}</b><span>저가</span><b style={{ color: "#4c6fc3" }}>{lvl(lo.r)}</b>
+              <span>고가</span><b style={{ color: signColor(hi.r) }}>{lvl(hi.r)}</b><span>저가</span><b style={{ color: signColor(lo.r) }}>{lvl(lo.r)}</b>
             </div>
             <div className="flegend"><span><i className="u" />어제 마감보다 높음</span><span><i className="d" />어제 마감보다 낮음</span></div>
             <p className="fine">야간 거래는 어제 18:00부터 오늘 06:00까지 열려요. 오늘 정규장은 09:00에 시작하고, 실제 시초가와는 차이가 날 수 있어요. 06:00 마감 변화가 예상 시가 계산의 입력이에요.</p>

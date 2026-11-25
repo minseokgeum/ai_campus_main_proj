@@ -3,15 +3,17 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { IMPACT_LABEL, kstTime } from "@/lib/format";
 import { stockName } from "@/lib/data";
-import type { Article } from "@/lib/news";
+import { foldStories, type Article } from "@/lib/news";
 
 
+// 아이콘(피그마 배포/하단 메뉴 771:173, 변경 기록 33 '투톤', 2026-11-25 반영): 선택 안 됨 = 회색 선만, 선택됨 = 민트 면 + 청록 선.
+// 두 가지 색이라 한 색으로 칠하는 마스크 대신 탭마다 파일 두 개(public/icons/nav-*.svg, nav-*-on.svg)
 const TABS = [
-  { key: "home", href: "/", label: "홈", icon: "/icons/tab-home.svg" },
-  { key: "news", href: "/news", label: "뉴스 브리핑", icon: "/icons/tab-news-on.svg" },
-  { key: "night", href: "/night", label: "밤사이", icon: "/icons/tab-night.svg" },
-  { key: "mine", href: "/mine", label: "내 종목", icon: "/icons/tab-mine.svg" },
-  { key: "saved", href: "/saved", label: "보관", icon: "/icons/tab-saved.svg" },
+  { key: "home", href: "/", label: "홈" },
+  { key: "news", href: "/news", label: "뉴스 브리핑" },
+  { key: "night", href: "/night", label: "밤사이" },
+  { key: "mine", href: "/mine", label: "내 종목" },
+  { key: "saved", href: "/saved", label: "보관" },
 ] as const;
 
 export type TabKey = (typeof TABS)[number]["key"];
@@ -26,7 +28,7 @@ export function BottomNav({ active, acct }: { active: TabKey | null; acct?: stri
     <nav className="nav" aria-label="아래 메뉴">
       {TABS.map((t) => (
         <Link key={t.key} href={withAcct(t.href, acct)} className={t.key === active ? "on" : ""} aria-current={t.key === active ? "page" : undefined}>
-          <span className="ic" style={{ ["--ic" as string]: `url(${t.icon})` }} aria-hidden />
+          <img className="ic" src={`/icons/nav-${t.key}${t.key === active ? "-on" : ""}.svg`} alt="" width={24} height={24} aria-hidden />
           {t.label}
         </Link>
       ))}
@@ -34,10 +36,11 @@ export function BottomNav({ active, acct }: { active: TabKey | null; acct?: stri
   );
 }
 
-export function Head({ title, sub, help }: { title: string; sub?: ReactNode; help?: ReactNode }) {
+export function Head({ title, sub, help, tabs }: { title: ReactNode; sub?: ReactNode; help?: ReactNode; tabs?: ReactNode }) {   // tabs: 제목 아래 보기 전환 줄(뉴스 브리핑, 2026-11-25). 있으면 help는 그 줄 끝에
   return (
     <header className="head">
-      <h1>{title}{help}</h1>
+      <h1>{title}{tabs ? null : help}</h1>
+      {tabs ? <div className="htabs">{tabs}{help}</div> : null}
       {sub ? <p className="sub">{sub}</p> : null}
       <Link href="/my" className="my" aria-label="마이">
         <img src="/icons/my.svg" alt="" width={23} height={23} />
@@ -65,9 +68,9 @@ function Source({ a }: { a: Article }) {
 }
 
 /** 한국어 한 줄 요약이 있으면 제목으로, 원문 제목은 그 아래 작게 */
-function Title({ a }: { a: Article }) {
+function Title({ a, back }: { a: Article; back?: string }) {   // back: 기사 상세에서 뒤로 갈 곳(없으면 뉴스 브리핑)
   return (
-    <Link href={`/news/a/${a.key}`} className="tlink">
+    <Link href={back ? `/news/a/${a.key}?back=${encodeURIComponent(back)}` : `/news/a/${a.key}`} className="tlink">
       {a.ko ? <p className="title">{a.ko}</p> : <p className="title" lang="en">{a.title}</p>}
     </Link>
   );
@@ -77,15 +80,16 @@ const ExtIcon = () => <svg aria-hidden width="16" height="16" viewBox="0 0 16 16
 
 /** 뉴스 목록 한 줄(배포용 변경 '뉴스 · 시장 / 산업별도 내 종목과 같은 목록 규칙', 피그마 784:1739 · 769:9749):
  *  흰 바탕 목록 + 구분선, (시장만) 주제 / 제목 / 매체 · 시각 / 관련 종목 · 종목 / 오른쪽 바깥 링크 아이콘. 칩 없음 */
-export function NewsCard({ a, tag }: { a: Article; tag?: string }) {
+export function NewsCard({ a, tag, impact, more }: { a: Article; tag?: string; impact?: string | null; more?: ReactNode }) {   // impact: 기사 판정(시장·산업별, articleVerdict) → 판정 글자·왼쪽 막대, more: 정보 줄 끝(같은 소식 n건)
   const k = tag ? null : a.themes[0];   // 주제는 시장 탭에서만(산업별은 업종이 이미 정해져 있음)
   const names = a.direct.slice(0, 3).map(stockName); // 그 종목 고유 검색어로 걸린 종목
+  const v = impact ? IMPACT_LABEL[impact] : null;
   return (
-    <article className="nline">
+    <article className={`nline ${impact !== undefined ? `sn ${v ? v[1] : ""}` : ""}`}>
       <div className="nl">
         {k ? <span className="ntopic">{k}</span> : null}
         <Title a={a} />
-        <span className="nmeta">{a.source} · {kstTime(a.published)}</span>
+        <span className="nmeta">{v ? <span className="vtag"><b className={`verdict ${v[1]}`}>{v[0]}</b> · </span> : null}{a.source} · {kstTime(a.published)}{more}</span>
         {names.length ? <span className="nrel"><b>관련</b> {names.join(" · ")}</span> : null}
       </div>
       <a className="next" href={a.link} target="_blank" rel="noreferrer noopener" aria-label="원문 보기"><ExtIcon /></a>
@@ -93,14 +97,61 @@ export function NewsCard({ a, tag }: { a: Article; tag?: string }) {
   );
 }
 
+/** 판정 묶음(2026-11-24): 부정 → 긍정 → 엇갈림 → 중립 → 표시 없음 순서로 머리줄과 기사들. 뉴스 브리핑 세 화면이 같이 쓴다.
+ *  같은 소식(서버 news.stories) 기사는 가장 최근 것 한 줄, 그 정보 줄 끝에 '같은 소식 n건 ⌄'(A안). 누르면 바로 아래에 제목 · 매체 · 시각만 작은 줄로 펼친다.
+ *  머리줄 = '부정 소식'(크게) + '14개 · 23건'(중간). 띠는 묶음 하나에 세로 한 줄, 기사 줄의 판정 글자·막대는 숨긴다.
+ *  묶음마다 처음엔 SHOW_ROWS줄만, 나머지는 '나머지 소식 n개 더 보기'로 펼친다. 펼치기는 모두 숨은 체크 칸 + label(스크립트 없이) */
+const SHOW_ROWS = 10;
+export function VerdictGroups({ groups, render }: { groups: { k: string | null; label: string; xs: Article[] }[]; render: (a: Article, more?: ReactNode) => ReactNode }) {
+  return (
+    <div className="vgroups">
+      {groups.map((g) => {
+        const folds = foldStories(g.xs);
+        const gid = `vg-${g.k ?? "none"}`;
+        const row = (f: { head: Article; rest: Article[] }) => {
+          if (!f.rest.length) return <div key={f.head.key} className="nfold">{render(f.head)}</div>;
+          const id = `fold-${g.k ?? "none"}-${f.head.key}`.replace(/[^A-Za-z0-9_-]/g, "");
+          return (
+            <div key={f.head.key} className="nfold">
+              <input type="checkbox" id={id} className="fold-cb" hidden />
+              {render(f.head, <> · <label htmlFor={id} className="fmore">같은 소식 {f.rest.length}건</label></>)}
+              <ul className="nfold-in" aria-label="같은 소식 기사">
+                {f.rest.map((a) => (
+                  <li key={a.key}>
+                    <Link href={`/news/a/${a.key}`} className="nm-tt">{a.ko ?? <span lang="en">{a.title}</span>}</Link>
+                    <span className="nm-m">{a.source} · {kstTime(a.published)}</span>
+                    <a className="nm-x" href={a.link} target="_blank" rel="noreferrer noopener" aria-label="원문 보기"><ExtIcon /></a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        };
+        const extra = folds.slice(SHOW_ROWS);
+        return (
+          <section key={g.label} className={`nsgroup ${gid.replace("vg-negative", "vg-neg").replace("vg-positive", "vg-pos").replace(/vg-(mixed|neutral)/, "vg-neu")}`}>
+            <p className="nsg-h"><span className="t">{g.label} 소식</span><span className="c">{folds.length < g.xs.length ? `${folds.length}개 · ${g.xs.length}건` : `${g.xs.length}건`}</span></p>
+            {folds.slice(0, SHOW_ROWS).map(row)}
+            {extra.length ? <>
+              <input type="checkbox" id={`${gid}-more`} className="more-cb" hidden />
+              <div className="vg-extra">{extra.map(row)}</div>
+              <label htmlFor={`${gid}-more`} className="vg-more"><span className="o">나머지 소식 {extra.length}개 더 보기<i className="chev" aria-hidden /></span><span className="x">접기<i className="chev up" aria-hidden /></span></label>
+            </> : null}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 /** 종목 블록 안 뉴스 한 줄(배포용 변경 '뉴스 · 내 종목 읽기 쉽게', 피그마 794:157): 왼쪽 세로 판정 막대 · 제목 · '판정 · 매체 · 시각' · 바깥 링크 아이콘 */
-export function StockNews({ a, impact }: { a: Article; impact?: string | null }) {
+export function StockNews({ a, impact, back, more }: { a: Article; impact?: string | null; back?: string; more?: ReactNode }) {
   const v = impact ? IMPACT_LABEL[impact] : null;
   return (
     <article className={`nline sn ${v ? v[1] : ""}`}>
       <div className="nl">
-        <Title a={a} />
-        <span className="nmeta">{v ? <b className={`verdict ${v[1]}`}>{v[0]}</b> : null}{v ? " · " : ""}{a.source} · {kstTime(a.published)}</span>
+        <Title a={a} back={back} />
+        <span className="nmeta">{v ? <span className="vtag"><b className={`verdict ${v[1]}`}>{v[0]}</b> · </span> : null}{a.source} · {kstTime(a.published)}{more}</span>
       </div>
       <a className="next" href={a.link} target="_blank" rel="noreferrer noopener" aria-label="원문 보기"><ExtIcon /></a>
     </article>
@@ -152,15 +203,26 @@ export function Glance({ title, rows, sector }: { title: string; rows: { name: s
   );
 }
 
+/** AI 표시(2026-11-25 통일, 사용자 시안): 테두리·바탕 없이 세 줄 요약 아이콘 + 'AI'를 진한 초록 계열 그라데이션(초록→앱 청록→진한 청록)으로. 빛이 4초마다 글자 위를 지나간다(움직임 줄이기면 없음).
+ *  label: 뒤에 붙일 말(예: '요약', '전체 요약'). small: 문장 앞에 붙는 작은 크기 */
+export function AiMark({ label, small }: { label?: string; small?: boolean }) {
+  return (
+    <span className={`aimk${small ? " sm" : ""}`} aria-label={`AI${label ? ` ${label}` : ""}`}>
+      <img src="/icons/ai-lines.svg" alt="" aria-hidden width={small ? 13 : 16} height={small ? 10 : 12} />
+      <b aria-hidden>AI</b>{label ? <span className="lb" aria-hidden>{label}</span> : null}
+    </span>
+  );
+}
+
 /** AI 전체 요약(핫이슈 줄). 줄이 없으면 준비 중 */
 /** lines: 글 한 줄, 또는 [굵은 머리말, 글](피그마 522:6842 '반도체 AI 서버 투자…') */
 /** empty: 요약은 돌았는데 줄이 없을 때 '준비 중' 대신 보여 줄 문구(본문, 아래 작은 글씨). 없으면 준비 중 */
-export function AiSummary({ meta, what, lines, note, empty }: { meta: string; what: string; lines: (string | [string, string])[]; note?: string; empty?: [string, string] }) {
+export function AiSummary({ meta, what, lines, note, empty, badge = "AI 전체 요약" }: { meta: string; what: string; lines: (string | [string, string])[]; note?: string; empty?: [string, string]; badge?: string }) {   // badge: 종목 한 장(뉴스 · 내 종목 뉴스)은 'AI 요약'
   if (!lines.length && empty) {
     return (
       <section className="ai">
         <div className="top">
-          <span className="badge">AI 전체 요약</span>
+          <span className="badge"><AiMark label={badge.replace(/^AI\s*/, "")} /></span>
           <span className="meta">{meta}</span>
         </div>
         <p className="pending">{empty[0]}</p>
@@ -168,11 +230,11 @@ export function AiSummary({ meta, what, lines, note, empty }: { meta: string; wh
       </section>
     );
   }
-  if (!lines.length) return <AiPending meta={meta} what={what} />;
+  if (!lines.length) return <AiPending meta={meta} what={what} badge={badge} />;
   return (
     <section className="ai">
       <div className="top">
-        <span className="badge">AI 전체 요약</span>
+        <span className="badge"><AiMark label={badge.replace(/^AI\s*/, "")} /></span>
         <span className="meta">{meta}</span>
       </div>
       {lines.map((l, i) => (
@@ -184,11 +246,11 @@ export function AiSummary({ meta, what, lines, note, empty }: { meta: string; wh
 }
 
 /** AI 전체 요약 자리: 처리(news_extract → news_track → 요약)를 켜면 채운다 */
-export function AiPending({ meta, what }: { meta: string; what: string }) {
+export function AiPending({ meta, what, badge = "AI 전체 요약" }: { meta: string; what: string; badge?: string }) {
   return (
     <section className="ai">
       <div className="top">
-        <span className="badge">AI 전체 요약</span>
+        <span className="badge"><AiMark label={badge.replace(/^AI\s*/, "")} /></span>
         <span className="meta">{meta}</span>
       </div>
       <p className="pending">{what} AI 요약은 준비 중이에요. 아래에서 밤사이 원문 기사를 먼저 볼 수 있어요.</p>

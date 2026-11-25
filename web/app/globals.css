@@ -82,9 +82,10 @@ dl.ntime dd { color: var(--ink); font-weight: 500; }
 .foot .go b { font-weight: 700; }
 
 /* 보유 · 관심 전환 */
-.seg { display: flex; gap: 4px; padding: 3px; border-radius: 11px; background: var(--block); }
-.seg a { flex: 1; text-align: center; padding: 7px 0; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--muted); line-height: 1.2; }
-.seg a.on { background: var(--charcoal); color: #fff; font-weight: 700; }
+/* 보유/관심 전환(배포용 변경 기록 30, 2026-11-25): 연회색 트랙 안에서 고른 쪽만 흰 바탕 + 옅은 그림자 + 진한 굵은 글자, 나머지는 회색 글자 */
+.seg { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: #eef1f2; }
+.seg a { flex: 1; text-align: center; padding: 7px 0; border-radius: 9px; font-size: 13px; font-weight: 500; color: #66777a; line-height: 1.2; }
+.seg a.on { background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgba(26,46,51,.10); }
 
 /* 종목 필터 칩(가로 스크롤) */
 .filter { display: flex; align-items: center; background: var(--block); border-radius: 18px; padding: 4px; }
@@ -141,7 +142,7 @@ dl.ntime dd { color: var(--ink); font-weight: 500; }
 .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; height: calc(var(--nav-h) + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--line); display: flex; padding: 0 1px env(safe-area-inset-bottom); z-index: 10; }
 .nav a { flex: 1; display: flex; flex-direction: column; align-items: center; padding-top: 17px; gap: 7px; font-size: 10px; line-height: 15px; color: var(--muted); }
 .nav a.on { color: var(--teal); font-weight: 700; }
-.nav .ic { width: 24px; height: 24px; background: currentColor; -webkit-mask: var(--ic) center / 20px 20px no-repeat; mask: var(--ic) center / 20px 20px no-repeat; }
+.nav .ic { display: block; width: 24px; height: 24px; margin: 2px; }   /* 피그마 771:173: 24px 아이콘 + 둘레 2px */
 
 /* 버튼 공통 */
 .primary { display: flex; justify-content: center; align-items: center; min-height: 52px; border-radius: 14px; background: #111; color: #fff; font-size: 16px; font-weight: 700; }
@@ -238,7 +239,7 @@ dl.ntime dd { color: var(--ink); font-weight: 500; }
 .acct .flow span { font-size: 11px; color: var(--muted); }
 .acct .flow b { font-size: 13px; }
 .acct .flow em { font-style: normal; color: var(--muted); }
-.seg.w { background: rgba(255,255,255,.6); }
+.seg.w { background: #eef1f2; }
 .fut { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
 .fut.big { border: 0; padding: 0; }
 .fut .fh { display: flex; align-items: center; gap: 6px; }
@@ -307,6 +308,9 @@ dl.ntime dd { color: var(--ink); font-weight: 500; }
 .slinks { display: flex; gap: 8px; }
 .slinks a { flex: 1; background: var(--block); border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700; min-height: 48px; }
 .slinks a b { color: var(--teal); }
+.slinks button, .slinks span.off { flex: 1; text-align: left; background: var(--block); border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700; min-height: 48px; color: var(--ink); }
+.slinks button b { color: var(--teal); }
+.slinks span.off { color: #8a9598; font-weight: 500; }
 
 /* 보관(피그마 297:659) */
 .dstrip { display: flex; gap: 6px; }
@@ -418,16 +422,18 @@ html[data-mask] .pval .amt::after, html[data-mask] .val .amt::after, html[data-m
 .grp > span { font-size: 11px; color: var(--muted); }
 .grp div { display: flex; gap: 6px; flex-wrap: wrap; }
 .grp div a, .grp div span { background: #fff; border-radius: 8px; padding: 4px 9px; font-size: 12px; font-weight: 500; color: var(--sub); }
-.grp div a.hot { background: rgba(241,163,60,.18); color: #b86e12; font-weight: 700; }
+.grp div a.hot { background: #eaf7f4; color: #008c82; font-weight: 700; box-shadow: inset 0 0 0 1px #008c82; }   /* 고른 업종 칩: 살구색 → 민트 + 청록(변경 기록 30) */
 .stickacct { position: sticky; top: 0; z-index: 5; margin: -14px -24px 0; padding: 0 24px; height: 0; overflow: hidden; background: #fff; transition: height .15s, padding .15s; }
-.stickacct.on { height: 64px; padding-top: 8px; }
+.stickacct.on { height: 72px; padding-top: 8px; }
+/* 시연 시각 줄(.demobar, 위쪽에 붙음)이 있을 때는 그 아래에 붙인다(겹쳐 가리던 것, 2026-11-25). 실제 사용자 화면엔 시연 줄이 없다 */
+body:has(.demobar) .stickacct { top: 41px; }   /* 시연 줄 높이 41px */
 .stickacct > * { flex: none; }
 .stickacct.on, .stickacct { display: flex; align-items: center; }
-.stickacct .sa { flex: 1; display: flex; flex-direction: column; background: var(--mint); border-radius: 14px 0 0 14px; padding: 8px 14px; height: 52px; justify-content: center; }
-.stickacct .sa > span { font-size: 11px; color: var(--teal); }
-.stickacct .sa b { font-size: 15px; }
-.stickacct .sa b small { font-size: 11px; font-weight: 500; }
-.stickacct .seg2 { display: flex; background: var(--mint); border-radius: 0 14px 14px 0; height: 52px; align-items: center; padding: 0 8px 0 0; gap: 2px; }
+.stickacct .sa { flex: 1; display: flex; flex-direction: column; gap: 1px; background: var(--mint); border-radius: 14px 0 0 14px; padding: 8px 14px; height: 60px; justify-content: center; }
+.stickacct .sa > span { font-size: 12px; color: var(--teal); }
+.stickacct .sa b { font-size: 20px; font-weight: 800; line-height: 1.2; }
+.stickacct .sa b small { font-size: 13px; font-weight: 600; }
+.stickacct .seg2 { display: flex; background: var(--mint); border-radius: 0 14px 14px 0; height: 60px; align-items: center; padding: 0 8px 0 0; gap: 2px; }
 .stickacct .seg2 a { font-size: 12px; padding: 7px 12px; border-radius: 10px; color: var(--muted); font-weight: 500; }
 .stickacct .seg2 a.on { background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 .acct.wait .big span { font-size: 26px; color: var(--ink); }
@@ -542,7 +548,8 @@ html[data-mask] .pval .amt::after, html[data-mask] .val .amt::after, html[data-m
 .uschg { font-size: 14px; font-weight: 700; }
 .uschg span { font-weight: 400; color: var(--muted); margin-left: 6px; font-size: 12px; }
 .uschart svg { display: block; height: 150px; }
-.uspick { font-size: 12px; color: var(--muted); }
+.uspick { font-size: 12px; color: var(--muted); height: 20px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 높이 고정: 값이 떠도 그래프가 밀리지 않게 */
+.uspick.idle { color: var(--faint, #9aa5a8); }
 .uspick b { color: var(--ink); font-size: 14px; }
 .usax { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
 .ohlc { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 10px 12px; background: var(--block); border-radius: 12px; padding: 14px; font-size: 12px; color: var(--muted); }
@@ -968,6 +975,15 @@ html[data-mask] .avgwon { display: none; }
 .bslide .bsmore { flex-basis: 220px; justify-content: center; gap: 10px; text-decoration: none; color: var(--ink); }
 .bslide .bsmore b { font-size: 16px; line-height: 1.4; }
 .bslide .bsmore span { font-size: 14px; font-weight: 700; color: var(--teal); }
+/* 지도 ↔ 업종별 투자 비중 넘겨 보기(2026-11-24, 홈 나눠 보기·내 종목 탭). 한 장이 화면 폭 전체, 높이는 긴 장에 맞춤 */
+.pswipewrap { display: flex; flex-direction: column; gap: 8px; }
+.pswipe { position: relative; display: flex; gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -24px; padding: 0 24px; scroll-padding: 0 24px; scrollbar-width: none; overscroll-behavior-x: contain; }
+.pswipe::-webkit-scrollbar { display: none; }
+.pswipe > .pslide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; }
+.pswipe > .pslide > * { flex: 1; }
+.pdots { display: flex; justify-content: center; gap: 6px; }
+.pdots button { width: 6px; height: 6px; padding: 0; border: 0; border-radius: 3px; background: #cfd6d8; transition: width .2s, background .2s; }
+.pdots button.on { width: 16px; background: var(--charcoal); }
 .aimark { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 13px; font-weight: 700; color: var(--teal); vertical-align: 3px; }
 
 /* 홈 야간선물 카드(피그마 843:1577) · 흐름 창(835:1433) */
@@ -1007,15 +1023,18 @@ html[data-mask] .avgwon { display: none; }
 .samemore { width: 100%; min-height: 44px; font-size: 13px; font-weight: 500; color: var(--muted); background: none; border-top: 1px solid var(--line); }
 
 /* 뉴스 목록 한 줄(배포용 변경: 회색 카드 → 흰 바탕 목록 + 구분선, 칩 없음) */
-.nline { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
-.nline .nl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.nline { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }   /* 2026-11-24: 기사 사이가 넓다는 의견으로 구분선 사이 가운데에 위아래 10px씩(대칭), 줄 사이 4 → 2px */
+.scroll > .nline + .nline { margin-top: -16px; }   /* 화면 틀(.scroll)의 칸 사이 16px이 기사마다 위에 더해져 위만 넓던 것 → 기사끼리는 구분선 + 위아래 여백만 */
+.sheet-body > .nline + .nline { margin-top: -10px; }   /* 업종 뉴스 모두 보기 창도 같은 이유(칸 사이 10px) */
+.nline .nl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nline .ntopic, .nline .nmeta, .nline .nrel { line-height: 1.35; }
 .nline .ntopic { font-size: 12px; font-weight: 700; color: var(--teal); }
 .nline .title { font-size: 15px; font-weight: 500; line-height: 1.45; color: var(--ink); }
 .nline .nmeta { font-size: 12px; color: var(--muted); }
 .nline .nmeta .verdict { font-size: 12px; }
 .nline .nrel { font-size: 12px; color: var(--sub); }
 .nline .nrel b { font-weight: 400; color: var(--muted); margin-right: 4px; }
-.nline .next { flex: none; width: 44px; height: 44px; margin-right: -12px; display: grid; place-items: center; color: #8a9598; }
+.nline .next { flex: none; width: 44px; height: 40px; margin-right: -12px; display: grid; place-items: center; color: #8a9598; }
 /* 내 종목 기사 줄: 왼쪽 세로 판정 막대(폭 3) */
 .nline.sn .nl { border-left: 3px solid transparent; padding-left: 10px; }
 .nline.sn.neg .nl { border-left-color: #b86e12; }
@@ -1027,7 +1046,7 @@ html[data-mask] .avgwon { display: none; }
 .block .bh b { font-size: 18px; }
 .block .bsub { font-size: 12px; color: var(--muted); margin: 2px 0 4px 36px; }
 .av { flex: none; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-weight: 700; line-height: 1; }
-.av.sec { background: #eaf7f4; color: var(--teal); }
+.av.sec { background: #eaf7f4; color: var(--teal); justify-content: center; align-content: center; }   /* 제목 줄 .sec(양 끝 벌리기)와 이름이 같아 글자가 왼쪽으로 붙던 것(2026-11-24) */
 /* 한눈에 카드 */
 .glance { background: var(--block); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
 .glance h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
@@ -1081,7 +1100,7 @@ html[data-mask] .avgwon { display: none; }
 html[data-mask] .sline .sv.amt::after { left: auto; right: 0; }
 /* 종목 상세 가격 그림: 평단 글자는 기간 단추 아래 줄 */
 .avgnote { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--muted); }
-.avgnote i { width: 16px; border-top: 1.5px dashed #8a9598; }
+.avgnote i { width: 16px; border-top: 1.5px dashed #008c82; }   /* 그래프의 평단 선(청록 점선)과 같은 표시, 2026-11-25 */
 .avgnote b { color: var(--sub); font-weight: 600; }
 /* 종목 상세 지난 소식: 같은 소식 묶음(누르면 펼침) */
 .pastgrp > summary { list-style: none; cursor: pointer; }
@@ -1220,7 +1239,8 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 .allcard .ac-ai .ac-ai-h { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--sub); }
 .allcard .ac-ai small { font-size: 11px; color: var(--muted); line-height: 1.4; }
 .allcard .ac-links { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; font-weight: 600; }
-.allcard .ac-links a { color: var(--teal); min-height: 32px; display: inline-flex; align-items: center; }
+.allcard .ac-links a, .allcard .ac-links button.ac-news { color: var(--teal); min-height: 32px; display: inline-flex; align-items: center; }
+.allcard .ac-links button.ac-news { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; cursor: pointer; }   /* 소식 목록 창을 여는 단추(링크와 같은 모양) */
 .allnone { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--muted); background: var(--block); border-radius: 12px; padding: 10px 12px; }
 .allnone b { width: 100%; color: var(--sub); }
 /* 시연 시각 고르기(2026-11-22, components/demopicker.tsx): 시연 띠의 '바꾸기', 마이의 '날짜·시각 직접 고르기' */
@@ -1348,3 +1368,431 @@ html[data-mask] .allbars .ab-v .amt::after { left: auto; right: 0; }
 .allcoach button { flex: none; background: #ffd970; color: #192d31; font-weight: 700; border-radius: 8px; padding: 6px 10px; font-size: 12px; }
 .allcard .ac-n small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .allcard .ac-v b, .allcard .ac-v small { white-space: nowrap; }
+.allmore { min-height: 44px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--teal); font-size: 13.5px; font-weight: 700; }   /* 한 화면에 보기 종목 카드 펼치기(5개 뒤) */
+
+/* 종목 카드로 이동할 때 맨 위 여백(2026-11-24): 시연 시각 띠(맨 위에 붙어 있음)에 카드 머리가 가리지 않게 */
+.allcard { scroll-margin-top: 6px; }   /* 카드 사이 간격 8px보다 작게: 윗 글씨가 비치지 않게 */
+.app:has(.demobar) .allcard { scroll-margin-top: 40px; }
+
+/* 한 화면에 보기 카드의 믿을 정도 칩: 눌러서 설명 창을 여는 단추지만 모양은 다른 칩(span)과 같게(2026-11-24) */
+.schips > button.g, .schips > button.n { padding: 5px 10px; border: 0; border-radius: 8px; font: inherit; font-size: 12px; font-weight: 500; line-height: inherit; cursor: pointer; }
+
+/* 종목 소식 목록 창(2026-11-24): 판정 묶음 제목 + 기사 줄(구분선) */
+.nsgroup { display: flex; flex-direction: column; }
+.nsgroup .nsg-h { font-size: 13px; font-weight: 700; color: var(--sub); padding: 4px 0 2px; }
+.nsgroup .nsg-h b { color: var(--ink); }
+.nsgroup + .nsgroup { margin-top: 6px; }
+.sheet-body .nsmore { align-self: center; padding: 6px 0; }
+
+/* 뉴스 브리핑 제목 전환 메뉴(2026-11-24, components/newsmenu.tsx) */
+.nmenu { position: relative; display: inline-block; }
+.nmenu .nm-t { font: inherit; color: inherit; background: none; border: 0; padding: 0; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.nmenu .nm-t svg { color: var(--sub); transition: transform .15s; }
+.nmenu .nm-t svg.up { transform: rotate(180deg); }
+.nmenu .nm-list { position: absolute; left: -4px; top: calc(100% + 8px); z-index: 30; display: block; width: 210px; max-height: min(60vh, 440px); overflow-y: auto; overscroll-behavior: contain; padding: 4px 0; background: #fff; border-radius: 14px; box-shadow: 0 8px 28px rgba(25, 45, 49, .16), 0 1px 3px rgba(25, 45, 49, .08); }
+.nmenu .nm-list a { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 12px; font-size: 14px; font-weight: 500; color: var(--ink); }
+.nmenu .nm-list a + a { border-top: 1px solid var(--line); }
+.nmenu .nm-list a.on { font-weight: 700; }
+.nmenu .nm-list i { width: 16px; font-style: normal; font-weight: 700; color: #008c82; text-align: center; }
+.nmenu .nm-list span { flex: 1; }
+.nmenu .nm-list em { font-style: normal; font-size: 12px; color: var(--muted); }
+.nmenu .nm-list a.on em { color: #008c82; font-weight: 700; }
+
+/* 뉴스 · 내 종목 뉴스: 한 종목 화면(2026-11-24, 종목 이름 = 고르기 메뉴 components/newsmenu.tsx) */
+.spg-in { display: flex; flex-direction: column; gap: 14px; }
+.spg-h { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.spg-h h2 { font-size: 20px; font-weight: 700; line-height: 1.25; word-break: keep-all; }
+.spg-meta { display: flex; flex-wrap: wrap; align-items: baseline; font-size: 12px; line-height: 18px; color: var(--muted); margin-top: -6px; padding: 0 4px; }
+.spg-meta a { color: var(--teal); font-weight: 700; }   /* 산업별: 내 종목 이름(줄 글자와 같은 크기, 2026-11-24) */
+.spg-meta > span { white-space: nowrap; }
+.spg-meta > span.wrap { white-space: normal; }   /* 산업별: 내 종목 이름이 길면 이 칸만 줄바꿈 */
+.spg-meta > span + span::before { content: "·"; margin: 0 5px; }
+.spg-meta .neg { color: #b86e12; }
+.spg-meta .pos { color: #15845a; }
+.lgbtn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 14px; border-radius: 12px; background: var(--block); font-size: 13px; font-weight: 700; color: var(--ink); text-align: left; }
+.lgbtn em { font-style: normal; font-weight: 500; font-size: 12px; color: #9a6b00; background: #fdf1cf; border-radius: 10px; padding: 2px 8px; margin-right: auto; }
+.spg-list { display: flex; flex-direction: column; }
+
+/* 뉴스 브리핑 같은 소식 접기(2026-11-24 A안, components/ui.tsx VerdictGroups): 정보 줄 끝 '같은 소식 n건 ⌄', 펼치면 작은 줄 목록 */
+.nfold { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
+.nfold > .nline { border-bottom: 0; }
+.nfold .fmore { color: var(--teal); font-weight: 700; cursor: pointer; white-space: nowrap; }
+/* 펼침 화살표(2026-11-25): 글자 ⌄·⌃는 글꼴에서 크기·높이가 서로 달라 펼칠 때와 접을 때 모양이 달랐다 → 선으로 그린 같은 화살표를 돌려서 쓴다 */
+.chev, .nfold .fmore::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; vertical-align: middle;
+  border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: translateY(-3px) rotate(45deg); }
+.chev.up, .fold-cb:checked ~ .nline .fmore::after { transform: translateY(1px) rotate(-135deg); }
+.nfold-in { display: none; list-style: none; margin: -2px 0 10px 13px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line); }
+.fold-cb:checked ~ .nfold-in { display: block; }
+.nfold-in li { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; padding: 6px 0; }
+.nfold-in li + li { border-top: 1px dashed var(--line); }
+.nfold-in .nm-tt { font-size: 13px; line-height: 1.4; color: var(--ink); }
+.nfold-in .nm-m { grid-column: 1; font-size: 11px; color: var(--muted); margin-top: 1px; }
+.nfold-in .nm-x { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--faint, #9aa5a8); }
+
+/* 종목·업종 고르기 칸(2안, 2026-11-24, components/newsmenu.tsx box): 제목 메뉴와 다른 입력 칸 모양 */
+.nmenu.nm-boxwrap { display: block; }
+.nmenu .nm-box { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+.nmenu .nm-box[aria-expanded="true"] { border-color: var(--teal); }
+.nmenu .nm-box small { font-size: 12px; color: var(--muted); flex: none; }
+.nmenu .nm-box b { font-size: 16px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nmenu .nm-box span { font-size: 12px; color: var(--muted); white-space: nowrap; margin-right: auto; }
+.nmenu .nm-box svg { flex: none; color: var(--sub); transition: transform .15s; }
+.nmenu .nm-box svg.up { transform: rotate(180deg); }
+.nmenu.nm-boxwrap .nm-list { left: 0; right: 0; width: auto; top: calc(100% + 6px); }
+
+/* 판정 묶음 모양(2026-11-24): 묶음마다 이어진 세로 띠 하나 + 큰 머리줄, 기사 줄의 판정 글자·막대는 숨김(홈 소식 창의 .nsgroup은 그대로) */
+.vgroups { display: flex; flex-direction: column; gap: 28px; }
+.vgroups .nsgroup { border-left: 3px solid #b8c0c3; padding-left: 14px; }
+.vgroups .nsgroup + .nsgroup { margin-top: 0; }
+.vgroups .nsgroup.vg-neg { border-left-color: #b86e12; }
+.vgroups .nsgroup.vg-pos { border-left-color: #15845a; }
+.vgroups .nsgroup.vg-none { border-left-color: #e4ebeb; }
+.vgroups .nsg-h { display: flex; align-items: baseline; gap: 8px; color: var(--sub); padding: 0 0 4px; line-height: 1.3; }
+.vgroups .nsg-h .t { font-size: 18px; font-weight: 800; }   /* 묶음 이름(크게) */
+.vgroups .nsg-h .c { font-size: 14px; font-weight: 600; opacity: .85; }   /* 'n개 · n건'(기사 정보 줄보다 크고 이름보다 작게) */
+.vgroups .vg-extra { display: none; }
+.vgroups .more-cb:checked ~ .vg-extra { display: block; }
+.vgroups .vg-more { display: flex; justify-content: center; margin-top: 8px; padding: 10px 0; border-radius: 10px; background: var(--block); font-size: 13px; font-weight: 700; color: var(--sub); cursor: pointer; }
+.vgroups .vg-more .x { display: none; }
+.vgroups .more-cb:checked ~ .vg-more .o { display: none; }
+.vgroups .more-cb:checked ~ .vg-more .x { display: inline; }
+.vgroups .vg-extra .nfold:last-child { border-bottom: 0; }
+.vgroups .vg-neg .nsg-h { color: #b86e12; }
+.vgroups .vg-pos .nsg-h { color: #15845a; }
+.vgroups .nline.sn .nl { border-left: 0; padding-left: 0; }
+.vgroups .vtag { display: none; }
+.vgroups .nfold:last-child { border-bottom: 0; }
+.vgroups .nfold-in { margin-left: 0; }
+
+/* 홈 미국 시장 지표 창(2026-11-24, components/ussheet.tsx): 아래에서 올라오는 창 + 옆으로 넘기기 */
+button.uschip { font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ussheet .usdots { display: flex; gap: 6px; margin: 2px 0 10px; }
+.ussheet .usdots button { flex: 1; padding: 7px 0; border-radius: 10px; background: var(--block); font-size: 12px; font-weight: 500; color: var(--muted); }
+.ussheet .usdots button.on { background: var(--charcoal); color: #fff; font-weight: 700; }
+.ussheet .ustrack { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.ussheet .ustrack::-webkit-scrollbar { display: none; }
+.ussheet .uspage { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
+.ussheet .uspage h3 { font-size: 18px; font-weight: 700; }
+.ussheet .usnote { margin-top: 10px; }
+
+/* 홈 맨 위 카드(2026-11-24 시안): 누르면 한 화면에 보기(/?view=all) */
+.nightcard { position: relative; display: flex; align-items: center; gap: 16px; padding: 20px 18px; border-radius: 18px; background: #eaf5f2; border: 1px solid #d3e8e2; color: var(--ink); }
+.nightcard .moon { flex: none; width: 44px; height: 44px; border-radius: 50%; background: #3d8a80; display: grid; place-items: center; }
+.nightcard .moon svg { width: 34px; height: 34px; }
+/* 글 간격(2026-11-25 사용자 요청): 세 묶음 — 이름표 / 제목·설명 / 금액·한 줄 문장. 묶음 안은 4px로 붙이고 금액 묶음 앞은 12px 띄운다. 제목은 이름표에 5px로 바짝(사용자 요청) */
+.nightcard .nc-b { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.nightcard .nc-tag { font-style: normal; font-size: 11px; font-weight: 700; line-height: 1.4; color: #3d8a80; background: #fff; border-radius: 7px; padding: 3px 8px; margin-bottom: 5px; }
+.nightcard .nc-t { font-size: 22px; font-weight: 800; line-height: 1.2; letter-spacing: -0.5px; }   /* 카드 제목을 가장 크게(2026-11-25 사용자 요청) */
+.nightcard .nc-s { font-size: 14px; line-height: 1.4; color: var(--sub); margin-top: 4px; }
+.nightcard .nc-amt { font-size: 18px; font-weight: 800; line-height: 1.3; font-variant-numeric: tabular-nums; margin-top: 12px; }
+.nightcard .nc-l { font-size: 13px; font-weight: 500; line-height: 1.4; color: var(--ink); letter-spacing: -0.2px; margin-top: 4px; }
+/* ›는 카드 오른쪽 가운데에 띄워, 맨 아래 문장이 › 아래 빈자리까지 쓰게(긴 종목 이름도 한 줄로, 2026-11-25) */
+.nightcard .nc-l.long { font-size: 12px; }   /* 종목 이름이 길어 문장이 25자 이상이면 한 단계 작게(한 줄 유지) */
+.nightcard .nc-b > :not(.nc-l) { max-width: calc(100% - 22px); }
+.nightcard .nc-go { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 20px; color: var(--sub); }
+.homehead h1 .hback { display: inline-grid; place-items: center; width: 28px; margin-left: -8px; color: var(--ink); font-weight: 400; }
+
+/* 밤사이 '종목별 오늘 예상' 세로 막대(배포용 변경 기록 45, components/nightbars.tsx) */
+.vbars { display: flex; flex-direction: column; gap: 8px; }
+.vbars .vb-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.vbars .vb-h b { font-size: 18px; font-weight: 800; }
+.vbars .vb-h span { font-size: 12px; color: #66777a; }
+.vbars .vb-wrap { position: relative; display: flex; }
+.vbars .vb-scroll { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+.vbars .vb-scroll::-webkit-scrollbar { display: none; }
+.vbars .vb-in { position: relative; min-width: 100%; }
+.vbars .vb-grid, .vbars .vb-zero { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #eef1f2; }
+.vbars .vb-zero { border-top: 1px dashed #b8c0c3; }
+.vbars .vb-col { position: absolute; top: 0; width: 56px; padding: 0; }
+.vbars .vb-bar { position: absolute; left: 19px; width: 18px; border-radius: 5px; background: #ffd970; }
+.vbars .vb-line { position: absolute; left: 16px; width: 24px; height: 3px; border-radius: 1.5px; background: #192d31; }
+.vbars .vb-dot { position: absolute; left: 23px; width: 10px; height: 10px; border-radius: 50%; box-sizing: border-box; }
+.vbars .vb-dot.in { background: #008c82; border: 1.5px solid #fff; }
+.vbars .vb-dot.out { background: #fff; border: 2px solid #b86e12; }
+.vbars .vb-lab { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; line-height: 16px; }
+.vbars .vb-lab b { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.vbars .vb-lab em { font-style: normal; font-size: 10px; font-weight: 700; }
+.vbars .vb-lab em.in { color: #008c82; }
+.vbars .vb-lab em.out { color: #b86e12; }
+.vbars .vb-none { position: absolute; left: 8px; width: 40px; height: 40px; border-radius: 8px; background: #eef1f2; color: #66777a; font-size: 10px; line-height: 1.3; display: grid; place-items: center; text-align: center; }
+.vbars .vb-name { position: absolute; left: 2px; right: 2px; font-size: 11px; line-height: 1.3; color: var(--ink); text-align: center; word-break: keep-all; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vbars .vb-axis { position: relative; flex: none; width: 40px; }
+.vbars .vb-axis span { position: absolute; right: 0; font-size: 11px; color: #66777a; font-variant-numeric: tabular-nums; }
+.vbars .vb-axis span.z { font-weight: 800; color: var(--ink); }
+.vbars .vb-leg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--sub); }
+.vbars .vb-leg span { display: inline-flex; align-items: center; gap: 5px; }
+.vbars .vb-leg i { display: inline-block; }
+.vbars .vb-leg i.b { width: 8px; height: 12px; border-radius: 3px; background: #ffd970; }
+.vbars .vb-leg i.l { width: 14px; height: 3px; border-radius: 1.5px; background: #192d31; }
+.vbars .vb-leg i.d { width: 8px; height: 8px; border-radius: 50%; background: #008c82; }
+.vbars .vb-leg i.z { width: 14px; border-top: 1px dashed #8a9598; }
+
+/* 종목 창 위 '밤사이 소식' 창(배포용 변경 기록 29) */
+.nnsheet .nn-head { display: flex; align-items: center; gap: 10px; }
+.nnsheet .nn-head .ic { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.nnsheet .nn-head b { flex: 1; font-size: 18px; font-weight: 700; }
+.nnsheet .nn-head .x { width: 44px; height: 44px; margin-right: -12px; font-size: 18px; color: var(--sub); }
+.nnsheet .nn-sub { font-size: 12px; color: #66777a; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.nnsheet .nn-sub b.neg { color: #b86e12; } .nnsheet .nn-sub b.pos { color: #15845a; }
+.nnsheet .nn-list { overflow-y: auto; max-height: 52vh; }
+.nnsheet .nn-list > .nline:last-child { border-bottom: 0; }
+.nnsheet .nn-rest { padding: 10px 0 4px; text-align: center; }
+.nnsheet .nn-more { display: block; padding: 14px 12px 4px; font-size: 13px; font-weight: 700; color: var(--teal); border-top: 1px solid var(--line); width: 100%; text-align: center; }
+
+/* 내 종목 v3(2026-11-25, 피그마 배포용 1108:1839 · 1108:1985 · 1108:2233, 변경 기록 41): 카드 없는 흰 바탕 */
+.m3-head { padding: 20px 24px 0; }
+.m3-head .row { display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
+.m3-head h1 { font-size: 28px; font-weight: 700; line-height: 1.2; }
+.m3-head h1 .nmenu .nm-t { gap: 6px; }
+.m3-head h1 .nmenu .nm-t svg { width: 16px; height: 16px; color: var(--ink); }
+.m3-head h1 .nm-list { font-size: 14px; line-height: normal; }
+.m3-head .r { display: flex; align-items: center; gap: 0; margin-right: -11px; }
+.m3-head .r a { width: 40px; height: 44px; display: grid; place-items: center; }
+.m3-head .sub { font-size: 13px; line-height: 1.4; color: var(--muted); }
+.scroll.m3 { gap: 0; padding-top: 24px; }
+.m3-total .h { display: flex; justify-content: space-between; align-items: center; height: 20px; font-size: 13px; color: var(--muted); }
+.m3-total .h .eye { margin-right: -4px; }
+.m3-total .v { font-size: 34px; font-weight: 700; line-height: 1.25; letter-spacing: -0.5px; }
+.m3-total .d { font-size: 15px; font-weight: 500; line-height: 1.4; }
+.m3-sec { margin-top: 28px; }
+.m3-sech { display: flex; justify-content: space-between; align-items: center; height: 24px; margin-bottom: 10px; }
+.m3-sech b { font-size: 15px; line-height: 1.4; }
+.m3-more { font-size: 14px; font-weight: 500; color: var(--teal); min-height: 44px; display: inline-flex; align-items: center; margin-right: -2px; }
+.m3-bar { display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden; }
+.m3-bar i { flex-basis: 0; min-width: 3px; height: 100%; }
+.m3-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; list-style: none; }
+.m3-legend li { display: flex; align-items: center; gap: 5px; font-size: 13px; line-height: 1.4; color: var(--sub); }
+.m3-legend li i { width: 8px; height: 8px; border-radius: 4px; }
+.m3-legend li b { color: var(--ink); }
+.m3-slist { list-style: none; margin-top: 8px; }
+.m3-slist li { display: flex; align-items: center; gap: 14px; padding: 14px 0; }
+.m3-slist li + li { border-top: 1px solid var(--line); }
+.m3-slist li > i { width: 8px; height: 8px; border-radius: 4px; flex: none; }
+.m3-slist .l, .m3-slist .r { display: flex; flex-direction: column; gap: 2px; line-height: 1.4; }
+.m3-slist .l { flex: 1; min-width: 0; }
+.m3-slist .l b { font-size: 16px; font-weight: 500; }
+.m3-slist .l span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m3-slist .r { align-items: flex-end; }
+.m3-slist .r b { font-size: 16px; }
+.m3-slist .r span { font-size: 13px; color: var(--muted); }
+.sheet-box .m3-bar { margin-top: 4px; }
+html[data-mask] .m3-slist .r .amt::after { left: auto; right: 0; }
+.m3-lh { display: flex; justify-content: space-between; align-items: center; height: 24px; margin-top: 32px; margin-bottom: 4px; }
+.m3-total + .m3-lh, .m3-head + .scroll.m3 > .m3-lh:first-child { margin-top: 0; }
+.m3-lh b { font-size: 15px; line-height: 1.4; }
+.m3-sort { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.m3-list { display: flex; flex-direction: column; }
+.m3-row { display: flex; align-items: center; gap: 14px; }
+.m3-row .ic { width: 40px; height: 40px; border-radius: 20px; background: #eef1f2; color: var(--sub); font-size: 15px; font-weight: 700; display: grid; place-items: center; flex: none; }
+.m3-row .body { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.m3-row:last-child .body { border-bottom: 0; }
+.m3-row .l { display: flex; flex-direction: column; gap: 2px; min-width: 0; line-height: 1.4; }
+.m3-row .l b { font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m3-row .l span { display: flex; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.m3-row .l .sep { font-style: normal; color: #8a9598; padding: 0 6px; }
+.m3-row .l .news { font-style: normal; font-weight: 500; color: var(--teal); display: inline-flex; align-items: center; gap: 4px; }
+.m3-row .l .news::before { content: ""; width: 5px; height: 5px; border-radius: 3px; background: var(--teal); }
+.m3-row .pval { gap: 2px; line-height: 1.4; flex: none; }
+.m3-row .pval b { font-size: 16px; font-weight: 500; }
+.m3-row .pval small { font-size: 13px; font-weight: 500; }
+.m3-row .pval .muted { color: var(--muted); }
+.m3-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 48px 8px 24px; }
+.m3-empty b { font-size: 17px; }
+.m3-empty p { font-size: 13px; color: var(--sub); line-height: 1.55; }
+.m3-empty .primary { width: 100%; margin-top: 8px; background: var(--charcoal); }
+
+/* 종목 상세 v4(2026-11-25, 피그마 배포용 769:11725 · 1033:2012 · 1042:7536, 변경 기록 27·28·42·44): 회색 카드 없이 흰 바탕, 큰 구간 사이 8px 회색 띠 */
+.sheet.d4 { gap: 24px; padding-bottom: 32px; }
+.sheet.d4 .shead { margin-bottom: -16px; }
+.d4-who { font-size: 11px; line-height: 1.45; color: var(--muted); margin-bottom: -14px; }
+.d4-gap { display: block; height: 8px; margin: 0 -24px; background: var(--block); }
+.d4-top { display: flex; flex-direction: column; gap: 10px; }
+.d4-top .cur { display: flex; align-items: baseline; gap: 8px; padding-bottom: 4px; }
+.d4-top .cur b { font-size: 26px; line-height: 1.2; }
+.d4-top .cur span { font-size: 13px; font-weight: 500; }
+.d4-top .cur small { margin-left: auto; font-size: 12px; color: var(--muted); }
+.d4-top .val { display: flex; justify-content: space-between; }
+.d4-top .val > div { display: flex; flex-direction: column; gap: 4px; }
+.d4-top .val .r { align-items: flex-end; text-align: right; }
+.d4-top .val span { font-size: 11px; color: var(--muted); }
+.d4-top .val > div:first-child b { font-size: 18px; }
+.d4-top .val .r b { font-size: 12px; }
+.d4-top .val .r b span { font-size: 12px; color: inherit; }
+.d4-top .val .muted { color: var(--muted); font-weight: 500; }
+.d4-top .acts { display: flex; gap: 16px; }
+.d4-top .acts a { min-height: 36px; display: flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--teal); }
+html[data-mask] .d4-top .val .r .amt::after { left: auto; right: 0; }
+/* 오늘 예측 요약 줄: 민트 = 모델 추정(누르면 창), 회색 = 안내 */
+.d4-pred { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 10px 12px 16px; border-radius: 14px; background: var(--mint); text-align: left; min-height: 56px; }
+.d4-pred.off { background: var(--block); }
+.d4-pred .in { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.d4-pred .t1 { display: flex; align-items: center; gap: 6px; line-height: 1.3; white-space: nowrap; flex-wrap: wrap; }
+.d4-pred .t1 b { font-size: 13px; color: var(--ink); }
+.d4-pred .t1 b.v, .d4-pred .t1 b.arrow { font-size: 15px; }
+.d4-pred .t1 .tag { font-size: 11px; color: var(--muted); }
+.d4-pred .t1 .nx { font-size: 12px; color: #d35d66; }
+.d4-pred .t1 .tx { font-size: 13px; color: var(--sub); }
+.d4-pred .t1 .tx2 { font-size: 13px; color: var(--sub); }
+.d4-pred .t1 em { font-style: normal; font-size: 12px; font-weight: 700; }
+.d4-pred .t1 em.in { color: #15845a; }
+.d4-pred .t1 em.out { color: #b86e12; }
+.d4-pred .t2 { font-size: 12px; line-height: 1.4; color: var(--sub); }
+.d4-pred .go { flex: none; }
+/* 구간 제목줄 */
+.d4-sec { display: flex; flex-direction: column; gap: 12px; }
+.d4-h { display: flex; align-items: center; justify-content: space-between; line-height: 1.3; }
+.d4-h b { font-size: 17px; }
+.d4-h small { font-size: 12px; color: var(--muted); }
+.d4-more { font-size: 12px; font-weight: 500; color: var(--teal); min-height: 32px; display: inline-flex; align-items: center; }
+.d4-none { font-size: 13px; color: var(--muted); line-height: 1.5; }
+/* 밤사이 이 종목 뉴스 */
+.d4-vc { font-size: 12px; color: var(--sub); line-height: 1.3; margin-top: -4px; }
+.d4-vc .neg { color: #b86e12; }
+.d4-vc .pos { color: #15845a; }
+.d4-news { list-style: none; }
+.d4-news li { display: flex; gap: 12px; padding: 12px 0; align-items: stretch; }
+.d4-news li + li { border-top: 1px solid var(--line); }
+.d4-news li > i { width: 3px; border-radius: 1.5px; flex: none; }
+.d4-news .c { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.d4-news .c b { font-size: 15px; font-weight: 500; line-height: 1.45; }
+.d4-news .c span { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.d4-news .c em { font-style: normal; font-weight: 700; }
+.d4-news .x { flex: none; align-self: flex-end; color: var(--muted); width: 32px; height: 32px; display: grid; place-items: center; margin: 0 -8px -8px 0; }
+.d4-us { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.d4-us .hh { display: flex; align-items: center; justify-content: space-between; }
+.d4-us .hh b { font-size: 13px; }
+.d4-tlink { font-size: 12px; font-weight: 500; color: var(--teal); min-height: 32px; display: inline-flex; align-items: center; }
+.d4-us .ln { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.3; }
+.d4-us .ln i { width: 3px; height: 14px; border-radius: 1.5px; background: var(--teal); }
+.d4-us .ln b { font-size: 13px; font-weight: 500; }
+.d4-us .ln span { color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d4-us .ln em { font-style: normal; font-weight: 500; color: var(--sub); }
+.d4-us .ln.none { color: var(--muted); }
+/* 시세 요약 */
+.d4-quote { display: flex; gap: 16px; padding: 10px 0; }
+.d4-quote + .d4-quote { border-top: 1px solid var(--line); margin-top: -12px; }   /* 2×2 칸(피그마 1039:2103): 두 줄 사이에만 선 */
+.d4-quote > div { flex: 1; display: flex; flex-direction: column; gap: 2px; line-height: 1.3; }
+.d4-quote span { font-size: 12px; color: var(--muted); }
+.d4-quote b { font-size: 15px; }
+.d4-52 { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
+.d4-52 > span { font-size: 12px; color: var(--muted); }
+.d4-52bar { position: relative; height: 20px; }   /* 피그마 1039:2120 모양: 연회색 6px 막대 · 지금 위치까지 진한 회색 · 흰 테두리 검은 점(2026-11-25 사용자 요청으로 18px로 키움). 점이 양 끝에서 잘리지 않게 9px 안쪽부터 */
+.d4-52bar::before { content: ""; position: absolute; left: 0; right: 0; top: 7px; height: 6px; border-radius: 3px; background: #e1e6e8; }
+.d4-52bar i { position: absolute; left: 0; top: 7px; height: 6px; border-radius: 3px; background: #b8c0c3; }
+.d4-52bar b { position: absolute; top: 1px; width: 18px; height: 18px; margin-left: -9px; box-sizing: border-box; border-radius: 50%; background: #2f3437; border: 2px solid #fff; box-shadow: 0 1px 2px rgba(25, 45, 49, .15); }
+.d4-52 p { display: flex; justify-content: space-between; font-size: 11px; color: var(--sub); }
+/* 주가 흐름 */
+.d4-chart { display: flex; flex-direction: column; gap: 10px; margin-top: -8px; }
+.d4-chart .ranges { justify-content: stretch; gap: 4px; }   /* 기간 단추 5개를 같은 너비로 화면 폭 전체에(2026-11-25 사용자 결정, 피그마는 4개 왼쪽 모음) */
+.d4-chart .ranges a { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 0; }
+.d4-chart .ranges a.on { background: #eef1f2; }
+/* 다가오는 일정 */
+.d4-ev { list-style: none; }
+.d4-ev li { display: flex; align-items: center; gap: 12px; padding: 10px 0; line-height: 1.3; }
+.d4-ev li + li { border-top: 1px solid var(--line); }
+.d4-ev .d { width: 100px; flex: none; font-size: 13px; font-weight: 500; color: var(--sub); }
+.d4-ev .t { flex: 1; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+.d4-ev .t small { font-size: 11px; color: var(--muted); }
+.d4-ev .dd { font-size: 12px; font-weight: 500; color: var(--muted); }
+/* 지난 소식 */
+.d4-past { gap: 10px; }
+.d4-past .past b { font-size: 14px; }   /* 지난 소식: 제목은 다른 구간과 같은 17px, 앞에 회색 띠(2026-11-25 사용자 요청) */
+.d4-past .past .pk { background: #eef1f2; }
+/* 오늘 아침 예상 창 */
+.d4-ps { display: flex; flex-direction: column; }
+.d4-ps .asof { align-self: flex-end; font-size: 12px; color: var(--muted); margin-top: -8px; }
+.d4-ps .lab { font-size: 13px; color: var(--sub); margin-top: 6px; }
+.d4-ps .big { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+.d4-ps .big b { font-size: 26px; }
+.d4-ps .big span { font-size: 17px; font-weight: 700; }
+.d4-ps .vs { font-size: 12px; color: var(--muted); }
+.d4-band { display: block; margin: 14px 0 6px; }
+.d4-pt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.d4-pt th { font-size: 12px; font-weight: 400; color: var(--muted); text-align: right; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.d4-pt th:first-child, .d4-pt td:first-child { text-align: left; }
+.d4-pt td { padding: 12px 0; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.d4-pt td:first-child { font-weight: 500; }
+.d4-pt td i { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: 1px; }
+.d4-pt td span { font-size: 12px; font-weight: 400; }
+html[data-mask] .d4-pt .amt::after { left: auto; right: 0; }
+.d4-pn { display: grid; grid-template-columns: 48px 1fr; gap: 8px 8px; margin: 14px 0 18px; font-size: 12px; line-height: 1.45; }
+.d4-pn dt { color: var(--sub); font-weight: 500; }
+.d4-pn dd { color: var(--sub); }
+.d4-days { border-top: 1px solid var(--line); padding-top: 16px; }
+.d4-days .h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.d4-days .h > b { font-size: 17px; }
+.d4-days .h span { font-size: 13px; color: var(--muted); }
+.d4-days .h span b { font-size: 15px; color: var(--ink); }
+.d4-days svg { display: block; }
+.d4-days .ax { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); padding-right: 36px; margin-top: 2px; }
+.d4-days .lg { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--sub); }
+.d4-days .lg span { display: inline-flex; align-items: center; gap: 5px; }
+.d4-days .lg i { display: inline-block; }
+.d4-days .lg i.b { width: 8px; height: 12px; border-radius: 3px; background: #FFD970; }
+.d4-days .lg i.e { width: 12px; height: 2px; background: #192d31; }
+.d4-days .lg i.y { width: 8px; height: 8px; border-radius: 4px; background: #008c82; }
+.d4-days .lg i.o { width: 8px; height: 8px; border-radius: 4px; border: 1.6px solid #b86e12; box-sizing: border-box; }
+.d4-pdis { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 14px; }
+
+/* 가격 그래프 글자(2026-11-25, components/daychart.tsx): 최고·최저 가격, 평단·전일 선 이름표. 그림 위·아래 18px 여백에 최고·최저 글자가 들어간다 */
+.pcin { position: relative; margin: 18px 0; }
+.pc-ext { position: absolute; white-space: nowrap; font-size: 11px; line-height: 13px; color: var(--sub); padding: 0 3px; border-radius: 3px; background: rgba(255, 255, 255, .85); pointer-events: none; }
+.pc-ref { position: absolute; left: 0; font-size: 10px; line-height: 12px; font-weight: 700; padding: 0 3px; border-radius: 3px; background: rgba(255, 255, 255, .85); pointer-events: none; }
+.pc-ref.r { left: auto; right: 0; }
+.pc-ref.avg { color: #008c82; }
+.pc-ref.base { color: #8a9598; font-weight: 500; }
+.pc-dot { position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; box-shadow: 0 0 0 1.5px #fff; pointer-events: none; }   /* 최고·최저 점(2026-11-25) */
+
+/* 마이 · 시연 계정 바로 바꾸기(2026-11-25): 시연 시각 칸과 같은 모양 */
+.demoacct form { display: contents; }
+.demoacct button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; background: #fff; border-radius: 12px; padding: 10px 12px; border: 1.5px solid transparent; }
+.demoacct button b { font-size: 14px; }
+.demoacct button small { font-size: 11px; color: var(--muted); }
+.demoacct button.on { border-color: var(--teal); cursor: default; }
+.sheet > .demoacct + .demotime { margin-top: -4px; }
+
+/* 밤사이 야간선물 칸 → 아래에서 올라오는 창(2026-11-25, components/futcard.tsx FuturesFlow): 칸 전체를 덮는 투명 단추, 물음표는 그 위 */
+.futflow { position: relative; display: flex; flex-direction: column; gap: 8px; }
+.futflow > .futtrig { position: absolute; inset: -14px -16px; z-index: 1; border-radius: 16px; background: none; cursor: pointer; }
+.futflow .tq .qmark { position: relative; z-index: 2; }
+
+/* AI 표시 통일(2026-11-25, components/ui.tsx AiMark, 사용자 결정): 테두리·바탕 없이 그라데이션만 — 세 줄 아이콘 + 'AI'(앱 청록에 맞춘 진한 초록 계열: 초록→청록→진한 청록, 2026-11-25 더 진하게), 4초마다 빛이 지나감 */
+.aimk { --ai: linear-gradient(90deg, #16a06a, #008c7a 55%, #006b62); display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; vertical-align: 2px; font-size: 14px; line-height: 1; white-space: nowrap; }
+.aimk img { display: block; }
+.aimk b { font-weight: 900; letter-spacing: .3px;   /* 두 겹: 위 = 지나가는 빛, 아래 = 청록→파랑→보라 */
+  background-image: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, .9) 50%, transparent 60%), var(--ai);
+  background-size: 300% 100%, 100% 100%; background-repeat: no-repeat; background-position: 150% 0, 0 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: aishine 4s ease-in-out .3s infinite; }
+.aimk .lb { font-weight: 800; background: var(--ai); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.aimk.sm { margin: 0 6px 0 0; font-size: 11px; gap: 3px; vertical-align: 1px; }
+@keyframes aishine { 0% { background-position: -50% 0, 0 0; } 35%, 100% { background-position: 150% 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) { .aimk b { animation: none; } }
+.ai .badge { display: inline-flex; align-items: center; }
+.ai .badge .aimk, .bkick .aimk { margin-left: 0; vertical-align: 0; }
+
+/* 화면 왼쪽 위 제목 통일(2026-11-25 사용자 요청)
+   · 탭 첫 화면(홈 · 뉴스 브리핑 · 밤사이 · 내 종목 · 보관): 26px 굵게 · 진한 남색 · 위 20px + 40px 줄 · 아래 설명 13px 회색 · 오른쪽 아이콘은 제목 줄 가운데
+   · 들어간 화면(‹ 뒤로 있는 화면): ‹ 옆 17px(.shead). 홈 '당신이 잠든 사이에'만 탭 제목과 같은 26px에 ‹ */
+.head, .m3-head { padding: 20px 24px 0; }
+.head h1, .m3-head h1 { font-size: 26px; font-weight: 700; line-height: 40px; color: var(--ink); }
+.head .sub, .m3-head .sub { margin-top: 0; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.head .my, .head .bell, .head.homehead .bell { top: 18px; }
+.homehead h1 { color: var(--ink); }
+.head h1 .nmenu .nm-t svg, .m3-head h1 .nmenu .nm-t svg { width: 16px; height: 16px; color: var(--ink); }
+/* 홈 '당신이 잠든 사이에'(달 카드로 들어간 한 화면 보기): 탭 제목과 같은 26px · 같은 위치, 앞에 ‹ 뒤로(2026-11-25 사용자 요청) */
+.head.homehead.allon h1 { display: flex; align-items: center; }
+.head.homehead.allon h1 .hback { width: 32px; min-height: 40px; margin-left: -8px; font-size: 26px; font-weight: 400; color: var(--ink); }
+.m3-head .row { min-height: 40px; height: 40px; }
+.m3-head .r a { height: 40px; }
+
+/* 어젯밤 미국 휴장·조기 마감 안내(2026-11-25, lib/market.ts usHead): 미국 지표 칸 4개 바로 아래 회색 한 줄 */
+.usnight { margin-top: 8px; font-size: 12px; line-height: 1.45; color: #66777a; }
+
+/* 뉴스 브리핑 제목 아래 글자 탭(2026-11-25): 내 종목 · 산업별 · 시장. 고른 것만 진한 글자, 나머지 연회색, 숫자 없음. 끝에 ? 안내 */
+.head .htabs { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+.head .ntabs { display: flex; gap: 16px; }
+.head .ntabs a { font-size: 20px; font-weight: 800; line-height: 32px; color: #c3cacc; letter-spacing: -0.3px; }
+.head .ntabs a.on { color: var(--ink); }
+.head .htabs .hq { font: inherit; background: none; padding: 0; display: inline-grid; place-items: center; width: 28px; height: 28px; margin-left: -6px; }
+.head .htabs .hq span { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #66777a; color: #66777a; font-size: 12px; font-weight: 700; display: grid; place-items: center; line-height: 1; }
+.head .htabs + .sub { margin-top: 8px; }

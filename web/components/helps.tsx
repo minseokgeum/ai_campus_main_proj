@@ -2,9 +2,9 @@
 // 설명 창(피그마 설명 · 믿을 정도 456:7547, 설명 · 서비스 대상 아님 456:7569, 오버레이 · 야간선물 설명 바텀 시트 363:83). 서버·화면 어디서나 쓴다.
 import { Sheet } from "@/components/sheet";
 
-export function GradeHelp({ label }: { label?: React.ReactNode }) {
+export function GradeHelp({ label, className }: { label?: React.ReactNode; className?: string }) {   // className: 칩 모양 그대로 단추로 쓸 때(한 화면에 보기 카드)
   return (
-    <Sheet className={label ? "linkish" : "qmark"} title="믿을 정도가 뭐예요?" confirm="확인" trigger={label ?? <span aria-label="믿을 정도 설명">?</span>}>
+    <Sheet className={className ?? (label ? "linkish" : "qmark")} title="믿을 정도가 뭐예요?" confirm="확인" trigger={label ?? <span aria-label="믿을 정도 설명">?</span>}>
       <div className="help">
         <b>한 줄 설명</b><p>08:11에 장 시작 전 거래(NXT 08:00~08:10)의 흐름(어제 종가보다 오름·내림)이 9시 시가까지 이어질 가능성을 3단계로 알려줘요.</p>
         <b>높음 ●●●</b><p>지난 비슷한 아침에 10번 중 9번 넘게 같은 방향으로 열렸어요.</p>

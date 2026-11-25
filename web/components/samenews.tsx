@@ -20,7 +20,7 @@ export function SameNews({ rows }: { rows: SameRow[] }) {
           </a>
         ))}
         {rows.length > 2 ? (
-          <button type="button" className="samemore" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "접기 ⌃" : `${rows.length - 2}건 더 보기 ⌄`}</button>
+          <button type="button" className="samemore" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <>접기<i className="chev up" aria-hidden /></> : <>{rows.length - 2}건 더 보기<i className="chev" aria-hidden /></>}</button>
         ) : null}
       </div>
     </section>

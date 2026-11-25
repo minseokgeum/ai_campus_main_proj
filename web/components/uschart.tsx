@@ -2,7 +2,7 @@
 // 미국시장 지표 차트(피그마 230:181): 정규장 5분봉, 전일 종가 점선, 고·저 표시. 누르거나 끌면 그 시점의 값이 보인다.
 import { useState } from "react";
 
-export function UsChart({ points, prev, digits }: { points: { t: string; p: number }[]; prev: number; digits: number }) {
+export function UsChart({ points, prev, digits, close = "16:00" }: { points: { t: string; p: number }[]; prev: number; digits: number; close?: string }) {
   const [k, setK] = useState<number | null>(null);
   if (points.length < 2) return <p className="fine">5분봉 자료가 아직 없어요.</p>;
   const W = 342, H = 150, ps = points.map((x) => x.p);
@@ -22,7 +22,8 @@ export function UsChart({ points, prev, digits }: { points: { t: string; p: numb
   const anchor = (x: number) => (x < 60 ? "start" : x > W - 60 ? "end" : "middle");
   return (
     <div className="uschart">
-      {k != null ? <p className="uspick"><b>{fmt(points[k].p)}</b> {et(points[k].t)} (미 동부)</p> : null}
+      {/* 값 줄은 늘 자리를 잡아 둔다(누를 때 생기면 그래프가 아래로 밀려서, 2026-11-24). 누르기 전엔 안내 문구 */}
+      <p className={`uspick${k == null ? " idle" : ""}`}>{k != null ? <><b>{fmt(points[k].p)}</b> {et(points[k].t)} (미 동부)</> : "그래프를 누르거나 끌면 그 시점 값이 보여요"}</p>
       {/* 전일 종가 위는 빨강, 아래는 파랑(피그마 230:467). 고·저와 전일 값은 그래프 위에 */}
       <svg width="100%" viewBox={`0 -14 ${W} ${H + 28}`} style={{ touchAction: "none", display: "block" }}
         onPointerDown={(e) => pick(e.clientX, e.currentTarget)} onPointerMove={(e) => e.buttons && pick(e.clientX, e.currentTarget)}>
@@ -41,7 +42,8 @@ export function UsChart({ points, prev, digits }: { points: { t: string; p: numb
         {ps[iLo] < prev ? <text x={X(iLo)} y={Y(ps[iLo]) + 14} textAnchor={anchor(X(iLo))} fontSize={10} fill="#45555a">저 {fmt(ps[iLo])}</text> : null}
         {k != null ? <line x1={X(k)} x2={X(k)} y1={-14} y2={H + 14} stroke="#192d31" strokeWidth={1} /> : null}
       </svg>
-      <div className="usax"><span>09:30</span><span>12:00</span><span>16:00 (미 동부)</span></div>
+      {/* 아래 시각: 조기 마감 날(13:00)은 가운데를 11:15로(2026-11-25) */}
+      <div className="usax"><span>09:30</span><span>{close === "16:00" ? "12:00" : "11:15"}</span><span>{close} (미 동부)</span></div>
     </div>
   );
 }

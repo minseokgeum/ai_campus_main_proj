@@ -1,23 +1,29 @@
-// 종목 상세(피그마 147:619): 평가 금액·손익, 가격 흐름(1주·1달·3달·1년, KIS 일봉), 이 종목의 예상 범위 기록, 야간선물 반응도.
+// 종목 상세 v4(피그마 배포용 769:11725 · 시간대별 예측 줄 1033:2012 · 오늘 예측 창 1042:7536, 변경 기록 27·28·42·44, 2026-11-25).
+// 카드 없는 흰 바탕, 큰 구간 사이 8px 회색 띠. 순서: 머리(보유 · 평단) → 현재가 · 평가 금액 · 손익 · 수정 ‖ 오늘 예측 줄(누르면 창) → 밤사이 이 종목 뉴스 + 미국 연결 기업 소식(관계도 창)
+// ‖ 시세 요약(전일 종가 · 거래량 · 시가총액 · 외국인 보유 · 52주 위치) → 주가 흐름(1일 · 1주 · 1달 · 3달 · 1년) ‖ 다가오는 일정 → 지난 소식.
+// 뺀 것: 이 종목의 예상 범위 기록(변경 기록 42, 20거래일 그래프는 오늘 예측 창 안으로), 미국 시장 반응도, 큰 연결 그림(관계도 창으로).
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/ui";
-import { MaskToggle } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
 import { tierOf } from "@/lib/model";
-import { bandHistory, closes, filings, intraday, lastCloses } from "@/lib/prices";
-import { avgPlace, DayChart } from "@/components/daychart";
+import { closes, filings, intraday, lastCloses, quote, series } from "@/lib/prices";
+import { avgFit, avgPlace, DayChart, PriceLine } from "@/components/daychart";
 import { AutoRefresh } from "@/components/autorefresh";
-import { Sheet } from "@/components/sheet";
-import { stockNewsDays } from "@/lib/news";
+import { MaskToggle, Sheet } from "@/components/sheet";
+import { byStock, foldStories, impactFor, nightNews, stockNewsDays, verdictsOf } from "@/lib/news";
 import { addDays, kstNow } from "@/lib/calendar";
-import { pct, swon, won } from "@/lib/format";
+import { kstTime, pct, swon, won } from "@/lib/format";
 import { appNow, demoAt } from "@/lib/clock";
 import { briefing } from "@/lib/briefing";
 import { stockLinks } from "@/lib/links";
-import { StockLinksSection } from "@/components/links";
+import { LinksSheet } from "@/components/links";
+import { PredLine } from "@/components/predline";
+import { RangeTabs } from "@/components/rangetabs";
+import { stockPred } from "@/lib/stockpred";
+import { upcomingEvents, type Ev } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +42,10 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
   const nowAt = await appNow();
   const today = kstNow(nowAt).ymd;
   const br = briefing(undefined, nowAt);   // 연결 그림의 소식 수는 지금 브리핑 범위(전날 23:00 ~ 그날 06:15 발행분, lib/briefing.ts)
-  const [px, hist, past, fl, lc, lk, day, demo] = await Promise.all([closes(code, addDays(today, -range[2])), bandHistory(code), stockNewsDays(code, 7), filings(code, 14), lastCloses(pf.holdings.map((x) => x.code)), stockLinks([code], br.start, br.end),
-    range[0] === "1d" ? intraday(code) : Promise.resolve(null), demoAt()]);
+  const [px, q, past, fl, lc, lcSelf, lk, day, demo, pred, news, evs] = await Promise.all([closes(code, addDays(today, -range[2])), quote(code), stockNewsDays(code, 7), filings(code, 14),
+    lastCloses(pf.holdings.map((x) => x.code)), lastCloses([code]), stockLinks([code], br.start, br.end),
+    range[0] === "1d" ? intraday(code) : Promise.resolve(null), demoAt(), stockPred(code),
+    nightNews().then(({ articles }) => byStock(articles, [code])).catch(() => new Map()), upcomingEvents(today, [code], 30)]);
   // 지난 소식(피그마 147:619): 기사(보도) + DART 공시, 최신순
   const md = (d: string) => `${Number(d.slice(4, 6))}/${Number(d.slice(6, 8))}`;
   const kd = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso)).replace(/-/g, "");
@@ -56,102 +64,165 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
     ...pastRows,
     ...fl.map((f) => ({ d: f.d, t: `${isoD(f.d)}T23:59:59Z`, kind: "공시", title: f.title, href: `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${f.no}`, ext: true })),
   ].sort((a, b) => b.t.localeCompare(a.t));
-  const totalVal = pf.holdings.reduce((a, x) => a + x.qty * (lc.get(x.code)?.close ?? 0), 0);
   const last = px[px.length - 1], first = px[0];
   // 평가 금액·손익은 기간 단추와 상관없이 최근 종가로(2026-11-22: '1일'은 하루치 종가만 읽어 주말·장 전엔 비어서 "—"가 나왔음). 비중 계산과 같은 값
-  const cur = lc.get(code)?.close ?? last?.c ?? null;
+  const cur = lc.get(code)?.close ?? lcSelf.get(code)?.close ?? last?.c ?? null;
   const value = h && cur != null ? h.qty * cur : null;
   const pnl = h?.avg && cur != null ? h.qty * (cur - h.avg) : null;
-  const scored = hist.filter((x) => x.in80 != null);
-  const inN = scored.filter((x) => x.in80).length;
-  const ratios = hist.filter((x) => x.x != null && Math.abs(x.x) >= 0.003).map((x) => x.h / x.x!).sort((a, b) => a - b);
-  const beta = ratios.length ? ratios[Math.floor(ratios.length / 2)] : null;
-  const react = beta == null ? null : beta >= 1.1 ? "크게 반응" : beta >= 0.6 ? "보통 반응" : "작게 반응";
-  // 가격 흐름 그림
-  const W = 342, H = 140;
-  const lo = Math.min(...px.map((p) => p.c), h?.avg ?? Infinity), hi = Math.max(...px.map((p) => p.c), h?.avg ?? -Infinity);
-  const X = (i: number) => (i / Math.max(1, px.length - 1)) * W, Y = (v: number) => 8 + (1 - (v - lo) / (hi - lo || 1)) * (H - 16);
-  const line = px.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.c).toFixed(1)}`).join("");
+  // 가격 흐름 그림(2026-11-24): 1주는 10분·1달은 1시간마다 장중 가격(거래일 하루 = 같은 폭), 3달·1년은 일봉 종가 한 점씩
+  const step = range[0] === "1w" ? 10 : range[0] === "1m" ? 30 : null;
+  const pts = step ? await series(px, code, step) : px.map((p, i) => ({ x: i / Math.max(1, px.length - 1), p: p.c }));
   const chg = first && last ? last.c / first.c - 1 : 0;
+
+  // 밤사이 이 종목 뉴스(변경 기록 27): 브리핑 기사 중 이 종목에 이어진 것. 같은 소식은 한 줄, 판정 난 것 먼저 · 매체 많은 것 먼저, 3줄까지
+  const mine = news.get(code) ?? [];
+  const vd = verdictsOf(mine, code);
+  const folds = foldStories([...mine].sort((a, b) => b.published.localeCompare(a.published)))
+    .map((f) => ({ ...f, v: impactFor(f.head, code) }))
+    .sort((a, b) => Number(b.v === "negative" || b.v === "positive") - Number(a.v === "negative" || a.v === "positive") || b.rest.length - a.rest.length)
+    .slice(0, 3);
+  const VC: Record<string, [string, string]> = { negative: ["부정", "#b86e12"], positive: ["긍정", "#15845a"], mixed: ["엇갈림", "#66777a"], neutral: ["중립", "#66777a"] };
+  const nodes = lk.get(code) ?? [];
+  const hotLinks = nodes.filter((x) => x.n > 0).slice(0, 3);
+  const newsHref = h || watch ? `/news?tab=mine&c=${code}${watch && !h ? "&v=watch" : ""}` : null;
+  // 시세 요약(변경 기록 27, 2026-11-25): 전일 종가는 일봉(위 현재가와 같은 값), 거래량 · 시가총액 · 외국인 보유 · 52주(장중)는 서버 model.stock_quote_daily(lib/prices.ts quote)
+  const dchg = lc.get(code) ?? lcSelf.get(code);
+  const pos52 = q?.hi && q.lo && cur != null && q.hi.p > q.lo.p ? Math.max(0, Math.min(1, (cur - q.lo.p) / (q.hi.p - q.lo.p))) : null;
+  const capText = (v: number) => { const eok = v / 1e8; return eok >= 1e4 ? `${(eok / 1e4).toLocaleString("ko-KR", { maximumFractionDigits: eok >= 1e6 ? 0 : 1 })}조 원` : `${Math.round(eok).toLocaleString("ko-KR")}억 원`; };
+  const yChg = dchg && dchg.prev ? dchg.close / dchg.prev - 1 : null;
+
+  // 다가오는 일정(2026-11-25): 홈과 같은 묶음(lib/events.ts upcomingEvents)에서 앞으로 30일. 칸에는 이 종목 일정 먼저, 남는 자리는 가까운 시장 일정으로 3줄, 나머지는 '더 보기' 창
+  const mineEv = evs.filter((e) => e.codes.includes(code));
+  const evTop = [...mineEv, ...evs.filter((e) => !e.codes.includes(code))].slice(0, 3).sort((a, b) => a.dday - b.dday);
+  const EvRow = ({ e }: { e: Ev }) => {
+    const d = new Date(Date.UTC(+today.slice(0, 4), +today.slice(4, 6) - 1, +today.slice(6, 8) + e.dday));
+    return (
+      <li><span className="d">{d.getUTCMonth() + 1}월 {d.getUTCDate()}일 ({"일월화수목금토"[d.getUTCDay()]})</span>
+        <span className="t">{e.title.replace(`${u.name} `, "")}{e.codes.includes(code) ? null : <small>{e.codes.length ? "이어진 미국 기업" : "시장"}</small>}</span>
+        <span className="dd">{e.dday === 0 ? "오늘" : `D-${e.dday}`}</span></li>
+    );
+  };
 
   return (
     <>
-      <main className="sheet">
+      <main className="sheet d4">
         <div className="shead"><Link href="/mine" aria-label="뒤로">‹</Link><span className="ttl">{u.name}</span><MaskToggle /></div>
-        <p className="fine">{h ? `보유 ${h.qty.toLocaleString("ko-KR")}주${h.avg ? ` · 평단 ${won(h.avg)}` : ""}${value != null && totalVal ? ` · 비중 ${Math.round((value / totalVal) * 100)}%` : ""}` : watch ? "관심 종목" : "보유하지 않은 종목"} · {u.sector}
+        <p className="d4-who">{h ? `보유 ${h.qty.toLocaleString("ko-KR")}주${h.avg ? ` · 평단 ${won(h.avg)}` : ""}` : watch ? `관심 종목 · ${u.sector}` : `보유하지 않은 종목 · ${u.sector}`}
           {tierOf(code) === 2 ? " · 모델 설계 밖" : tierOf(code) === 3 ? " · 서비스 대상 아님" : ""}</p>
 
-        {h ? (
-          <section className="pcard">
-            <div className="vrow">
-              <div><span>평가 금액</span><b className="amt tot">{value != null ? won(value) : "—"}</b></div>
+        {/* 머리(변경 기록 27): 현재가(어제 종가) · 어제 등락 → 평가 금액 · 평가 손익 → 수정 · 관심 이동 */}
+        <section className="d4-top">
+          <p className="cur"><b>{cur != null ? won(cur) : "—"}</b>{yChg != null ? <span style={{ color: signColor(yChg) }}>어제 {pct(yChg * 100)}</span> : null}<small>{dchg ? `${md(dchg.date)} 종가` : ""}</small></p>
+          {h ? (
+            <div className="val">
+              <div><span>평가 금액</span><b className="amt">{value != null ? won(value) : "—"}</b></div>
               <div className="r"><span>평가 손익</span>{pnl != null ? <b style={{ color: signColor(pnl) }}><span className="amt">{swon(pnl)}</span> ({pct(((cur! / h.avg! - 1) * 100))})</b> : <b className="muted">평단을 넣으면 계산해요</b>}</div>
             </div>
-            <div className="vlinks"><Link href={`/mine/${code}/edit`}>수량·평단 수정 ›</Link><Link href={`/mine/${code}/edit?watch=1`}>관심으로 옮기기 ›</Link></div>
-          </section>
-        ) : (
-          <section className="pcard"><div className="vlinks"><Link href={`/mine/${code}/edit`}>보유 종목으로 추가 ›</Link></div></section>
-        )}
+          ) : null}
+          <div className="acts">{h ? <><Link href={`/mine/${code}/edit`}>수량·평단 수정 ›</Link><Link href={`/mine/${code}/edit?watch=1`}>관심으로 옮기기 ›</Link></>
+            : <Link href={`/mine/${code}/edit`}>보유 종목으로 추가 ›</Link>}</div>
+        </section>
+        <i className="d4-gap" aria-hidden />
 
-        <section className="pcard">
+        <PredLine p={pred} name={u.name} qty={h?.qty ?? 0} avg={h?.avg ?? null} />
+
+        <section className="d4-sec">
+          <div className="d4-h"><b>밤사이 이 종목 뉴스</b>{newsHref && mine.length ? <Link href={newsHref} className="d4-more">모두 보기 ›</Link> : null}</div>
+          {mine.length ? (
+            <>
+              <p className="d4-vc">뉴스 {mine.length}건{vd.neg ? <> · <span className="neg">부정</span> {vd.neg}</> : null}{vd.pos ? <> · <span className="pos">긍정</span> {vd.pos}</> : null}</p>
+              <ul className="d4-news">
+                {folds.map(({ head: a, rest, v }) => (
+                  <li key={a.key}>
+                    <i style={{ background: v ? VC[v][1] : "#d8dfe0" }} aria-hidden />
+                    <Link href={`/news/a/${a.key}?back=/mine/${code}`} className="c">
+                      <b>{a.ko ?? a.title}</b>
+                      <span>{v ? <em style={{ color: VC[v][1] }}>{VC[v][0]}</em> : null}{v ? " · " : ""}{a.outlet || a.source} · {kstTime(a.published)}{rest.length ? ` · 같은 소식 ${rest.length}건` : ""}</span>
+                    </Link>
+                    <a href={a.link} target="_blank" rel="noreferrer noopener" className="x" aria-label="원문 보기"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V13H3V5h3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : <p className="d4-none">밤사이 이 종목에 이어진 미국 뉴스가 없어요.</p>}
+          {nodes.length ? (
+            <div className="d4-us">
+              <div className="hh"><b>미국 연결 기업 소식</b><LinksSheet name={u.name} nodes={nodes} /></div>
+              {hotLinks.length ? hotLinks.map((x) => (
+                <p key={x.key} className="ln"><i aria-hidden /><b>{x.name}</b><span>{x.rel}</span><em>소식 {x.n}</em></p>
+              )) : <p className="ln none">밤사이 소식이 난 연결은 없어요</p>}
+            </div>
+          ) : null}
+        </section>
+        <i className="d4-gap" aria-hidden />
+
+        <section className="d4-sec">
+          <div className="d4-h"><b>시세 요약</b>{dchg ? <small>{md(dchg.date)} 종가 기준</small> : null}</div>
+          <div className="d4-quote">
+            <div><span>전일 종가</span><b>{dchg ? won(dchg.close) : "—"}</b></div>
+            <div><span>거래량</span><b>{q?.volume != null ? `${q.volume.toLocaleString("ko-KR")}주` : "—"}</b></div>
+          </div>
+          <div className="d4-quote">
+            <div><span>시가총액</span><b>{q?.marketCap ? capText(q.marketCap) : "—"}</b></div>
+            <div><span>외국인 보유</span><b>{q?.foreign != null ? `${q.foreign.toFixed(1)}%` : "—"}</b></div>
+          </div>
+          {pos52 != null ? (
+            <div className="d4-52">
+              <span>52주 범위에서 지금 위치</span>
+              <div className="d4-52bar" role="img" aria-label={`52주 최저와 최고 사이 ${Math.round(pos52 * 100)}% 위치`}><i style={{ width: `calc(9px + (100% - 18px) * ${pos52.toFixed(4)})` }} /><b style={{ left: `calc(9px + (100% - 18px) * ${pos52.toFixed(4)})` }} /></div>
+              <p><span>최저 {won(q!.lo!.p)} · {md(q!.lo!.d)}</span><span>최고 {won(q!.hi!.p)} · {md(q!.hi!.d)}</span></p>
+            </div>
+          ) : null}
+        </section>
+
+        <section className="d4-chart">
           {range[0] === "1d" ? (
             day && day.points.length ? (() => {
               // 1일(장중 1분봉): 장이 열려 있으면 1분마다 이어 그린다. 장 전·휴장일은 마지막 거래일 하루
               // 한국거래소 정규장(09:00~15:30)만 그린다. 그래서 끝 가격은 정규장 마감가이고, 1주·1달의 '종가'(넥스트레이드 20:00까지의 마지막 가격)와 다를 수 있다
               const lp = day.points[day.points.length - 1];
-              const dchg = day.prev ? lp.p / day.prev - 1 : 0;
+              const dc = day.prev ? lp.p / day.prev - 1 : 0;
               const dl = `${Number(day.day.slice(4, 6))}/${Number(day.day.slice(6))}`;
               return <>
                 {day.live && !demo ? <AutoRefresh sec={60} /> : null}
-                <div className="prow2"><b>{won(lp.p)}</b><span style={{ color: signColor(dchg) }}>{day.day === today ? "오늘" : dl} {pct(dchg * 100)}</span>
+                <div className="prow2"><b>{won(lp.p)}</b><span style={{ color: signColor(dc) }}>{day.day === today ? "오늘" : dl} {pct(dc * 100)}</span>
                   <small>{day.live ? <><i className="livedot" aria-hidden />{lp.hhmm} 기준</> : "정규장 마감"}</small></div>
-                <DayChart d={day} avg={h?.avg ?? null} />
+                <DayChart id={`c${code}-1d`} d={day} avg={h?.avg ?? null} />
                 <div className="paxis"><span>{day.openAt}</span><span>12:00</span><span>{day.closeAt}</span></div>
               </>;
             })() : <p className="fine">하루 가격(1분) 자료가 아직 없어요. 장이 열리면 1분마다 그려요.</p>
           ) : <>
-          <div className="prow2"><b>{last ? won(last.c) : "—"}</b><span style={{ color: signColor(chg) }}>{range[1]} {pct(chg * 100)}</span><small>{last ? `${Number(last.d.slice(4, 6))}/${Number(last.d.slice(6))} 종가` : ""}</small></div>
-          {px.length > 1 ? (
-            <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="pchart">
-              <path d={`${line}L${W},${H}L0,${H}Z`} fill="rgba(211,93,102,.08)" />
-              {h?.avg ? <line x1={0} x2={W} y1={Y(h.avg)} y2={Y(h.avg)} stroke="#8a9598" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" /> : null}
-              <path d={line} fill="none" stroke={signColor(chg)} strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
-              <circle cx={X(px.length - 1)} cy={Y(last!.c)} r={3.5} fill={signColor(chg)} stroke="#fff" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-            </svg>
-          ) : <p className="fine">가격 자료가 아직 없어요.</p>}
+          <div className="prow2"><b>{last ? won(last.c) : "—"}</b><span style={{ color: signColor(chg) }}>{range[1]} {pct(chg * 100)}</span><small>{last ? `${md(last.d)} 종가` : ""}</small></div>
+          {px.length > 1 ? <PriceLine id={`c${code}-${range[0]}`} pts={pts} avg={h?.avg ?? null} color0={signColor(chg)} label={`${md(first!.d)}부터 ${md(last!.d)}까지 가격`} />
+            : <p className="fine">가격 자료가 아직 없어요.</p>}
           {px.length > 1 ? <div className="paxis"><span>{md(first!.d)}</span><span>{md(last!.d)}</span></div> : null}
           </>}
-          <div className="ranges">{RANGES.map((x) => <Link key={x[0]} href={`/mine/${code}?r=${x[0]}`} className={x[0] === range[0] ? "on" : ""}>{x[1]}</Link>)}</div>
+          <RangeTabs on={range[0]} items={RANGES.map((x) => ({ key: x[0], label: x[1], href: `/mine/${code}?r=${x[0]}` }))} />
           {h?.avg && (range[0] === "1d" ? day?.points.length : px.length > 1) ? (() => {
-            // 1일에서 평단이 그날 가격과 멀면 선을 그리지 않고 글로만(점선 표시 빼고 '그래프보다 위·아래')
-            const place = range[0] === "1d" && day ? avgPlace(day, h.avg) : "in";
+            // 평단이 그래프 가격과 멀면 선을 그리지 않고 글로만(점선 표시 빼고 '그래프보다 위·아래'). 1일만 쓰던 규칙을 모든 기간에(2026-11-24)
+            const place = range[0] === "1d" && day ? avgPlace(day, h.avg) : avgFit(pts.map((q) => q.p), h.avg);
             return <p className="avgnote">{place === "in" ? <i aria-hidden /> : null}내 평단 <b>{won(h.avg)}</b>{place === "top" ? " · 그래프보다 위" : place === "bottom" ? " · 그래프보다 아래" : ""}</p>;
           })() : null}   {/* 차트 안 글자가 잘려서 기간 단추 아래 줄로(2026-11-22 팀원 개선 사항). 점선은 차트에 그대로 */}
         </section>
+        <i className="d4-gap" aria-hidden />
 
-        <section className="pcard">
-          <div className="rowh"><b>이 종목의 예상 범위 기록</b><Link href="/saved" className="linkish teal">전체 기록 ›</Link></div>
-          {scored.length ? (
-            <>
-              <p className="score"><b>{inN} / {scored.length}일</b> 최근 {scored.length}거래일 중 범위 안</p>
-              <div className="hgrid">{[...scored].reverse().map((x) => <i key={x.t} className={x.in80 ? "in" : "out"} title={`${x.t} ${x.in80 ? "범위 안" : "범위 밖"}`} />)}</div>
-            </>
-          ) : <p className="sline2">채점 기록이 쌓이면 보여 줘요(거래일 09:05마다 하루씩).</p>}
-        </section>
+        {evs.length ? (<>
+          <section className="d4-sec">
+            <div className="d4-h"><b>다가오는 일정</b>{evs.length > evTop.length ? (
+              <Sheet className="d4-more" title={`${u.name} 다가오는 일정`} sub={`앞으로 30일 · 이 종목 일정과 시장 일정 ${evs.length}개`} trigger={<>더 보기 ›</>}>
+                <ul className="d4-ev">{evs.map((e) => <EvRow key={e.dday + e.title} e={e} />)}</ul>
+              </Sheet>) : null}</div>
+            <ul className="d4-ev">{evTop.map((e) => <EvRow key={e.dday + e.title} e={e} />)}</ul>
+          </section>
+          <i className="d4-gap" aria-hidden />
+        </>) : null}
 
-        <section className="pcard">
-          <div className="rowh"><b>미국 시장 반응도</b>{react ? <span className="react">{react}</span> : null}</div>
-          {beta != null ? <p className="beta">×{beta.toFixed(1)}</p> : null}
-          <p className="sline2">{beta == null ? "기록이 쌓이면 이 종목이 지난밤 야간선물 움직임을 얼마나 따라 시가가 정해지는지 보여 줘요."
-            : `야간선물이 1% 움직이면 평소 ${beta.toFixed(1)}% 안팎 · 지난 ${ratios.length}거래일`}</p>
-        </section>
-        <StockLinksSection name={u.name} nodes={lk.get(code) ?? []} />
-        <section className="pcard">
-          <div className="rowh"><b>지난 소식</b>{items.length > 3 ? (
-            <Sheet className="linkish teal" title={`${u.name} 지난 소식`} sub={`최근 ${items.length}건 · 기사 7일 · 공시 14일`} trigger={<>더 보기 ›</>}>
+        <section className="d4-sec d4-past">
+          <div className="d4-h"><b>지난 소식</b>{items.length > 3 ? (
+            <Sheet className="d4-more" title={`${u.name} 지난 소식`} sub={`최근 ${items.length}건 · 기사 7일 · 공시 14일`} trigger={<>더 보기 ›</>}>
               {items.map((x, k) => <PastRow key={k} x={x} md={md} />)}
             </Sheet>) : null}</div>
-          {items.length ? items.slice(0, 3).map((x, k) => <PastRow key={k} x={x} md={md} />) : <p className="sline2">최근 일주일 동안 이 종목 소식이 없어요.</p>}
+          {items.length ? items.slice(0, 3).map((x, k) => <PastRow key={k} x={x} md={md} />) : <p className="d4-none">최근 일주일 동안 이 종목 소식이 없어요.</p>}
         </section>
       </main>
       <BottomNav active="mine" />

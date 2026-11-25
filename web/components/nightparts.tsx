@@ -1,4 +1,5 @@
 // 밤사이 화면의 창·띠·상태 부품(서버에서 그림). 창은 components/sheet.tsx(움직이는 부분)로 연다.
+import { FuturesFlow } from "@/components/futcard";
 import Link from "next/link";
 import { Sheet } from "@/components/sheet";
 import { NamesTip } from "@/components/namestip";
@@ -60,7 +61,7 @@ export function Banner({ kind, n, total, title, body }: { kind: "mon" | "hol" | 
   const text = kind === "day" ? [title ?? "", body ?? ""] : {
     mon: ["월요일 아침이에요", "주말 동안 쌓인 소식이 한꺼번에 반영돼서, 과거 월요일엔 시가가 예상 범위를 벗어난 날이 더 많았어요. 다른 요일은 10번 중 2번, 월요일은 10번 중 2.6번꼴이에요."],
     hol: ["연휴 다음 날 아침이에요", "며칠 동안 쌓인 소식이 한꺼번에 반영돼서, 과거 연휴 다음 날엔 시가가 예상 범위를 벗어난 날이 더 많았어요."],
-    us: ["어젯밤 미국 증시가 쉬었어요", "미국 장 소식이 없는 밤이에요. 오늘 예상 시가는 평소처럼 야간선물로 계산했어요."],
+    us: ["어젯밤 미국 증시가 쉬었어요", `${body ?? ""}미국 장 소식이 없는 밤이에요. 오늘 예상 시가는 평소처럼 야간선물로 계산했어요.`],   // body: 휴일 이름 앞말(예: '추수감사절이라 ', 2026-11-25)
     nonight: ["어젯밤 야간 거래가 없었어요", "야간선물 없이 미국 시장 흐름만으로 계산해서 예상 범위가 평소보다 넓어요."],   // 컴포넌트 563:17
     earn: [`어제 실적 공시가 나온 종목이 ${n}개 있어요`, "과거 이런 아침엔 시가가 범위 밖으로 더 자주 나갔어요. 종목에 '어제 실적 공시' 표시를 붙였어요."],
     partial: [`${n}종목의 예상을 불러오지 못했어요`, `계좌 예상은 나머지 ${total}종목으로만 계산했어요.`],
@@ -104,10 +105,12 @@ export function WaitState({ kicker, title, body, link, night, nightNote, seg, af
       </section>
       {night ? (
         <div className="fut">
-          <div className="fh"><b className="tq">코스피200 야간선물<FuturesHelpInline /></b><Link href={`/night/futures?d=${night.d}`} className="futgo"><span style={{ color: signColor(last ?? 0) }}>{last != null ? pct(P(last)) : "—"}</span><em>›</em></Link></div>
-          <p className="fine">{nightNote}</p>
-          <Link href={`/night/futures?d=${night.d}`}><NightChart night={night} /></Link>
-          <div className="axis"><span>18:00</span><span>23:30 미국 개장</span><span>06:00 마감</span></div>
+          <FuturesFlow night={night} sub={nightNote}>
+            <div className="fh"><b className="tq">코스피200 야간선물<FuturesHelpInline /></b><span className="futgo"><span style={{ color: signColor(last ?? 0) }}>{last != null ? pct(P(last)) : "—"}</span><em>›</em></span></div>
+            <p className="fine">{nightNote}</p>
+            <NightChart night={night} />
+            <div className="axis"><span>18:00</span><span>23:30 미국 개장</span><span>06:00 마감</span></div>
+          </FuturesFlow>
         </div>
       ) : null}
       {after}

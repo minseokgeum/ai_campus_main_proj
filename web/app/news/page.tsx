@@ -1,23 +1,26 @@
 // 뉴스 브리핑 v2(피그마 시장 522:6706 · 산업별 493:9838 · 내 종목 532:6226). 기사는 오라클 수집 DB의 밤사이 실제 기사.
+// 2026-11-24: 위 탭 줄 대신 큰 제목을 눌러 보기를 바꾼다(components/newsmenu.tsx), 내 종목 뉴스는 종목 이름 메뉴로 한 종목씩 고른다(Mine), 산업별도 같은 방식(IndustryV2, IND_V2로 되돌림), 세 화면 모두 판정 묶음.
 import Link from "next/link";
 import { NewsTimeHelp } from "@/components/helps";
-import { NewsLinksCard } from "@/components/links";
+import { NewsLinksButton } from "@/components/links";
 import { stockLinks, type LinkNode } from "@/lib/links";
-import { AiSummary, Avatar, BottomNav, Empty, Glance, Head, NewsCard, Section, StateBox, StockNews, VerdictGlance } from "@/components/ui";
+import { AiSummary, Avatar, BottomNav, Empty, Glance, Head, NewsCard, Section, StateBox, StockNews, VerdictGroups } from "@/components/ui";
+import { NewsMenu } from "@/components/newsmenu";
 import { aiBrief, type Brief } from "@/lib/summary";
 import { Sheet } from "@/components/sheet";
 import { requireUser } from "@/lib/auth";
 import { portfolio, UNIVERSE, uStock } from "@/lib/portfolio";
-import { bySector, byStock, impactFor, nightNews, verdictsOf } from "@/lib/news";
+import { articleVerdict, bySector, byStock, foldStories, groupByVerdict, impactFor, nightNews, verdictsOf } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
 
-type Q = { tab?: string; v?: string; c?: string; s?: string; open?: string; d?: string };
+type Q = { tab?: string; v?: string; c?: string; s?: string; d?: string };
 type Acct = { holdings: { code: string; qty: number }[]; watch: string[] };
 const nameOf = (c: string) => uStock(c)?.name ?? c;
 const sectorOf = (c: string) => uStock(c)?.sector;
-const PER_BLOCK = 2; // 종목 블록에 먼저 보여 줄 기사 수(넘으면 '모두 보기')
 const MARKET_MAX = 30;
+// 산업별 새 화면(2026-11-24, 내 종목 뉴스처럼 업종 하나씩 · 업종 이름 메뉴). false로 바꾸면 예전 화면(업종 여러 개 고르기 · 업종별 2건 묶음)으로 돌아간다
+const IND_V2 = true;
 
 function q(base: Q, patch: Partial<Q>) {
   const p = new URLSearchParams();
@@ -27,9 +30,10 @@ function q(base: Q, patch: Partial<Q>) {
 
 export default async function NewsPage({ searchParams }: { searchParams: Promise<Q> }) {
   const sp = await searchParams;
-  const tab = sp.tab === "ind" || sp.tab === "mine" ? sp.tab : "market";
   const user = await requireUser();
   const acct: Acct = await portfolio(user.id);
+  // 탭 순서와 처음 열리는 탭: 내 종목 → 산업별 → 시장(2026-11-24 사용자 결정). 보유 종목이 없으면 처음엔 시장 탭
+  const tab = sp.tab === "ind" || sp.tab === "mine" || sp.tab === "market" ? sp.tab : acct.holdings.length ? "mine" : "market";
   const { brief, articles } = await nightNews(sp.d);
   const ai = await aiBrief(brief.date);
   const base: Q = { d: sp.d };
@@ -39,16 +43,18 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <Head title="뉴스 브리핑" help={<NewsTimeHelp />} sub={`국내 종목에 영향을 줄 미국 뉴스만 모았어요 · ${asOf}`} />
-      <nav className="toptabs" aria-label="뉴스 구분">
-        <Link href={q(base, { tab: "market" })} className={tab === "market" ? "on" : ""}>시장</Link>
-        <Link href={q(base, { tab: "ind" })} className={tab === "ind" ? "on" : ""}>산업별</Link>
-        <Link href={q(base, { tab: "mine" })} className={tab === "mine" ? "on" : ""}>내 종목</Link>
-      </nav>
+      {/* 제목은 '뉴스 브리핑' 고정, 그 아래 글자 탭(내 종목 · 산업별 · 시장)을 바로 눌러 바꾼다. 숫자는 두지 않는다(2026-11-25 사용자 결정, 예전 '제목 누름' 메뉴 대신) */}
+      <Head title="뉴스 브리핑" help={<NewsTimeHelp />} sub={`국내 종목에 영향을 줄 미국 뉴스만 모았어요 · ${asOf}`} tabs={
+        <nav className="ntabs" aria-label="뉴스 보기">
+          {([["mine", "내 종목"], ["ind", "산업별"], ["market", "시장"]] as const).map(([k, label]) => (
+            <Link key={k} href={q(base, { tab: k })} className={tab === k ? "on" : ""} aria-current={tab === k ? "page" : undefined}>{label}</Link>
+          ))}
+        </nav>} />
       <main className="scroll">
         {tab === "market" ? <Market list={articles.filter((a) => a.market)} asOf={asOf} ai={ai} /> : null}
-        {tab === "ind" ? <Industry base={{ ...base, tab: "ind" }} sel={sp.s} acct={acct} list={articles} asOf={asOf} ai={ai} /> : null}
-        {tab === "mine" ? <Mine base={{ ...base, tab: "mine", v: sp.v, c: sp.c }} acct={acct} view={sp.v === "watch" ? "watch" : "hold"} pick={sp.c} open={sp.open} list={articles} ai={ai} links={links} /> : null}
+        {tab === "ind" ? (IND_V2 ? <IndustryV2 base={{ ...base, tab: "ind" }} sel={sp.s} acct={acct} list={articles} ai={ai} />
+          : <Industry base={{ ...base, tab: "ind" }} sel={sp.s} acct={acct} list={articles} asOf={asOf} ai={ai} />) : null}
+        {tab === "mine" ? <Mine base={{ ...base, tab: "mine", v: sp.v, c: sp.c }} acct={acct} view={sp.v === "watch" ? "watch" : "hold"} pick={sp.c} list={articles} ai={ai} links={links} /> : null}
       </main>
       <BottomNav active="news" />
     </>
@@ -60,13 +66,44 @@ function Market({ list, asOf, ai }: { list: Awaited<ReturnType<typeof nightNews>
     <>
       <AiSummary meta={`${asOf} · 뉴스 ${list.length}건`} what="시장 전체" lines={ai.macro} />
       <Section title="최신 뉴스" right={<><img src="/icons/dot-red.svg" alt="" width={6} height={6} />{asOf.replace(" 기준", "")} 갱신</>} />
-      {list.length ? list.slice(0, MARKET_MAX).map((a) => <NewsCard key={a.key} a={a} />) : <Empty />}
+      {/* 판정 묶음(부정 → 긍정 → 엇갈림 → 중립 → 표시 없음, 2026-11-24). 최신 소식 30개(같은 소식 기사는 한 소식으로 셈) 안에서 묶는다 */}
+      {list.length ? <VerdictGroups groups={groupByVerdict(foldStories([...list].sort((a, b) => b.published.localeCompare(a.published))).slice(0, MARKET_MAX).flatMap((f) => [f.head, ...f.rest]), (a) => articleVerdict(a))}
+        render={(a, more) => <NewsCard key={a.key} a={a} impact={articleVerdict(a)} more={more} />} /> : <Empty />}
     </>
   );
 }
 
 const ALL_SECTORS = [...new Set(UNIVERSE.map((x) => x.sector))].filter((x) => x && x !== "기타").sort((a, b) => a.localeCompare(b, "ko"));
 const SHOW = 3; // 업종별 뉴스에 펼쳐 둘 업종 수(나머지는 '나머지 업종 더 보기' 창)
+
+/** 산업별 새 화면(2026-11-24, 내 종목 뉴스와 같은 의도: 한 번에 하나, 그 업종 뉴스를 쭉). 업종 이름을 누르면 업종 고르기 메뉴
+ *  (위: 내 종목이 있는 업종 •, 아래: 뉴스가 있는 다른 업종, 각각 뉴스 많은 순). 구성 = 업종 이름 · 뉴스 수와 그 업종 내 종목 · AI 요약 · 판정 묶음 뉴스 전체.
+ *  ?s=업종이면 그 업종, 없으면 내 종목 업종 중 뉴스가 가장 많은 업종. 기사 판정은 그 업종 종목들의 판정을 합친 것(articleVerdict) */
+function IndustryV2({ base, sel, acct, list, ai }: { base: Q; sel?: string; acct: Acct; list: Awaited<ReturnType<typeof nightNews>>["articles"]; ai: Brief }) {
+  const codes = [...new Set([...acct.holdings.map((h) => h.code), ...acct.watch])];
+  const mine = [...new Set(codes.map(sectorOf).filter(Boolean))] as string[];
+  const m = bySector(list, ALL_SECTORS);
+  const n = (x: string) => m.get(x)?.length ?? 0;
+  const byN = (a: string, b: string) => n(b) - n(a) || a.localeCompare(b, "ko");
+  const order = [...mine.filter((x) => ALL_SECTORS.includes(x)).sort(byN), ...ALL_SECTORS.filter((x) => !mine.includes(x) && n(x)).sort(byN)];
+  if (!order.length) return <Empty />;
+  const cur = sel && order.includes(sel) ? sel : order.find((x) => mine.includes(x) && n(x)) ?? order[0];
+  const inSec = new Set(UNIVERSE.filter((u) => u.sector === cur).map((u) => u.code));
+  const myHere = codes.filter((c) => sectorOf(c) === cur);
+  const arts = m.get(cur) ?? [];
+  const line = ai.sectors.get(cur);
+  return (
+    <div className="spg-in">
+      <NewsMenu box="업종" on={cur} views={order.map((x) => ({ key: x, label: x, n: n(x), href: q(base, { s: x }), dot: mine.includes(x) }))} />
+      <p className="spg-meta">
+        {myHere.length ? <span className="wrap">내 종목 {myHere.map((c, i) => <span key={c}>{i ? " · " : ""}<Link href={`/news?tab=mine&c=${c}`} >{nameOf(c)}</Link></span>)}</span> : <span>내 종목 없는 업종</span>}</p>
+      <AiSummary badge="AI 요약" meta={`${cur} · 뉴스 ${arts.length}건`} what={`${cur} 업종`} lines={line ? [line] : []} />
+      {arts.length ? <VerdictGroups groups={groupByVerdict(arts, (a) => articleVerdict(a, inSec))} render={(a, more) => <NewsCard key={a.key} a={a} tag={cur} impact={articleVerdict(a, inSec)} more={more} />} />
+        : <p className="quiet">밤사이 {cur} 업종 관련 미국 뉴스가 들어오지 않았어요.</p>}
+      <p className="fine">업종 칸을 누르면 다른 업종 뉴스를 볼 수 있어요(• 내 종목이 있는 업종). 긍정·부정은 AI가 이 소식이 그 업종 종목에 유리한지 판단한 거예요. 주가 방향 예측이 아니에요.</p>
+    </div>
+  );
+}
 
 /** 산업별(피그마 522:6842 여러 개 선택 · 493:9838 한 업종 · 534:6305 업종 전체 창 · 534:6293 업종 뉴스 창 · 534:6302 나머지 업종 창) */
 function Industry({ base, sel, acct, list, asOf, ai }: { base: Q; sel?: string; acct: Acct; list: Awaited<ReturnType<typeof nightNews>>["articles"]; asOf: string; ai: Brief }) {
@@ -148,27 +185,27 @@ function Industry({ base, sel, acct, list, asOf, ai }: { base: Q; sel?: string; 
   );
 }
 
-function Mine({ base, acct, view, pick, open, list, ai, links }: { base: Q; acct: Acct; view: "hold" | "watch"; pick?: string; open?: string; list: Awaited<ReturnType<typeof nightNews>>["articles"]; ai: Brief; links: Map<string, LinkNode[]> }) {
+/** 내 종목 뉴스(2026-11-24 사용자 결정): 한 번에 한 종목. 종목 이름(크게)을 누르면 종목 고르기 메뉴. 구성 = 종목 이름 · 관계 그림 보기(아래에서 올라오는 창) · 그 종목 AI 요약 · 그 종목 뉴스 전체(시장 뉴스처럼 쭉).
+ *  메뉴 순서: 부정 소식이 있는 종목 → 뉴스 많은 순, 밤사이 소식 없는 종목은 맨 아래. ?c=종목코드면 그 종목, 없으면 맨 앞 종목 */
+function Mine({ base, acct, view, pick, list, ai, links }: { base: Q; acct: Acct; view: "hold" | "watch"; pick?: string; list: Awaited<ReturnType<typeof nightNews>>["articles"]; ai: Brief; links: Map<string, LinkNode[]> }) {
   const hold = acct.holdings.map((h) => h.code);
   const codes = view === "hold" ? hold : acct.watch;
   const m = byStock(list, codes);
   const neg = (c: string) => (m.get(c) ?? []).some((a) => impactFor(a, c) === "negative");
-  const shown = (pick && codes.includes(pick) ? [pick] : codes)
-    .map((c) => ({ c, n: m.get(c)?.length ?? 0, neg: neg(c) }))
-    .sort((x, y) => Number(y.neg) - Number(x.neg) || y.n - x.n);
-  const cnt = { positive: 0, negative: 0, neutral: 0 } as Record<string, number>;
-  for (const c of codes) { const i = ai.companies.get(c)?.impact; if (i && i in cnt) cnt[i]++; }
-  const impactMeta = cnt.positive + cnt.negative + cnt.neutral ? `긍정 ${cnt.positive} · 부정 ${cnt.negative} · 중립 ${cnt.neutral}` : null;
-  const withNews = shown.filter((x) => x.n > 0);
-  const quiet = shown.filter((x) => x.n === 0).map((x) => nameOf(x.c));
+  const order = codes.map((c) => ({ c, n: m.get(c)?.length ?? 0, neg: neg(c) }))
+    .sort((x, y) => Number(y.n > 0) - Number(x.n > 0) || Number(y.neg) - Number(x.neg) || y.n - x.n);
   const total = new Set(codes.flatMap((c) => (m.get(c) ?? []).map((a) => a.key))).size;
+  const aiRan = !!(ai.createdAt || ai.macro.length || ai.sectors.size || ai.companies.size);
+  const seg = (
+    <div className="seg">
+      <Link href={q(base, { v: undefined, c: undefined })} className={view === "hold" ? "on" : ""}>보유 {hold.length}</Link>
+      <Link href={q(base, { v: "watch", c: undefined })} className={view === "watch" ? "on" : ""}>관심 {acct.watch.length}</Link>
+    </div>
+  );
   if (!codes.length) {
     return (
       <>
-        <div className="seg">
-          <Link href={q(base, { v: undefined, c: undefined })} className={view === "hold" ? "on" : ""}>보유 {hold.length}</Link>
-          <Link href={q(base, { v: "watch", c: undefined })} className={view === "watch" ? "on" : ""}>관심 {acct.watch.length}</Link>
-        </div>
+        {seg}
         <StateBox mark="+" title="아직 등록한 종목이 없어요" body={<>종목을 추가하면 내 종목과 관련된<br />밤사이 미국 뉴스만 모아 보여드려요.</>} action={{ href: "/mine/add", label: "종목 추가하기" }} />
       </>
     );
@@ -176,52 +213,34 @@ function Mine({ base, acct, view, pick, open, list, ai, links }: { base: Q; acct
   if (!total) {   // 종목은 있는데 밤사이 이어진 뉴스가 없음(배포 784:2521)
     return (
       <>
-        <div className="seg">
-          <Link href={q(base, { v: undefined, c: undefined })} className={view === "hold" ? "on" : ""}>보유 {hold.length}</Link>
-          <Link href={q(base, { v: "watch", c: undefined })} className={view === "watch" ? "on" : ""}>관심 {acct.watch.length}</Link>
-        </div>
+        {seg}
         <StateBox mark="–" title="밤사이 내 종목 소식이 없어요" body={<>{view === "hold" ? "보유" : "관심"} {codes.length}종목과 관련된 미국 뉴스가<br />밤사이 들어오지 않았어요.</>} action={{ href: q(base, { tab: "market", v: undefined, c: undefined }), label: "시장 뉴스 보기" }} />
       </>
     );
   }
+  const cur = order.find((x) => x.c === pick) ?? order[0];
+  const c = cur.c, n = cur.n;
+  const qty = acct.holdings.find((h) => h.code === c)?.qty ?? 0;
+  const arts = m.get(c) ?? [];
+  const v = verdictsOf(arts, c);
+  const line = ai.companies.get(c)?.line;
   return (
     <>
-      <div className="seg">
-        <Link href={q(base, { v: undefined, c: undefined })} className={view === "hold" ? "on" : ""}>보유 {hold.length}</Link>
-        <Link href={q(base, { v: "watch", c: undefined })} className={view === "watch" ? "on" : ""}>관심 {acct.watch.length}</Link>
+      {seg}
+      <div className="spg-in">
+        {/* 종목 고르기 칸(2안, 2026-11-24): 누르면 종목 메뉴. 오른쪽 숫자 = 그 종목 밤사이 뉴스 수 */}
+        <NewsMenu box="종목" on={c} views={order.map((x) => ({ key: x.c, label: nameOf(x.c), n: x.n, href: q(base, { c: x.c }) }))} />
+        <p className="spg-meta"><span>{qty > 0 ? `보유 ${qty.toLocaleString("ko-KR")}주` : "관심 종목"}</span>
+          {v.neg ? <span><b className="neg">부정</b> {v.neg}</span> : null}{v.pos ? <span><b className="pos">긍정</b> {v.pos}</span> : null}</p>
+        <NewsLinksButton code={c} name={nameOf(c)} nodes={links.get(c) ?? []} />
+        {n ? <>
+          <AiSummary badge="AI 요약" meta={`${nameOf(c)} · 밤사이 소식 ${n}건`} what={nameOf(c)} lines={line ? [line] : []}
+            // 그날 요약이 돌았는데 줄이 없으면: 종목 요약은 회사가 기사에 직접 나온 소식으로만 만들어서(거래처·제품 검색어로 걸린 기사는 쓰지 않음, 2026-11-23 정함)
+            empty={aiRan ? [`오늘은 ${nameOf(c)}에 직접 관한 소식이 없어 AI 요약을 만들지 않았어요. 아래 기사는 거래처·관련 제품 검색어로 모았어요.`, "AI 요약은 회사가 기사에 직접 나온 소식으로만 만들어요."] : undefined} />
+          <VerdictGroups groups={groupByVerdict(arts, (a) => impactFor(a, c))} render={(a, more) => <StockNews key={a.key} a={a} impact={impactFor(a, c)} more={more} />} />
+        </> : <p className="quiet">밤사이 {nameOf(c)} 관련 미국 뉴스가 들어오지 않았어요.</p>}
       </div>
-      <div className="filter">
-        <div className="row">
-          <Link href={q(base, { c: undefined })} className={`pill ${!pick ? "all" : ""}`}>{view === "hold" ? "보유" : "관심"} 종목 전체</Link>
-          {codes.map((c) => (
-            <Link key={c} href={q(base, { c })} className={`pill ${pick === c ? "on" : ""}`}>{nameOf(c)}{pick === c ? <i>✓</i> : null}</Link>
-          ))}
-        </div>
-      </div>
-      <AiSummary meta={impactMeta ?? `${view === "hold" ? "보유" : "관심"} ${codes.length}종목 · 밤사이 소식 ${total}건`} what="내 종목"
-        note={`${view === "hold" ? "보유" : "관심"} ${codes.length}종목 · 밤사이 소식 ${total}건 기준 · AI가 요약했어요`}
-        lines={shown.map(({ c }) => ai.companies.get(c)?.line ?? "").filter(Boolean).slice(0, 3)}   // 피그마 532:6226: 3줄, 부정 소식 종목 먼저
-        // 그날 요약이 돌았는데 줄이 없으면: 종목 요약은 회사가 기사에 직접 나온 소식으로만 만들어서(거래처·제품 검색어로 걸린 기사는 쓰지 않음, 2026-11-23 정함)
-        empty={ai.createdAt || ai.macro.length || ai.sectors.size || ai.companies.size ? [
-          `오늘은 ${pick && codes.includes(pick) ? nameOf(pick) : `${view === "hold" ? "보유" : "관심"} 종목`}에 직접 관한 소식이 없어 AI 요약을 만들지 않았어요. 아래 기사는 거래처·관련 제품 검색어로 모았어요.`,
-          "AI 요약은 회사가 기사에 직접 나온 소식으로만 만들어요."] : undefined} />
-      <VerdictGlance title={`${view === "hold" ? "보유" : "관심"} 종목 소식 한눈에`} rows={withNews.map(({ c, n }) => ({ name: nameOf(c), href: q(base, { c }), ...verdictsOf(m.get(c) ?? [], c), total: n }))} />
-      <Section title="종목별 뉴스" right={<><img src="/icons/dot-red.svg" alt="" width={6} height={6} />부정 소식이 있는 종목 먼저</>} />
-      {withNews.length === 0 ? <Empty /> : withNews.map(({ c, n }) => {
-        const arts = m.get(c) ?? [];
-        const all = open === c;
-        return (
-          <section key={c} className="block">
-            <div className="bh"><Avatar name={nameOf(c)} /><b>{nameOf(c)}</b><span>{(acct.holdings.find((h) => h.code === c)?.qty ?? 0) > 0 ? `보유 ${acct.holdings.find((h) => h.code === c)!.qty.toLocaleString("ko-KR")}주` : "관심 종목"}</span></div>
-            <p className="bsub">뉴스 {n}건{(() => { const v = verdictsOf(m.get(c) ?? [], c); return <>{v.neg ? <> · <b className="neg">부정</b> {v.neg}</> : null}{v.pos ? <> · <b className="pos">긍정</b> {v.pos}</> : null}</>; })()}</p>
-            <NewsLinksCard code={c} name={nameOf(c)} nodes={links.get(c) ?? []} />
-            {(all ? arts : arts.slice(0, PER_BLOCK)).map((a) => <StockNews key={a.key} a={a} impact={impactFor(a, c)} />)}
-            {n > PER_BLOCK && !all ? <Link className="more" href={q(base, { open: c })}>{nameOf(c)} 뉴스 {n}건 모두 보기 ›</Link> : null}
-          </section>
-        );
-      })}
-      {quiet.length ? <p className="quiet">밤사이 소식 없음 · {quiet.length <= 2 ? quiet.join(", ") : `${quiet.slice(0, 2).join(", ")} 외 ${quiet.length - 2}종목`}</p> : null}
-      <p className="fine">긍정·부정은 AI가 이 소식이 종목에 유리한지 판단한 거예요. 주가 방향 예측이 아니에요.</p>
+      <p className="fine">종목 칸을 누르면 다른 종목 뉴스를 볼 수 있어요. 긍정·부정은 AI가 이 소식이 종목에 유리한지 판단한 거예요. 주가 방향 예측이 아니에요.</p>
     </>
   );
 }

@@ -50,3 +50,32 @@ export function FuturesCard({ night, live, buckets }: { night: Night; live: bool
     </div>
   );
 }
+
+/** 밤사이 화면의 야간선물 칸(2026-11-25 사용자 요청: 새 화면 대신 아래에서 올라오는 창, 홈 카드와 같은 방식).
+ *  children = 칸에 보이는 내용(제목·그래프·눈금). 칸 전체를 덮는 투명 단추가 창을 열고, 물음표는 그 위에 떠 있다.
+ *  창 내용은 예전 야간선물 상세 화면(app/night/futures, 피그마 363:2)과 같다: 마감 가격·변화, 훑어 보는 그래프, 시작가·어제 마감·고가·저가 */
+export function FuturesFlow({ night, sub, children }: { night: Night; sub: string; children: React.ReactNode }) {
+  const pts = night.points;
+  const r = night.last ?? pts[pts.length - 1]?.r ?? 0;
+  const hi = pts.reduce((a, p) => (p.r > a.r ? p : a), pts[0] ?? { m: 0, r: 0 });
+  const lo = pts.reduce((a, p) => (p.r < a.r ? p : a), pts[0] ?? { m: 0, r: 0 });
+  const lvl = (v: number) => (night.dayClose * (1 + v)).toFixed(2);
+  return (
+    <div className="futflow">
+      {children}
+      <Sheet className="futtrig" title="코스피200 야간선물" sub={sub} trigger={<span className="sr">코스피200 야간선물 흐름 크게 보기</span>}>
+        <p className="fbig"><b style={{ color: signColor(r) }}>{pct(r * 100)}</b><span>{lvl(r)}</span></p>
+        <p className="fine">어제 주간 종가 {night.dayClose.toFixed(2)} 대비 · {r >= 0 ? "▲" : "▼"} {Math.abs(night.dayClose * r).toFixed(2)}</p>
+        {pts.length ? <>
+          <ChartScrub points={pts} dayClose={night.dayClose}><div className="fut big"><NightChart night={night} h={180} detail /></div></ChartScrub>
+          <div className="axis scrubaxis"><span>18:00</span><span>21:00</span><span>00:00</span><span>03:00</span><span>06:00</span></div>
+          <div className="ohlc">
+            <span>시작가</span><b>{lvl(pts[0].r)}</b><span>어제 마감</span><b>{night.dayClose.toFixed(2)}</b>
+            <span>고가</span><b style={{ color: signColor(hi.r) }}>{lvl(hi.r)}</b><span>저가</span><b style={{ color: signColor(lo.r) }}>{lvl(lo.r)}</b>
+          </div>
+        </> : <p className="quiet">야간선물 1분봉이 아직 없어요.</p>}
+        <p className="fine">야간 거래는 전날 18:00부터 다음 날 06:00까지 열려요. 06:00 마감 변화가 예상 시가 계산의 입력이고, 실제 시가와는 차이가 날 수 있어요.</p>
+      </Sheet>
+    </div>
+  );
+}

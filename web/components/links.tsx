@@ -14,8 +14,9 @@ export function LinkGraph({ name, nodes }: { name: string; nodes: LinkNode[] }) 
   return (
     <div className="lgraph" style={{ height: H }}>
       <svg aria-hidden className="lglines" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" width="100%" height={H}>
-        {nodes.map((x, i) => (
-          <line key={x.key} x1={L} y1={i * ROW + BOX / 2} x2={R} y2={mid} vectorEffect="non-scaling-stroke"
+        {/* 선(2026-11-24): 왼쪽 칸에서 수평으로 나와 가운데서 휘고 내 종목 칸에 수평으로 들어가는 곡선. 소식 난(주황) 선은 회색 위에 오게 나중에 그린다 */}
+        {nodes.map((x, i) => ({ x, y: i * ROW + BOX / 2 })).sort((a, b) => Number(!!a.x.n) - Number(!!b.x.n)).map(({ x, y }) => (
+          <path key={x.key} d={`M${L},${y} C${(L + R) / 2},${y} ${(L + R) / 2},${mid} ${R},${mid}`} fill="none" vectorEffect="non-scaling-stroke"
             stroke={x.n ? "#e0a526" : "#b8c0c3"} strokeWidth={x.n ? 2.5 : 1.5} strokeDasharray={x.direct ? undefined : "5 5"} strokeLinecap="round" />
         ))}
       </svg>
@@ -70,25 +71,34 @@ export function StockLinksSection({ name, nodes }: { name: string; nodes: LinkNo
   );
 }
 
-/** ② 뉴스 · 내 종목 블록의 카드: 오늘 소식이 난 연결만 세 칸까지. 없으면 숨김. '관계도 ›'는 ③ 창(다섯 칸 그림) */
-export function NewsLinksCard({ code, name, nodes }: { code: string; name: string; nodes: LinkNode[] }) {
-  const hot = nodes.filter((x) => x.n > 0);
-  if (!hot.length) return null;
+/** ② 뉴스 · 내 종목 뉴스의 '관계 그림 보기 ›' 단추(2026-11-24: 화면에 바로 뜨던 카드 대신 누르면 아래에서 올라오는 창). 이어진 것이 없으면 숨김 */
+export function NewsLinksButton({ code, name, nodes }: { code: string; name: string; nodes: LinkNode[] }) {
+  if (!nodes.length) return null;
+  const hot = nodes.filter((x) => x.n > 0).length;
   return (
-    <LinkLang><div className="lcard">
-      <div className="lchead">
-        <span>오늘 소식이 <b>난 연결</b></span>
-        <LangToggle />
-        <Sheet className="linkish teal" title={`${name} · 이어진 것`} sub="오늘 소식이 난 연결을 위에 보여드려요" trigger={<>관계도 ›</>}>
-          <div className="lgtbar"><LangToggle /></div>
-          <LinkGraph name={name} nodes={nodes.slice(0, 5)} />
-          <LinkLegend />
-          <p className="lgnote">이어진 것 {nodes.length}개 중 {Math.min(5, nodes.length)}개</p>
-          <Link href={`/mine/${code}`} className="cta lgcta">종목 상세에서 보기</Link>
-        </Sheet>
-      </div>
-      <LinkGraph name={name} nodes={hot.slice(0, 3)} />
-      {hot.length > 3 ? <p className="lgmore">그 밖에 소식이 난 연결 {hot.length - 3}개</p> : null}
-    </div></LinkLang>
+    <LinkLang>
+      <Sheet className="lgbtn" title={`${name} · 이어진 것`} sub="오늘 소식이 난 연결을 위에 보여드려요" trigger={<>관계 그림 보기{hot ? <em>소식 난 연결 {hot}</em> : null} ›</>}>
+        <div className="lgtbar"><LangToggle /></div>
+        <LinkGraph name={name} nodes={nodes.slice(0, 5)} />
+        <LinkLegend />
+        <p className="lgnote">이어진 것 {nodes.length}개 중 {Math.min(5, nodes.length)}개</p>
+        <Link href={`/mine/${code}`} className="cta lgcta">종목 상세에서 보기</Link>
+      </Sheet>
+    </LinkLang>
+  );
+}
+
+/** ③ 종목 상세 v4의 '미국 연결 기업 소식' 줄 오른쪽 '관계도 보기 ›'(피그마 769:11725, 변경 기록 27·35, 2026-11-25): 큰 그림은 상세에서 빼고 이 창에서만 */
+export function LinksSheet({ name, nodes }: { name: string; nodes: LinkNode[] }) {
+  if (!nodes.length) return null;
+  return (
+    <LinkLang>
+      <Sheet className="d4-tlink" title={`${name} · 이어진 것`} sub="오늘 소식이 난 연결을 위에 보여드려요" trigger={<>관계도 보기 ›</>}>
+        <div className="lgtbar"><LangToggle /></div>
+        <LinkGraph name={name} nodes={nodes.slice(0, 5)} />
+        <LinkLegend />
+        {nodes.length > 5 ? <><p className="lgnote">그 밖에 이어진 것 {nodes.length - 5}개</p><LinkRows nodes={nodes.slice(5)} /></> : null}
+      </Sheet>
+    </LinkLang>
   );
 }

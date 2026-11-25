@@ -1,6 +1,6 @@
 "use client";
 // 오늘 아침 내 종목 지도(피그마 컴포넌트 323:511, 팀원 규칙표 '규칙표 · 오늘 아침 내 종목 지도'의 RULES).
-// 칸 크기 = 보유 금액, 색 = 예상 시가가 어제 종가보다 위(빨강)/아래(파랑) ±2%를 0.5% 단위 9단계, 진하기 = 믿을 정도(높음 100·보통 60·낮음 32%, 낮음은 점선),
+// 칸 크기 = 보유 금액, 색 = 예상 시가가 어제 종가보다 위(빨강)/아래(파랑) ±10%를 2.5% 단위 9단계(2026-11-24 ±2%에서 넓힘), 진하기 = 믿을 정도(높음 100·보통 60·낮음 32%, 낮음은 점선),
 // 예상 범위 없음 = 회색 빗금. 업종 → 종목 2단계 squarified treemap, 높이 고정. 칸을 누르면 바텀 시트.
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -16,7 +16,7 @@ export const RULES = {
   maxSectors: 4,                      // 업종 칸 최대 수(넘으면 큰 업종 maxSectors-1개 + '그 외 업종')
   minCell: [56, 28], minOther: [48, 20], minDot: [12, 12],
   text: { full: [96, 52], one: [72, 28], name: [48, 20] },
-  badgeW: 110, range: 0.02, step: 0.005, smallCount: 2,
+  badgeW: 110, range: 0.1, step: 0.025, smallCount: 2,
   alpha: { 높음: 1, 보통: 0.6, 낮음: 0.32 } as Record<string, number>,
 };
 const SCALE = ["#7fa2ec", "#a3bcf2", "#c6d5f7", "#e3eafb", "#edf0f1", "#fbe4e6", "#f8c9ce", "#f2a3ab", "#ea7d88"];
@@ -194,7 +194,7 @@ export function MapLegend({ idle }: { idle?: boolean }) {
   if (idle) return <div className="tleg"><span>크기 = 보유 금액</span><i className="sep" /><em>소식</em><span>밤사이 소식 수</span></div>;
   return (
     <>
-      <div className="tleg"><span>−2%</span><span className="sw">{SCALE.map((c) => <i key={c} style={{ background: c }} />)}</span><span>+2%</span><i className="sep" /><span>크기 = 보유 금액</span></div>
+      <div className="tleg"><span>−{RULES.range * 100}%</span><span className="sw">{SCALE.map((c) => <i key={c} style={{ background: c }} />)}</span><span>+{RULES.range * 100}%</span><i className="sep" /><span>크기 = 보유 금액</span></div>
       <div className="tleg"><span className="ti"><i className="dash" />흐릴수록 방향이 불확실해요</span><i className="sep" /><span className="ti"><em>소식</em>밤사이 소식 수</span><i className="sep" /><span className="ti"><i className="hatch" />범위 없음</span></div>
     </>
   );

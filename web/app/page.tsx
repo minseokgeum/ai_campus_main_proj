@@ -1,16 +1,15 @@
 // 홈(피그마 '홈 v2' 464:8207, 보유 없음 465:8693, 07:30 전 465:8339, 주말·휴장 465:8516, 일부 못 받아옴 465:8869).
 // 내 주식 변화·지도는 아침 모델, 뉴스 브리핑은 LLM 요약, 미국 시장은 us_market, 야간선물은 야간 1분봉(모두 서버 DB).
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { ViewToggle } from "@/components/viewtoggle";
 import { AllView } from "@/components/allview";
-import { BottomNav } from "@/components/ui";
+import { AiMark, BottomNav } from "@/components/ui";
 import { NightChart, signColor } from "@/components/model";
-import { MaskToggle, Sheet } from "@/components/sheet";
 import { FuturesHelp } from "@/components/helps";
 import { BriefCards } from "@/components/brief";
 import { FuturesCard } from "@/components/futcard";
-import { MapLegend, TreeMap } from "@/components/treemap";
+import { MapCard, mapInfo } from "@/components/morningmap";
+import { SectorShare } from "@/components/sectorshare";
+import { Swipe } from "@/components/swipe";
 import { requireUser } from "@/lib/auth";
 import { portfolio, uStock } from "@/lib/portfolio";
 import { nightNews, byStock, bySector, newsBuckets } from "@/lib/news";
@@ -18,7 +17,8 @@ import { aiBrief, companyReasons } from "@/lib/summary";
 import { dayModel, isoDay, night as nightOf, nxtHistory, recordData } from "@/lib/model";
 import { upcomingEvents } from "@/lib/events";
 import { account, buildRows, P } from "@/lib/night";
-import { md, US, usLatest } from "@/lib/market";
+import { md, usHead, usItems, usLatest } from "@/lib/market";
+import { UsChips } from "@/components/ussheet";
 import { lastCloses } from "@/lib/prices";
 import { addDays, kstNow, minutesTo0730 } from "@/lib/calendar";
 import { isWeekend } from "@/lib/calendar";
@@ -28,11 +28,12 @@ import { appNow, isDemoUser } from "@/lib/clock";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const user = await requireUser();
   const nowDate = await appNow();   // 시연 계정이 고른 지난 시각이면 그 시각
   const now = kstNow(nowDate);
   const [acct, { brief, articles }, m, us] = await Promise.all([portfolio(user.id), nightNews(), dayModel().catch(() => null), usLatest()]);
+  const usList = await usItems(us);   // 미국 시장 칸 4개와 누르면 올라오는 창(그래프 자료 포함, 2026-11-24)
   const ai = await aiBrief(brief.date);
   const before0730 = now.hour < 7 || (now.hour === 7 && now.minute < 30);
   const today = now.ymd;
@@ -44,10 +45,7 @@ export default async function Home() {
   const news = byStock(articles, [...acct.holdings.map((h) => h.code), ...acct.watch]);   // 관심 종목 기사는 한 화면에 보기 카드에서 씀
   const px = await lastCloses(acct.holdings.map((h) => h.code));   // 예상 범위 없는 종목의 지도 칸 크기(보유 금액)
   const nWatch = preRows.filter((r) => r.kind === "out" || r.kind === "low").length;
-  const nIn = rows.filter((r) => r.c?.in80).length;
-  const nNot = preRows.filter((r) => r.kind === "notservice").length;
-  const nMiss = preRows.filter((r) => r.kind === "nocalc").length;
-  const usDate = us.get("^GSPC")?.usDate;
+  const usInfo = usHead(us, today);   // 미국 시장 머리 줄(마감 시각) + 어젯밤 미국 휴장·조기 마감 안내
   const D = now.hour >= 18 ? today : addDays(today, -1);
   // 18:00 뒤에는 오늘 밤 진행 중인 야간선물(아침 카드의 지난밤 흐름이 아니라)
   const nightLive = !fresh || now.hour >= 18 ? await nightOf(isClosedDay(today) && m?.card?.d ? m.t : D).catch(() => null) : m?.night ?? null;
@@ -70,8 +68,9 @@ export default async function Home() {
   const focus = { codes: acct.holdings.map((h) => h.code), names: Object.fromEntries(acct.holdings.map((h) => [h.code, uStock(h.code)?.name ?? h.code])),
     sectors: [...mySectors].sort((a, b) => (secNews.get(b)?.length ?? 0) - (secNews.get(a)?.length ?? 0)) };
   // 예상 전(07:30 전·주말·휴장일) 지도: 크기만 보유 금액, 칸에는 '07:30 공개'·'쉬는 날'(피그마 465:8339 · 465:8516)
-  // '한 화면에 보기'(원래 버전처럼 밤사이 정보를 한 화면에): 쿠키로 기억. 오늘 예상이 나온 때만 그 화면, 그 밖의 상태(07:30 전·휴장·지연)는 나눠 보기와 같다
-  const allMode = (await cookies()).get("home_view")?.value === "all";
+  // '한 화면에 보기'(원래 버전처럼 밤사이 정보를 한 화면에): 2026-11-24부터 전환 단추 대신 홈 맨 위 카드를 누르면 /?view=all 로 들어온다.
+  // 오늘 예상이 나온 때만 그 화면, 그 밖의 상태(07:30 전·휴장·지연)는 홈과 같다
+  const allMode = (await searchParams).view === "all";
   const allOn = allMode && fresh && acct.holdings.length > 0;
   // 한 화면에 보기 관심 종목 카드(수량 0, 2026-11-24): 보유와 겹치는 코드는 뺀다
   const watchRows = allOn ? buildRows(m, acct.watch.filter((c) => !acct.holdings.some((h) => h.code === c)).map((code) => ({ code, qty: 0 })), m!.check ? "post" : "pre") : [];
@@ -92,27 +91,32 @@ export default async function Home() {
   const checkHm = (m?.t === today ? m.check?.checkedAt : null) ?? checkTime(today)[0];   // 오늘 채점 전이면 어제 채점 시각이 아니라 기준 시각(개장 5분 뒤)
   const steps = [{ t: "06:00", label: "야간장 마감", done: true, at: stepAt("06:00") }, { t: "07:30", label: "예상", done: true, at: stepAt("07:30") },
     { t: "08:11", label: "장전 거래", done: slot0811, at: stepAt("08:11") }, { t: checkHm, label: "채점", done: !!m?.check, at: stepAt(checkHm) }];
-  const idleStocks = acct.holdings.map((h) => { const u = uStock(h.code); return { code: h.code, name: u?.name ?? h.code, sector: u?.sector ?? "기타", value: h.qty * (px.get(h.code)?.close ?? 0), pct: null, grade: null, l80: null, u80: null, news: news.get(h.code)?.length ?? 0 }; });
+  // 맨 위 카드 금액과 문장: 채점 뒤엔 실제, 전엔 예상. 문장 = 합계와 같은 방향 종목 중 가장 큰 종목이 그 방향 금액의 몇 %(한 화면에 보기 문장과 같은 계산)
+  const cardRows = (m?.check ? rows : preRows).filter((r) => r.amount != null && r.qty > 0);
+  const topAmt = (m?.check ? account(rows) : ac).amount;   // 예전 카드와 같은 합계
+  const sameDir = cardRows.filter((r) => Math.sign(r.amount!) === Math.sign(topAmt) && r.amount !== 0).sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
+  const sameSum = sameDir.reduce((a, r) => a + Math.abs(r.amount!), 0);
+  const topLine = sameDir[0] && sameSum ? `${topAmt < 0 ? (m?.check ? "줄어든" : "줄어들") : (m?.check ? "늘어난" : "늘어날")} 금액의 ${Math.round((100 * Math.abs(sameDir[0].amount!)) / sameSum)}%가 ${sameDir[0].name}${/[가-힣]$/.test(sameDir[0].name) && (sameDir[0].name.charCodeAt(sameDir[0].name.length - 1) - 0xac00) % 28 ? "이에요" : "예요"}.` : "";
+  const map = mapInfo({ today, fresh, off, delayed, slot0811, preRows, holdings: holdItems, px, news });
 
   return (
     <>
-      <header className="head homehead">
-        <h1>투자 브리핑</h1>
+      <header className={`head homehead${allOn ? " allon" : ""}`}>
+        <h1>{allOn ? <><Link href="/" className="hback" aria-label="홈으로">‹</Link>당신이 잠든 사이에</> : "오늘의 출발"}</h1>   {/* 2026-11-25 사용자 결정: 홈 이름 '오늘의 출발', 달 카드를 눌러 들어간 한 화면에 보기만 '당신이 잠든 사이에' */}
         <p className="sub">{dateLabel(isoDay(today))} · {stamp} · {user.username}</p>
         <Link href="/my" className="my" aria-label="마이"><img src="/icons/my.svg" alt="" width={23} height={23} /></Link>
         <Link href="/alerts" className="bell" aria-label="알림"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15L6 17Zm4 3h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>{fresh && nWatch ? <i /> : null}</Link>
       </header>
       <main className="scroll home">
-        {acct.holdings.length ? <ViewToggle all={allMode} /> : null}
         {allMode && demoUser && !allOn && !off ? (   // 07:30 전처럼 한 화면에 보기가 안 나오는 시각에도 단계 줄(시연 계정만): 눌러서 다른 시점으로
           <ol className="allsteps stepnav">
-            {steps.map((x) => <li key={x.t}>{x.at ? <a href={`/demo-time?at=${x.at}&back=/`} aria-label={`${x.t} ${x.label} 시점 화면 보기`}><i /><b>{x.t}</b><span>{x.label}</span></a> : <><i /><b>{x.t}</b><span>{x.label}</span></>}</li>)}
+            {steps.map((x) => <li key={x.t}>{x.at ? <a href={`/demo-time?at=${x.at}&back=${encodeURIComponent("/?view=all")}`} aria-label={`${x.t} ${x.label} 시점 화면 보기`}><i /><b>{x.t}</b><span>{x.label}</span></a> : <><i /><b>{x.t}</b><span>{x.label}</span></>}</li>)}
           </ol>
         ) : null}
         {allOn ? (
           <AllView t={m!.t} rows={rows} watchRows={watchRows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
             lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
-            us={us} night={night} buckets={buckets} nightLive={now.hour >= 18}
+            us={us} usList={usList} night={night} buckets={buckets} nightLive={now.hour >= 18}
             briefSlot={!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : null} />
         ) : <>
         {!acct.holdings.length ? (
@@ -137,22 +141,23 @@ export default async function Home() {
             <p className="wb">야간 거래가 06:00에 끝나서 내 계좌 예상을 계산하고 있어요 · 07:30 공개</p>
             {m ? <Link href={`/night?d=${m.t}`} className="wlink">{lastLabel === "어제" ? "어제" : `${lastLabel}`} 결과 보기 <em>›</em></Link> : null}</section>
         ) : (
-          <section className="acct">
-            <div className="at"><span>{m!.check ? "오늘 시가로 실제 바뀐 내 주식" : "오늘 시가에 예상되는 내 주식 변화"}</span><MaskToggle /><Link href="/night" className="linkish teal">밤사이 ›</Link></div>
-            <div className="big" style={{ color: signColor(m!.check ? account(rows).amount : ac.amount) }}>
-              <span className="amt tot">{swon(m!.check ? account(rows).amount : ac.amount)}</span><small>{pct(P(m!.check ? account(rows).pct : ac.pct))}</small>
-            </div>
-            <div className="hchips">
-              {m!.check ? <span>채점 · 범위 안 {nIn} / {rows.filter((r) => r.c).length}</span>
-                : <Link href="/night?f=out" className="warnchip"><i />확인 필요 {nWatch}종목 ›</Link>}
-              <span>{m!.check ? "" : `범위 안 ${preRows.filter((r) => r.kind === "ok").length}`}{nNot ? ` · 대상 아님 ${nNot}` : ""}{nMiss ? ` · 못 받아옴 ${nMiss}` : ""}</span>
-            </div>
-          </section>
+          // 맨 위 카드(2026-11-24 시안): 달 그림 · 시각 이름표 · '당신이 잠든 사이에' · 설명 · 금액 · 가장 큰 종목 문장. 카드를 누르면 한 화면에 보기(/?view=all)
+          <Link href="/?view=all" className="nightcard" aria-label="당신이 잠든 사이에 · 한 화면에 보기">
+            <span className="moon" aria-hidden><svg width="30" height="30" viewBox="0 0 30 30"><path d="M19.5 4.5a11 11 0 1 0 6 18.6A9 9 0 0 1 19.5 4.5Z" fill="#ffd970" /></svg></span>
+            <span className="nc-b">
+              <em className="nc-tag">{m!.check ? `${checkHm} 채점 완료` : slot0811 ? "08:11 새로 반영" : "07:30 예상"}</em>
+              <b className="nc-t">당신이 잠든 사이에</b>
+              <span className="nc-s">{m!.check ? "오늘 시가로 실제 바뀐 내 주식" : "오늘 9시에 예상되는 내 주식 변화"}</span>
+              <span className="nc-amt amt" style={{ color: signColor(topAmt) }}>{swon(topAmt)}</span>
+              {topLine ? <span className={`nc-l${topLine.length > 24 ? " long" : ""}`}>{topLine}</span> : null}
+            </span>
+            <em className="nc-go" aria-hidden>›</em>
+          </Link>
         )}
 
-        <div className="hrow"><h2>뉴스 브리핑 <span className="aimark" aria-label="AI 요약"><svg width="14" height="12" viewBox="0 0 14 12" aria-hidden><path d="M1 2h12M1 6h9M1 10h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>AI</span></h2><Link href="/news">전체 보기</Link></div>
+        <div className="hrow"><h2>뉴스 브리핑 <AiMark /></h2><Link href="/news">전체 보기</Link></div>
         {/* 장이 열리는 날: 가로로 넘기는 카드(시장 / 산업 / 내 종목). 주말·휴장일과 요약이 없을 때: 예전 카드에서 '3분 브리핑 읽기' 줄만 뺌 */}
-        {!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : (
+        {!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} mineFirst /> : (
           <Link href="/news" className="hcard">
             <span className="k">오늘의 핵심 3가지</span>
             <span className="hl">{ai.title ?? (articles.length ? `미국 뉴스 ${articles.length}건을 모았어요` : "오늘은 관련 소식이 없어요")}</span>
@@ -160,18 +165,10 @@ export default async function Home() {
           </Link>
         )}
 
-        <div className="hrow"><h3>미국 시장</h3><span className="fine">{usDate ? `${md(usDate)} 16:00 마감 (미 동부)` : "자료 준비 중"}</span></div>
-        <div className="uschips">
-          {US.map((u) => {
-            const d = us.get(u.sym);
-            return (
-              <Link key={u.sym} href={`/us?s=${encodeURIComponent(u.sym)}`} className="uschip">
-                <span>{u.short}</span>
-                <b style={{ color: signColor(d?.chg ?? 0) }}>{d ? pct(P(d.chg)) : "—"}</b>
-              </Link>
-            );
-          })}
-        </div>
+        {/* 머리 줄 마감 시각은 조기 마감이면 13:00, 어젯밤 미국이 휴장·조기 마감이면 칸 아래 한 줄 안내(2026-11-25, 달력 web/data/special_days.csv) */}
+        <div className="hrow"><h3>미국 시장</h3><span className="fine">{usInfo.head}</span></div>
+        <UsChips items={usList} />
+        {usInfo.note ? <p className="usnight">{usInfo.note}</p> : null}
 
         {!night?.points.length ? (
           // 연휴처럼 전날 밤 거래가 없으면 회색 띠 + '거래 없음'. 띠는 누를 수 없고 ?는 동작(규칙표 331:1379 야간선물)
@@ -181,41 +178,17 @@ export default async function Home() {
           </div>
         ) : <FuturesCard night={night} live={now.hour >= 18} buckets={buckets} />}
 
-        {fresh && preRows.some((r) => r.value) ? (
-          <section className="mapsec">
-            <div className="hrow"><h3 className="tq">오늘 아침 내 종목 지도<MapHelp /></h3><Link href="/night" className="linkish teal">밤사이 자세히 ›</Link></div>
-            <p className="fine">{m!.card!.slot === "0811" && (marketDay(today)?.premarket ?? true) ? "08:11" : "07:30"} 기준 · 장 전 · 오늘 예상 시가</p>
-            <TreeMap stocks={preRows.map((r) => ({
-              code: r.code, name: r.name, sector: r.sector, value: r.value ?? r.qty * (px.get(r.code)?.close ?? 0),
-              pct: r.kind === "notservice" || r.kind === "nocalc" ? null : r.pct, grade: r.s?.grade ?? null,
-              l80: r.s?.l80 ?? null, u80: r.s?.u80 ?? null, news: news.get(r.code)?.length ?? 0 }))} />
-            <MapLegend />
-          </section>
-        ) : !fresh && acct.holdings.length && idleStocks.some((s) => s.value > 0) ? (
-          <section className="mapsec">
-            <div className="hrow"><h3 className="tq">오늘 아침 내 종목 지도<MapHelp /></h3><Link href="/night" className="linkish teal">밤사이 자세히 ›</Link></div>
-            <p className="fine">보유 비중 · {off ? `다음 예상 ${dateLabel(isoDay(nextOpenDay(today)))} 07:30` : delayed ? "오늘 예상은 준비되면 채워져요" : "오늘 예상은 07:30에 채워져요"}</p>
-            <TreeMap stocks={idleStocks} idle={off ? "쉬는 날" : delayed ? "준비 중" : "07:30 공개"} />
-            <MapLegend idle />
-          </section>
+        {/* 지도와 업종별 투자 비중을 옆으로 넘겨 본다(2026-11-24, 내 종목 탭과 같음). 홈은 지도가 첫 장 */}
+        {acct.holdings.length ? (
+          <Swipe labels={["오늘 아침 내 종목 지도", "업종별 투자 비중"]}>
+            {map ? <MapCard info={map} /> : null}
+            <SectorShare holdings={holdItems} px={px} />
+          </Swipe>
         ) : null}
         <p className="fine">모델 추정이며 투자 권유가 아니에요.</p>
         </>}
       </main>
       <BottomNav active="home" />
     </>
-  );
-}
-
-function MapHelp() {
-  return (
-    <Sheet className="qmark" title="오늘 아침 내 종목 지도" confirm="확인" trigger={<span aria-label="지도 설명">?</span>}>
-      <div className="help">
-        <b>어떻게 읽나요?</b><p>업종별로 내 종목을 모았어요. 칸이 클수록 보유 금액이 커요.</p>
-        <b>색</b><p>예상 시가가 어제 종가보다 위면 빨강, 아래면 파랑이에요. 진할수록 많이 움직일 것으로 예상해요(±2%까지).</p>
-        <b>흐린 칸</b><p>믿을 정도가 낮아서 방향이 불확실한 종목이에요.</p>
-        <b>소식</b><p>밤사이 그 종목과 관련된 미국 기사 수예요.</p>
-      </div>
-    </Sheet>
   );
 }

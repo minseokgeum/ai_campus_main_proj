@@ -5,7 +5,7 @@
 // 2026-11-24 사용자 결정: 맨 위 되돌리기 줄·평단 표시는 넣지 않는다. 가정·수량을 바꿔도 카드 높이와 범례가 그대로라 아래 카드가 밀리지 않게 한다.
 // 바꾼 수량은 이 브라우저 탭에만(밤사이 종목 창과 같은 저장 칸 qty:날짜), 가정한 시작가는 화면을 다시 열면 풀린다. 계정 보유 종목·주문과는 상관없다.
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { MaskToggle } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { pct, swon, won } from "@/lib/format";
@@ -14,6 +14,24 @@ import type { CardStock, CheckRow } from "@/lib/model";
 const P = (v: number) => v * 100;
 const BAND = "#FFD970";
 const MAXQ = 99999;
+const FIRST = 5;   // 처음에 보여 줄 종목 카드 수(2026-11-24: 다 보여 주면 너무 길어서 5개 + 펼치기)
+
+/** 이 요소를 스크롤하는 조상(없으면 문서) */
+function scroller(el: HTMLElement): Element {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowY;
+    if ((o === "auto" || o === "scroll") && p.scrollHeight > p.clientHeight) return p;
+  }
+  return document.scrollingElement ?? document.documentElement;
+}
+
+// 종목 카드로 부드럽게 내려가기(2026-11-24): 바로 점프하면 부자연스러워서. 도착 위치는 화면 맨 위에 붙은 시연 시각 띠 아래 6px
+// 카드 사이 간격(8px)보다 작게 6px를 띄워 윗 카드·설명 글씨가 띠 아래로 비치지 않게('동작 줄이기'를 켠 사람에게는 애니메이션 없이 바로)
+function glide(el: HTMLElement) {
+  const bar = document.querySelector(".demobar")?.getBoundingClientRect().height ?? 0;
+  const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  scroller(el).scrollBy({ top: el.getBoundingClientRect().top - bar - 6, behavior: calm ? "auto" : "smooth" });
+}
 
 export type PlayCard = {
   code: string; name: string;
@@ -94,6 +112,35 @@ export function AllPlay(p: {
   const hf = nOwn && nWatch ? hold : "all";
   const shown = sorted.filter((c) => hf === "all" || (hf === "watch") === c.watch);
   const coachAt = !p.post && coach ? shown[0]?.code : undefined;
+  // 펼치기: 다시 불러오지 않고 그 자리에서. 펼친 뒤 여섯째 카드가 단추가 있던 자리에 오게, 접으면 단추가 보이게 스크롤을 맞춘다
+  const [more, setMore] = useState(false);
+  const moreBtn = useRef<HTMLButtonElement>(null);
+  const keep = useRef<{ code: string; top: number } | { btn: true } | { jump: string } | null>(null);
+  const visible = more ? shown : shown.slice(0, FIRST);
+  const hidden = new Set(shown.slice(FIRST).map((c) => c.code));
+  const open = () => { if (moreBtn.current && shown[FIRST]) keep.current = { code: shown[FIRST].code, top: moreBtn.current.getBoundingClientRect().top }; setMore(true); };
+  const close = () => { keep.current = { btn: true }; setMore(false); };
+  useLayoutEffect(() => {
+    const k = keep.current; keep.current = null;
+    if (!k) return;
+    if ("top" in k) { const el = document.getElementById(`ac-${k.code}`); if (el) scroller(el).scrollBy(0, el.getBoundingClientRect().top - k.top); }
+    else if ("btn" in k) moreBtn.current?.scrollIntoView({ block: "center" });
+    else { const el = document.getElementById(`ac-${k.jump}`); if (el) glide(el); }
+  }, [more]);
+  // 위 막대·먼저 확인할 것에서 종목(#ac-코드)을 누르면 그 카드로 부드럽게. 접혀 있는 종목이면 펼친 뒤에
+  const hiddenRef = useRef(hidden); hiddenRef.current = more ? new Set<string>() : hidden;
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href^="#ac-"]');
+      const code = a?.getAttribute("href")?.slice(4);
+      if (!code) return;
+      if (hiddenRef.current.has(code)) { e.preventDefault(); keep.current = { jump: code }; setMore(true); return; }
+      const el = document.getElementById(`ac-${code}`);
+      if (el) { e.preventDefault(); glide(el); }
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
   const nowOf = new Map(now.map((x) => [x.c.code, x]));
 
   return (
@@ -124,7 +171,7 @@ export function AllPlay(p: {
         ) : null}
         <ol className="allsteps">
           {p.steps.map((s) => <li key={s.t} className={s.done ? "done" : ""}>{s.at
-            ? <a href={`/demo-time?at=${s.at}&back=/`} aria-label={`${s.t} ${s.label} 시점 화면 보기`}><i /><b>{s.t}</b><span>{s.label}</span></a>
+            ? <a href={`/demo-time?at=${s.at}&back=${encodeURIComponent("/?view=all")}`} aria-label={`${s.t} ${s.label} 시점 화면 보기`}><i /><b>{s.t}</b><span>{s.label}</span></a>
             : <><i /><b>{s.t}</b><span>{s.label}</span></>}</li>)}
         </ol>
       </section>
@@ -150,7 +197,7 @@ export function AllPlay(p: {
         {p.record ? <Link href="/night/record" className="allrec"><span>지난 20거래일 동안 내 종목 <b>{p.record.inN}/{p.record.n}</b>번이 예상 범위 안에서 열렸어요(목표 80%)</span><em>›</em></Link> : null}
         <p className="alllegend"><span><i className="lb" />노란 띠 · 80% 예상 범위</span><span><i className="ld" />대표 예상</span>
           {p.slot0811 && !p.post ? <span><i className="ln" />08:10 장전 거래</span> : null}{p.post ? <span><i className="lo" />실제 시가</span> : null}</p>
-        {shown.map((c) => {
+        {visible.map((c) => {
           const x = nowOf.get(c.code)!, s = c.s, q = x.q, zero = c.watch && q === 0;
           const moved = q !== c.qty || pins[c.code] != null;
           return (
@@ -185,6 +232,11 @@ export function AllPlay(p: {
             </article>
           );
         })}
+        {shown.length > FIRST ? (
+          <button type="button" ref={moreBtn} className="allmore" aria-expanded={more} onClick={more ? close : open}>
+            {more ? <>접기<i className="chev up" aria-hidden /></> : <>나머지 {shown.length - FIRST}종목 더 보기<i className="chev" aria-hidden /></>}
+          </button>
+        ) : null}
         {p.tail}
         <p className="fine">{p.post ? "수량을 바꾸면 실제 시가로 본 금액이 다시 계산돼요." : "노란 띠를 누르거나 끌면 그 가격에 시작했을 때 내 금액을 볼 수 있어요."} 수량을 바꿔도 실제 주문은 나가지 않고, 계정의 보유 종목도 바뀌지 않아요.</p>
       </section>

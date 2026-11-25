@@ -45,6 +45,9 @@ export function BandBar({ l, u, dot, nxt, label }: { l: number; u: number; dot: 
 /** 야간선물 흐름(18:00 ~ 06:00, 전일 주간 종가 대비). 23:30 미국 개장 표시 */
 export function NightChart({ night, h = 62, detail }: { night: Night; h?: number; detail?: boolean }) {
   // 어제 마감(0%) 위는 빨강, 아래는 파랑으로 나눠 칠한다(피그마 363:2 · 야간선물 카드). detail이면 고·저와 어제 마감 값을 그래프 위에 적는다
+  // 2026-11-25 사용자 결정(종목 상세 그래프와 같은 모양): 바탕은 가격선에서 바닥까지 칠하고 진하기는 색과 상관없이 위에서 아래로 한 번에 옅어진다
+  //   (예전엔 어제 마감선과 가격선 사이를 칠해서 내린 날엔 위에서 매달린 모양이었다). 선 색은 0%를 지나는 점을 계산해 위·아래 조각을 따로 그린다
+  //   (잘라 그리기는 굵기 고정 선과 함께 쓰면 Safari에서 선 일부가 사라졌다)
   const w = 310, pts = night.points;
   if (!pts.length) return <p className="fine">야간선물 1분봉이 아직 없어요.</p>;
   const top = detail ? 22 : 4, bot = detail ? 22 : 4;
@@ -53,7 +56,20 @@ export function NightChart({ night, h = 62, detail }: { night: Night; h?: number
   const X = (m: number) => (m / 720) * w, Y = (r: number) => top + (1 - (r - lo) / span) * (h - top - bot);
   const d = pts.map((p, i) => `${i ? "L" : "M"}${X(p.m).toFixed(1)},${Y(p.r).toFixed(1)}`).join("");
   const y0 = Y(0), x1 = X(pts[pts.length - 1].m), xs = X(pts[0].m);
-  const area = `${d}L${x1.toFixed(1)},${y0.toFixed(1)}L${xs.toFixed(1)},${y0.toFixed(1)}Z`;
+  const area = `${d}L${x1.toFixed(1)},${h}L${xs.toFixed(1)},${h}Z`;
+  const yTop = Math.min(...pts.map((p) => Y(p.r)));
+  const cut = Math.max(0, Math.min(1, y0 / h));
+  const at = (m: number, r: number) => `${X(m).toFixed(1)},${Y(r).toFixed(1)}`;
+  const seg = { u: [] as string[], d: [] as string[] };
+  let side: "u" | "d" | null = null;
+  const push = (sd: "u" | "d", a: string, b: string) => { if (side !== sd) seg[sd].push(`M${a}`); seg[sd].push(`L${b}`); side = sd; };
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], sa = a.r >= 0 ? "u" : "d", sb = b.r >= 0 ? "u" : "d";
+    if (sa === sb) { push(sa, at(a.m, a.r), at(b.m, b.r)); continue; }
+    const cm = a.m + (b.m - a.m) * ((0 - a.r) / (b.r - a.r));   // 0%를 지나는 점
+    push(sa, at(a.m, a.r), at(cm, 0)); push(sb, at(cm, 0), at(b.m, b.r));
+  }
+  if (pts.length === 1) seg[pts[0].r >= 0 ? "u" : "d"].push(`M${at(pts[0].m, pts[0].r)}`);
   const id = `nc${Math.round(h)}${detail ? "d" : ""}`;
   const pHi = pts.reduce((a, p) => (p.r > a.r ? p : a), pts[0]), pLo = pts.reduce((a, p) => (p.r < a.r ? p : a), pts[0]);
   const lv = (r: number) => (night.dayClose * (1 + r)).toFixed(2);
@@ -62,15 +78,21 @@ export function NightChart({ night, h = 62, detail }: { night: Night; h?: number
   return (
     <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio={detail ? "xMidYMid meet" : "none"} role="img" aria-label="야간선물 흐름" className="nchart">
       <defs>
-        <clipPath id={`${id}u`}><rect x={0} y={0} width={w} height={y0} /></clipPath>
-        <clipPath id={`${id}d`}><rect x={0} y={y0} width={w} height={h - y0} /></clipPath>
+        <linearGradient id={`${id}s`} gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={0} y2={h}>
+          <stop offset={cut} stopColor="#d35d66" /><stop offset={cut} stopColor="#4c6fc3" />
+        </linearGradient>
+        <linearGradient id={`${id}g`} x1={0} y1={0} x2={0} y2={1}>
+          <stop offset={0} stopColor="#fff" stopOpacity={0.18} /><stop offset={1} stopColor="#fff" stopOpacity={0} />
+        </linearGradient>
+        <mask id={`${id}m`} maskUnits="userSpaceOnUse" x={0} y={0} width={w} height={h}>
+          <rect x={0} y={yTop} width={w} height={Math.max(1, h - yTop)} fill={`url(#${id}g)`} />
+        </mask>
       </defs>
-      <path d={area} fill="rgba(211,93,102,.10)" clipPath={`url(#${id}u)`} />
-      <path d={area} fill="rgba(76,111,195,.10)" clipPath={`url(#${id}d)`} />
+      <path d={area} fill={`url(#${id}s)`} mask={`url(#${id}m)`} />
       <line x1={0} x2={w} y1={y0} y2={y0} stroke="#b8c0c3" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
       {detail ? null : <line x1={X(330)} x2={X(330)} y1={0} y2={h} stroke="#e4ebeb" vectorEffect="non-scaling-stroke" />}
-      <path d={d} fill="none" stroke="#d35d66" strokeWidth={1.6} vectorEffect="non-scaling-stroke" clipPath={`url(#${id}u)`} />
-      <path d={d} fill="none" stroke="#4c6fc3" strokeWidth={1.6} vectorEffect="non-scaling-stroke" clipPath={`url(#${id}d)`} />
+      {seg.u.length ? <path d={seg.u.join("")} fill="none" stroke="#d35d66" strokeWidth={1.6} vectorEffect="non-scaling-stroke" /> : null}
+      {seg.d.length ? <path d={seg.d.join("")} fill="none" stroke="#4c6fc3" strokeWidth={1.6} vectorEffect="non-scaling-stroke" /> : null}
       {detail ? <>
         <circle cx={x1} cy={Y(pts[pts.length - 1].r)} r={3} fill={signColor(pts[pts.length - 1].r)} />
         <text x={w} y={y0 - 5} textAnchor="end" fontSize={10} fill="#66777a">어제 마감 {night.dayClose.toFixed(2)}</text>

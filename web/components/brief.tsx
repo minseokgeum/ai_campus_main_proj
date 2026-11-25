@@ -1,6 +1,7 @@
 // 3분 브리핑 창(배포용 변경 기록 07, 피그마 784:720): 카드 3개를 시장 / 산업 / 내 종목으로 고정. 카드 머리에 구분 이름, 그 아래 주제 제목, 본문, 근거 뉴스 1~2개.
 // 시장: 시장 핫이슈 첫 줄(소제목·근거 포함) · 산업: 내 업종 중 밤사이 뉴스가 가장 많은 업종의 한 줄 · 내 종목: 보유 종목 한 줄(긍정·부정 판정 먼저, 2종목까지).
 // 산업·내 종목 카드의 짧은 주제 제목은 요약 결과에 아직 없어(지시문 쪽 작업) 업종 이름·종목 이름으로 대신한다.
+import { AiMark } from "@/components/ui";
 import Link from "next/link";
 import { Sheet } from "@/components/sheet";
 import type { Brief, Evidence } from "@/lib/summary";
@@ -26,8 +27,9 @@ function cardsOf(brief: Brief, focus?: BriefFocus): Card[] {
 }
 
 /** 홈 3분 브리핑 카드(배포용 변경 '홈 3분 브리핑: 바텀 시트 없이 카드 넘기기', 피그마 769:6759): 가로로 넘기는 카드 3장 + 마지막 '뉴스 브리핑에서 더 보기' 카드 */
-export function BriefCards({ brief, focus }: { brief: Brief; focus?: BriefFocus }) {
-  const cards = cardsOf(brief, focus);
+export function BriefCards({ brief, focus, mineFirst }: { brief: Brief; focus?: BriefFocus; mineFirst?: boolean }) {
+  // mineFirst: 홈 나눠 보기에서는 내 종목 → 산업 → 시장 순서(2026-11-24 사용자 결정)
+  const cards = mineFirst ? cardsOf(brief, focus).reverse() : cardsOf(brief, focus);
   if (!cards.length) return null;
   return (
     <div className="bslide" role="list" aria-label="오늘의 핵심">
@@ -51,7 +53,7 @@ export function BriefSheet({ brief, date, trigger, className, focus }: { brief: 
   if (!cards.length) return <Link href="/news" className={className}>{trigger}</Link>;
   return (
     <Sheet className={className} title={brief.title ?? "오늘의 핵심 3가지"} sub={`${dateLabel(date)} ${BRIEF_AT} KST 기준`} trigger={trigger}
-      kicker={<p className="bkick">오늘의 핵심 3가지 <span>AI 요약</span></p>}>
+      kicker={<p className="bkick">오늘의 핵심 3가지 <AiMark small label="요약" /></p>}>
       <div className="bcards">
         {cards.map((c) => (
           <section key={c.kick} className="bpoint">
