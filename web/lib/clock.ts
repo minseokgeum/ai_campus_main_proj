@@ -68,7 +68,7 @@ export async function demoPresets(): Promise<{ key: string; label: string; sub: 
     if (d) out.push({ key, label, sub, at: `${d}${String(h).padStart(4, "0")}` });
   };
   pick("early", "07:30 전 · 준비 중", "야간장이 끝나고 예상 공개 전(06:00)", 600);
-  pick("pre", "장 전 · 08:11 믿을 정도 반영", "장전 거래가 반영된 때(08:11)", 811);
+  pick("pre", "장 전 · 08:11 장전 가격·방향 등급", "장전 거래가 반영된 때(08:11)", 811);
   const chk = await checkMinutes();
   const dPost = days.find((x) => past(x, Number(checkAt(x, chk)[1])));
   if (dPost) { const [lab, val] = checkAt(dPost, chk); out.push({ key: "post", label: "장 후 · 채점", sub: `채점이 끝난 때(${lab})`, at: `${dPost}${val}` }); }

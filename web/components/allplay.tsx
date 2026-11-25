@@ -21,7 +21,7 @@ export type PlayCard = {
   watch: boolean;            // 관심 종목
   warn: boolean;             // 확인 필요(장전 거래·시작가가 예상 밖)
   s: CardStock; c: CheckRow | null;
-  pct: number;               // 장전: 예상 시가 변화(08:11은 보정값) · 장후: 실제 시가 변화
+  pct: number;               // 장전: 예상 시가 변화(08:11은 마지막 NXT 가격) · 장후: 실제 시가 변화
   nxt: number | null; y: number | null;   // 띠 표식: 08:10 장전 거래 · 실제 시가
   icon: ReactNode; chips: ReactNode; flow: ReactNode; combined: ReactNode; links: ReactNode;
 };
@@ -148,8 +148,8 @@ export function AllPlay(p: {
           </div>
         ) : null}
         {p.record ? <Link href="/night/record" className="allrec"><span>지난 20거래일 동안 내 종목 <b>{p.record.inN}/{p.record.n}</b>번이 예상 범위 안에서 열렸어요(목표 80%)</span><em>›</em></Link> : null}
-        <p className="alllegend"><span><i className="lb" />노란 띠 · 80% 예상 범위</span><span><i className="ld" />대표 예상</span>
-          {p.slot0811 && !p.post ? <span><i className="ln" />08:10 장전 거래</span> : null}{p.post ? <span><i className="lo" />실제 시가</span> : null}</p>
+        <p className="alllegend"><span><i className="lb" />노란 띠 · 07:30의 80% 범위</span><span><i className="ld" />07:30 예상</span>
+          {p.slot0811 && !p.post ? <span><i className="ln" />08:11 2차 예상 · NXT</span> : null}{p.post ? <span><i className="lo" />실제 시가</span> : null}</p>
         {shown.map((c) => {
           const x = nowOf.get(c.code)!, s = c.s, q = x.q, zero = c.watch && q === 0;
           const moved = q !== c.qty || pins[c.code] != null;
@@ -157,7 +157,7 @@ export function AllPlay(p: {
             <article key={c.code} id={`ac-${c.code}`} className={`allcard ${c.warn ? "warn" : ""}`}>
               <div className="ac-h">
                 {c.icon}
-                <div className="ac-n"><b>{c.name}</b><small>어제 {won(s.pc)} → {p.post && c.c ? `실제 ${won(c.c.open)}` : `${x.pin != null ? "가정" : "예상"} ${won(s.pc * (1 + (x.v ?? 0)))}`}</small></div>
+                <div className="ac-n"><b>{c.name}</b><small>어제 {won(s.pc)} → {p.post && c.c ? `실제 ${won(c.c.open)}` : `${x.pin != null ? "가정" : c.nxt != null ? "08:11 예상" : "07:30 예상"} ${won(s.pc * (1 + (x.v ?? 0)))}`}</small></div>
                 <div className="ac-v"><b style={{ color: signColor(x.v ?? 0) }}>{x.v != null ? `${x.pin != null ? "가정 " : ""}${pct(P(x.v))}` : "—"}</b>
                   <small className={zero ? "" : "amt"} style={{ color: zero ? undefined : signColor(x.amount ?? 0) }}>{zero ? "관심" : x.amount != null ? swon(x.amount) : ""}</small></div>
               </div>
@@ -252,9 +252,9 @@ function PlayBand({ s, nxt, y, pin, play, onLive, onPin }: {
   const clash = (x: number) => pinX != null && Math.abs(pinX - x) < 58;   // 말풍선과 겹치는 위쪽 글자는 잠깐 숨긴다
   return (
     <svg ref={svg} width="100%" viewBox={`0 0 ${W} 58`} className={`aband${play ? " play" : ""}`}
-      role={play ? "slider" : "img"} aria-label={play ? `${s.name} 가정할 시작가 변화(예상 범위 ${pc(l)} ~ ${pc(u)}, 대표 예상 ${pc(h)})` : `예상 범위 ${pc(l)} ~ ${pc(u)}, 대표 예상 ${pc(h)}`}
-      aria-valuenow={play ? Math.round((pin ?? h) * 10000) / 100 : undefined} tabIndex={play ? 0 : undefined}
-      onKeyDown={play ? (e) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); onPin(Math.round(Math.max(-m, Math.min(m, (pin ?? h) + (e.key === "ArrowLeft" ? -0.001 : 0.001))) * 1000) / 1000); } } : undefined}
+      role={play ? "slider" : "img"} aria-label={play ? `${s.name} 가정할 시작가 변화(예상 범위 ${pc(l)} ~ ${pc(u)}, 07:30 예상 ${pc(h)}${nxt != null ? `, 08:11 2차 예상 ${pc(nxt)}` : ""})` : `예상 범위 ${pc(l)} ~ ${pc(u)}, 07:30 예상 ${pc(h)}${nxt != null ? `, 08:11 2차 예상 ${pc(nxt)}` : ""}`}
+      aria-valuenow={play ? Math.round((pin ?? nxt ?? h) * 10000) / 100 : undefined} tabIndex={play ? 0 : undefined}
+      onKeyDown={play ? (e) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); onPin(Math.round(Math.max(-m, Math.min(m, (pin ?? nxt ?? h) + (e.key === "ArrowLeft" ? -0.001 : 0.001))) * 1000) / 1000); } } : undefined}
       onPointerDown={play ? (e) => { down.current = true; svg.current?.setPointerCapture?.(e.pointerId); onLive(val(e.clientX)); } : undefined}
       onPointerMove={play ? (e) => { if (down.current) onLive(val(e.clientX)); } : undefined}
       onPointerUp={play ? (e) => { if (!down.current) return; down.current = false; onPin(val(e.clientX)); } : undefined}

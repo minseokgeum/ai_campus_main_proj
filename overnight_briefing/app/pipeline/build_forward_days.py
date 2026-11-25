@@ -34,10 +34,22 @@ FIRST, FREEZE = "20261027", "20261103"
 E100 = RESEARCH / "workbench/runs/claude_forward_r1"
 
 
-def same_card(a: dict, b: dict) -> bool:
-    key = lambda c: [(s["code"], round(s["H"], 10), round(s["band80"][0], 10), round(s["band80"][1], 10),
-                      (s.get("grade_0811") or {}).get("level")) for s in c["stocks"]]
-    return key(a) == key(b)
+def same_card(current: dict, reference: dict, *, legacy_reference=False) -> bool:
+    """표시되는 두 시점의 값과 등급을 대조한다. 예전 E100 카드는 등급 없는 장전 가격을 기록하지 않았다."""
+    stocks = {s["code"]: s for s in current["stocks"]}
+    if stocks.keys() != {s["code"] for s in reference["stocks"]}:
+        return False
+    for old in reference["stocks"]:
+        new = stocks[old["code"]]
+        old_grade, new_grade = old.get("grade_0811") or {}, new.get("grade_0811") or {}
+        if (old["H"], old["band80"], old_grade.get("level"), old_grade.get("p")) != (
+                new["H"], new["band80"], new_grade.get("level"), new_grade.get("p")):
+            return False
+        if legacy_reference and "nxt_g" not in old and not old_grade:
+            continue
+        if old.get("nxt_g", old_grade.get("nxt_g")) != new.get("nxt_g", new_grade.get("nxt_g")):
+            return False
+    return True
 
 
 def main() -> None:
@@ -52,7 +64,7 @@ def main() -> None:
     for T in days:
         c811 = mc.build_card(z, n, dev, codes, T, ACCOUNTS, with_outcome=True, slot="0811")
         ref = E100 / f"card_{T}.json"
-        if ref.exists() and not same_card(c811, json.loads(ref.read_text())):
+        if ref.exists() and not same_card(c811, json.loads(ref.read_text()), legacy_reference=True):
             raise SystemExit(f"{T}: E100 카드와 다름 — 중단")
         c730 = mc.build_card(z, n, dev, codes, T, ACCOUNTS, with_outcome=True, slot="0730")
         seal = sealed_info(T)   # 11/10 추가: 아침에 봉인한 카드가 있으면 발행 시각·해시와 숫자 일치 여부를 남긴다

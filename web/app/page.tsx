@@ -79,6 +79,7 @@ export default async function Home() {
     upcomingEvents(m!.t, [...acct.holdings.map((h) => h.code), ...acct.watch])])
     : [new Map(), null, new Map<string, [number, number]>(), []];
   const recN = rec ? [...rec.cells.values()].flatMap((m) => [...m.values()]).filter((c) => c.in80 != null) : [];
+  const after0811 = now.hour * 100 + now.minute >= 811;
   const slot0811 = m?.card?.slot === "0811" && (marketDay(today)?.premarket ?? true);
   // 단계를 누르면 그 시점 화면(시연 계정만, 테스트 편의, 2026-11-23): 단계 시각 그대로(경계 시각, 2026-11-24) 시연 시각을 바꾼다. 아직 오지 않은 시각은 링크 없음
   const demoUser = await isDemoUser();
@@ -92,7 +93,7 @@ export default async function Home() {
   const checkHm = (m?.t === today ? m.check?.checkedAt : null) ?? checkTime(today)[0];   // 오늘 채점 전이면 어제 채점 시각이 아니라 기준 시각(개장 5분 뒤)
   const steps = [{ t: "06:00", label: "야간장 마감", done: true, at: stepAt("06:00") }, { t: "07:30", label: "예상", done: true, at: stepAt("07:30") },
     { t: "08:11", label: "장전 거래", done: slot0811, at: stepAt("08:11") }, { t: checkHm, label: "채점", done: !!m?.check, at: stepAt(checkHm) }];
-  const idleStocks = acct.holdings.map((h) => { const u = uStock(h.code); return { code: h.code, name: u?.name ?? h.code, sector: u?.sector ?? "기타", value: h.qty * (px.get(h.code)?.close ?? 0), pct: null, grade: null, l80: null, u80: null, news: news.get(h.code)?.length ?? 0 }; });
+  const idleStocks = acct.holdings.map((h) => { const u = uStock(h.code); return { code: h.code, name: u?.name ?? h.code, sector: u?.sector ?? "기타", value: h.qty * (px.get(h.code)?.close ?? 0), pct: null, grade: null, p: null, nxtG: null, after0811, l80: null, u80: null, news: news.get(h.code)?.length ?? 0 }; });
 
   return (
     <>
@@ -110,7 +111,7 @@ export default async function Home() {
           </ol>
         ) : null}
         {allOn ? (
-          <AllView t={m!.t} rows={rows} watchRows={watchRows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
+          <AllView after0811={after0811} t={m!.t} rows={rows} watchRows={watchRows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
             lines={new Map([...ai.companies].map(([k, v]) => [k, { line: v.line }]))} record={recN.length ? { inN: recN.filter((c) => c.in80).length, n: recN.length } : null}
             us={us} night={night} buckets={buckets} nightLive={now.hour >= 18}
             briefSlot={!off && ai.macro.length ? <BriefCards brief={ai} focus={focus} /> : null} />
@@ -187,7 +188,7 @@ export default async function Home() {
             <p className="fine">{m!.card!.slot === "0811" && (marketDay(today)?.premarket ?? true) ? "08:11" : "07:30"} 기준 · 장 전 · 오늘 예상 시가</p>
             <TreeMap stocks={preRows.map((r) => ({
               code: r.code, name: r.name, sector: r.sector, value: r.value ?? r.qty * (px.get(r.code)?.close ?? 0),
-              pct: r.kind === "notservice" || r.kind === "nocalc" ? null : r.pct, grade: r.s?.grade ?? null,
+              pct: r.kind === "notservice" || r.kind === "nocalc" ? null : r.pct, grade: r.s?.grade ?? null, p: r.s?.p ?? null, nxtG: r.s?.nxtG ?? null, after0811,
               l80: r.s?.l80 ?? null, u80: r.s?.u80 ?? null, news: news.get(r.code)?.length ?? 0 }))} />
             <MapLegend />
           </section>
@@ -213,7 +214,7 @@ function MapHelp() {
       <div className="help">
         <b>어떻게 읽나요?</b><p>업종별로 내 종목을 모았어요. 칸이 클수록 보유 금액이 커요.</p>
         <b>색</b><p>예상 시가가 어제 종가보다 위면 빨강, 아래면 파랑이에요. 진할수록 많이 움직일 것으로 예상해요(±2%까지).</p>
-        <b>흐린 칸</b><p>믿을 정도가 낮아서 방향이 불확실한 종목이에요.</p>
+        <b>흐린 칸</b><p>흐릴수록 전일 종가 대비 장전 등락 방향이 시가까지 이어질 추정 확률이 낮아요.</p>
         <b>소식</b><p>밤사이 그 종목과 관련된 미국 기사 수예요.</p>
       </div>
     </Sheet>

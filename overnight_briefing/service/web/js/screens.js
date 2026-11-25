@@ -1,5 +1,5 @@
 // 화면 다섯 개와 아래에서 올라오는 창의 HTML. 상태는 app.js가 넘겨 준다(m = 지금 계좌·수량으로 만든 값 묶음).
-import { esc, tone, pct, pct2, won, num, man, tick, dlabel, avatar, priceShort, I, kst, AI } from "./fmt.js";
+import { gradeText, esc, tone, pct, pct2, won, num, man, tick, dlabel, avatar, priceShort, I, kst, AI } from "./fmt.js";
 import { bandHtml, domain } from "./band.js";
 import { spark, nightChart, recordBars, histChart, relGraph, acctMap } from "./charts.js";
 import { summary, stockNote, nightCaption, glance } from "./llm.js";
@@ -7,8 +7,7 @@ import { summary, stockNote, nightCaption, glance } from "./llm.js";
 const GRADE = { "높음": ["hi", 3], "보통": ["", 2], "낮음": ["lo", 1] };
 const meter = (n) => `<span class="meter">${[1, 2, 3].map((i) => `<i class="${i <= n ? "f" : ""}"></i>`).join("")}</span>`;
 // 믿을 정도 = 카드의 방향 등급(D08: 8시 장전 흐름이 9시 시가까지 이어질 가능성, 11/24 나은 결정). 1·2차 예측 거리(E107, t08.trust)는 낮음일 때 '07:30 예상과 크게 달라짐'으로만 보인다
-const trustChip = (t) => (t && t.trust === "낮음" ? `<button class="chip btn lo" data-act="info" data-info="trust">07:30 예상과 크게 달라짐</button>` : "");   // 1·2차 예측 거리(E107)는 크게 달라졌을 때만 표시(11/24)
-const gradeChip = (g) => (g ? `<button class="chip btn ${GRADE[g.level][0]}" data-act="info" data-info="grade">믿을 정도 ${g.level} ${meter(GRADE[g.level][1])}</button>` : "");
+const gradeChip = (g) => (g ? `<button class="chip btn ${GRADE[g.level][0]}" data-act="info" data-info="grade">방향 믿을 정도 ${gradeText(g)} ${meter(GRADE[g.level][1])}</button>` : "");
 const hhmm = (n, T) => { const [d, t] = n.time.split(" "); const today = +d.split("/")[1] === +T.slice(6); return (today ? "오늘 " : "어제 ") + t; };
 export const gist = (n) => { const p = (n.path || "").split(" → "); return n.tier === "AI 판정" && p.length >= 3 ? p[0] : null; };
 export const usNode = (d, us) => { const k = us.replace(/\(.+\)/, "").trim(); return d.graph.nodes.find((x) => x.name === us || x.name.replace(/\(.+\)/, "").trim() === k || x.name.startsWith(k) || k.startsWith(x.name)); };
@@ -30,21 +29,22 @@ function stockRow(r, m, st, d) {
   const s = r.s, live = r.pin != null, v = live ? r.pin : s.H, amt = r.value * v, watch = r.h.q === 0 && r.q === 0;
   const avgR = r.h.avg > 0 ? r.h.avg / s.pc - 1 : null;
   const news = (m.newsBy[s.code] || 0) + (m.briefBy[s.code] || 0), g = st.slot !== "0730" ? s.grade : null;
-  const nxtOut = g && g.g != null && !(s.b80[0] <= g.g && g.g <= s.b80[1]);
+  const nxt = st.slot !== "0730" ? s.nxt_g : null;
+  const nxtOut = nxt != null && !(s.b80[0] <= nxt && nxt <= s.b80[1]);
   const chips = [S_PIN(r, s), gradeChip(g)];
   s.cautions.forEach((c) => chips.push(`<button class="chip btn lo" data-act="stock" data-code="${s.code}">${I.warn.replace('width="16" height="16"', 'width="12" height="12"')} ${esc(c.title)}</button>`));
-  if (nxtOut) chips.push(`<button class="chip btn lo" data-act="info" data-info="nxtout">07:30 예상보다 크게 ${g.g > s.b80[1] ? "높음" : "낮음"}</button>`);
+  if (nxtOut) chips.push(`<button class="chip btn lo" data-act="info" data-info="nxtout">07:30 예상보다 크게 ${nxt > s.b80[1] ? "높음" : "낮음"}</button>`);
   if (news) chips.push(`<button class="chip btn" data-act="stock" data-code="${s.code}">${I.news} 밤사이 소식 ${news}</button>`);
   if (s.eve && s.eve.r != null) chips.push(`<button class="chip btn" data-act="info" data-info="eve">어제 저녁 거래 <b class="${tone(s.eve.r)}" style="margin-left:3px">${pct(s.eve.r)}</b></button>`);   // 참고용(띠 계산에 넣지 않음)
   if (watch) chips.unshift(`<span class="chip accent">관심 종목</span>`);
   if (avgR != null) { const e = tick(s.pc * (1 + v)) / r.h.avg - 1; chips.push(`<span class="chip" title="평균단가 ${num(r.h.avg)}원">${live ? "가정" : "예상"} 시가는 내 평단보다 <b class="${tone(e)}" style="margin-left:3px">${pct(e)}</b></span>`); }
   let flow = "";
   if (m.showAct && s.y != null) {
-    flow = `<div class="stock-flow"><span>예상 <b class="${tone(s.H)}">${pct(s.H)}</b></span>${I.sm}${g && g.g != null ? `<span>장전 <b class="${tone(g.g)}">${pct(g.g)}</b></span>${I.sm}` : ""}<span>실제 <b class="${tone(s.y)}">${pct(s.y)}</b></span>
+    flow = `<div class="stock-flow"><span>예상 <b class="${tone(s.H)}">${pct(s.H)}</b></span>${I.sm}${nxt != null ? `<span>장전 <b class="${tone(nxt)}">${pct(nxt)}</b></span>${I.sm}` : ""}<span>실제 <b class="${tone(s.y)}">${pct(s.y)}</b></span>
       <span class="chip ${s.inb ? "hi" : "lo"}" style="margin-left:auto">${s.inb ? "범위 안" : s.y > s.b80[1] ? "범위 위" : "범위 아래"}</span></div>`;
-  } else if (st.slot === "0811" && g && g.g != null) {           // 11/17: 07:30 예상과 08:10 장전 거래를 한 줄로 잇는다(실시간 시세는 증권사 몫)
-    flow = `<div class="stock-flow"><span>07:30 예상 <b class="${tone(s.H)}">${pct(s.H)}</b></span>${I.sm}<span>08:10 장전 거래 <b class="${tone(g.g)}">${pct(g.g)}</b></span>
-      <span class="chip ${nxtOut ? "lo" : "hi"}" style="margin-left:auto">${nxtOut ? (g.g > s.b80[1] ? "범위 위" : "범위 아래") : "범위 안"}</span></div>`;
+  } else if (st.slot === "0811" && nxt != null) {           // 11/17: 07:30 예상과 08:10 장전 거래를 한 줄로 잇는다(실시간 시세는 증권사 몫)
+    flow = `<div class="stock-flow"><span>07:30 예상 <b class="${tone(s.H0730 ?? s.H)}">${pct(s.H0730 ?? s.H)}</b></span>${I.sm}<span>08:11 2차 예측(NXT) <b class="${tone(nxt)}">${pct(nxt)}</b></span>
+      <span class="chip ${nxtOut ? "lo" : "hi"}" style="margin-left:auto">${nxtOut ? (nxt > s.b80[1] ? "07:30 범위 위" : "07:30 범위 아래") : "07:30 범위 안"}</span></div>`;
   }
   return `<article class="stock" data-row="${s.code}">
     <button class="stock-top" data-act="stock" data-code="${s.code}">${avatar(s.code, s.name)}
@@ -79,12 +79,12 @@ export function heroHtml(m, d, st) {
   // 11/19: 장전 거래가 없는 날(수능일 등, core/extras.py SPECIAL)엔 08:11도 07:30과 같은 값이다. 개장 시각도 그날 값을 쓴다
   const noPre = !!(d.special && d.special.premarket === false), openAt = (d.special && d.special.open) || "09:00";
   const sealed = d.record && d.record.sealed, no730 = !!(sealed && Object.keys(sealed).length && !sealed["0730"]);
-  if (st.slot === "0811" && !act) h += `<div class="tiny" style="margin-top:8px">${noPre ? "오늘은 장전 거래(NXT 프리마켓)가 없어 07:30 예상 범위와 같은 값이에요." : "08:00~08:10 장전 거래까지 반영했어요. 실서비스에서는 증권사 실시간 시세로 개장 전까지 계속 바뀌어요."}</div>`;
+  if (st.slot === "0811" && !act) h += `<div class="tiny" style="margin-top:8px">${noPre ? "오늘은 장전 거래(NXT 프리마켓)가 없어 07:30 예상 범위와 같은 값이에요." : "08:10까지 마지막 NXT 체결가를 반영한 2차 예측으로 계좌 예상을 업데이트했어요. 장전 가격 자료가 없는 종목에는 07:30 예상을 썼어요."}</div>`;
   if (m.changed || m.pinned) h += `<div class="what-if"><span>${m.changed && m.pinned ? "수량과 시가를" : m.changed ? "수량을" : "시가를"} 바꿔서 보는 중이에요</span><button data-act="reset">${I.undo} 되돌리기</button></div>`;
   if (act) {
     const got = m.rows.filter((r) => r.s.y != null), ok = got.filter((r) => r.s.inb).length, dr = got.filter((r) => r.s.dir != null), dok = dr.filter((r) => r.s.dir).length;
     const hs = m.HsumAct != null ? m.HsumAct : m.Hsum;             // 시가를 못 받은 종목이 있으면 같은 종목끼리만 견준다
-    h += `<div class="result"><span class="chip">아침 예상 ${won(hs)}</span><span class="chip">차이 ${won(m.actSum - hs)}</span><span class="chip ${ok === got.length ? "hi" : ""}">범위 안 ${ok}/${got.length}종목</span>${dr.length ? `<span class="chip">장전 방향 일치 ${dok}/${dr.length}</span>` : ""}${m.actMissing ? `<span class="chip lo">시가를 아직 못 받은 ${m.actMissing}종목은 빠졌어요</span>` : ""}</div>`;
+    h += `<div class="result"><span class="chip">07:30 예상 ${won(hs)}</span><span class="chip">차이 ${won(m.actSum - hs)}</span><span class="chip ${ok === got.length ? "hi" : ""}">범위 안 ${ok}/${got.length}종목</span>${dr.length ? `<span class="chip">장전 방향 일치 ${dok}/${dr.length}</span>` : ""}${m.actMissing ? `<span class="chip lo">시가를 아직 못 받은 ${m.actMissing}종목은 빠졌어요</span>` : ""}</div>`;
   } else if (st.slot === "0900") {
     h += `<div class="notice info" style="margin-top:12px">${I.info}<div><b>아직 개장 전이에요</b>${openAt} 시가가 나오면 아침 예상과 나란히 보여 드려요.</div></div>`;
   }
@@ -95,9 +95,9 @@ export function heroHtml(m, d, st) {
     const sh = { "높음": 0, "보통": 0, "낮음": 0, "없음": 0 };
     m.rows.forEach((r) => (sh[r.s.grade ? r.s.grade.level : "없음"] += r.value));
     const seg = [["높음", "g-hi", "var(--ok)"], ["보통", "g-mid", "var(--mute)"], ["낮음", "g-lo", "#F0A23C"], ["없음", "g-none", "var(--line)"]].filter(([k]) => sh[k] > 0);
-    h += `<div class="trust"><div class="sub" style="display:flex;justify-content:space-between"><span>믿을 정도(8시 흐름이 9시까지 이어질 가능성) <span class="tiny">· 보유 금액 기준</span></span><button class="tiny" data-act="info" data-info="grade" style="text-decoration:underline">뜻 보기</button></div>
+    h += `<div class="trust"><div class="sub" style="display:flex;justify-content:space-between"><span>방향 등급별 보유 금액 비중 <span class="tiny">· 전일 종가 기준</span></span><button class="tiny" data-act="info" data-info="grade" style="text-decoration:underline">뜻 보기</button></div>
       <div class="bar">${seg.map(([k, c]) => `<i class="${c}" style="width:${(sh[k] / sv) * 100}%"></i>`).join("")}</div>
-      <div class="legend">${seg.map(([k, , c]) => `<span style="--c:${c}">${k === "없음" ? "장전 거래 없음" : k} ${Math.round((sh[k] / sv) * 100)}%</span>`).join("")}</div></div>`;
+      <div class="legend">${seg.map(([k, , c]) => `<span style="--c:${c}">${k === "없음" ? "등급 없음" : k} ${Math.round((sh[k] / sv) * 100)}%</span>`).join("")}</div></div>`;
   }
   return h;
 }
@@ -414,7 +414,7 @@ export function record(m, d, st) {
 
 /* ───── 아래에서 올라오는 창 ───── */
 export function stockSheet(r, m, d, st) {
-  const s = r.s, g = st.slot !== "0730" ? s.grade : null, P = (v) => num(tick(s.pc * (1 + v)));
+  const s = r.s, g = st.slot !== "0730" ? s.grade : null, nxt = st.slot !== "0730" ? s.nxt_g : null, P = (v) => num(tick(s.pc * (1 + v)));
   const myNews = d.news.filter((n) => n.stocks.some((x) => x.code === s.code));
   const hasAvg = r.h.avg > 0, pl = hasAvg ? (s.pc - r.h.avg) * r.h.q : null, plr = hasAvg ? s.pc / r.h.avg - 1 : null, wt = m.baseValue ? (r.h.q * s.pc) / m.baseValue : 0;
   const line = (dot, name, v, bold) => `<tr><td><i style="background:${dot}"></i>${name}</td><td class="${tone(v)}">${pct2(v)}</td><td>${P(v)}원</td><td class="${tone(v)}" ${bold ? 'style="font-weight:750"' : ""}>${won(r.value * v)}</td></tr>`;
@@ -422,15 +422,15 @@ export function stockSheet(r, m, d, st) {
   const hist = d.hist[s.code] || [], hin = hist.filter((x) => x.inb).length;
   return `<div class="grab" data-act="close"><i></i></div><div class="sheet-h">${avatar(s.code, s.name)}<h3>${esc(s.name)}<small>${s.code}${s.seg ? " · " + esc(s.seg) : ""}</small></h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div>
   <div class="sheet-b"><p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0 0 4px" data-llm="4">${esc(stockNote(r, st.slot, myNews.length))}</p>${combinedHtml(d, s.code)}
-    ${bandHtml(s, { dom: domain([s.b90[0], s.b90[1], s.H, g ? g.g : null, m.showAct ? s.y : null].filter((v) => v != null)), slot: st.slot, showActual: m.showAct, pin: null, wide: true }).replace('data-band="', 'data-band-static="')}
+    ${bandHtml(s, { dom: domain([s.b90[0], s.b90[1], s.H, nxt, m.showAct ? s.y : null].filter((v) => v != null)), slot: st.slot, showActual: m.showAct, pin: null, wide: true }).replace('data-band="', 'data-band-static="')}
     <table class="tbl"><thead><tr><th>${num(r.q)}주 기준</th><th>어제 종가 대비</th><th>가격</th><th>내 금액</th></tr></thead><tbody>
-      ${line("var(--band)", "범위 위쪽 끝", s.b80[1])}${line("var(--ink)", "예상 시가", s.H, true)}${line("var(--band)", "범위 아래쪽 끝", s.b80[0])}
-      ${s.eve && s.eve.r != null ? line("var(--mute)", `어제 저녁 거래(${s.eve.at || "20:00"})`, s.eve.r) : ""}${g && g.g != null ? line("var(--ink2)", "08:10 장전 거래", g.g) : ""}${m.showAct && s.y != null ? line(s.inb ? "var(--ok)" : "var(--miss)", "09:00 실제 시가", s.y, true) : ""}</tbody></table>
+      ${line("var(--band)", "범위 위쪽 끝", s.b80[1])}${line("var(--ink)", s.H0730 != null ? "08:11 2차 예측 (NXT)" : "07:30 예상 시가", s.H, true)}${line("var(--band)", "범위 아래쪽 끝", s.b80[0])}
+      ${s.eve && s.eve.r != null ? line("var(--mute)", `어제 저녁 거래(${s.eve.at || "20:00"})`, s.eve.r) : ""}${nxt != null ? line("var(--ink2)", "08:10 장전 거래", nxt) : ""}${m.showAct && s.y != null ? line(s.inb ? "var(--ok)" : "var(--miss)", "09:00 실제 시가", s.y, true) : ""}</tbody></table>
     <div class="tiny" style="margin-top:8px">옅은 띠는 10번 중 9번이 들어온 더 넓은 범위(${pct(s.b90[0])} ~ ${pct(s.b90[1])})예요.</div>
     ${s.cautions.map((c) => `<div class="notice" style="margin-top:12px">${I.warn}<div><b>${esc(c.title)}</b>${esc(c.body)}</div></div>`).join("")}
-    ${s.t08 && s.t08.trust && st.slot !== "0730" && !m.showAct ? `<h4>08:11 2차 예측</h4><div class="rows"><div class="rowline"><span>2차 예측 시가</span><b class="${tone(s.t08.Hb)}">${pct2(s.t08.Hb)}</b></div><div class="rowline"><span>2차 예측 범위</span><b>${pct(s.t08.adj[0])} ~ ${pct(s.t08.adj[1])}</b></div><div class="rowline"><span>07:30 예상과 비교</span><b>${{ "높음": "가까워요", "보통": "조금 달라요", "낮음": "크게 달라졌어요" }[s.t08.trust]} ${trustChip(s.t08)}</b></div></div>
-      <div class="tiny" style="margin-top:6px">8시~8시 10분 장전 거래로 한 번 더 계산한 값이에요(07:30 예상 ${pct2(s.H0730 ?? s.H)}). 2차 예측 범위에는 지난 기록에서 10번 중 8번쯤 시가가 들어왔어요.</div>` : ""}
-    ${g ? `<h4>믿을 정도</h4><div class="rows"><div class="rowline"><span>등급</span><b>${gradeChip(g)}</b></div><div class="rowline"><span>지난 비슷한 경우 방향이 같았던 비율</span><b>${g.p >= 0.995 ? "99% 이상" : Math.round(g.p * 100) + "%"}</b></div></div>
+    ${st.slot === "0811" ? `<h4>08:11 2차 예측</h4><div class="rows"><div class="rowline"><span>08:10까지 마지막 NXT 체결가</span><b>${nxt != null ? pct2(nxt) : "장전 가격 자료 없음"}</b></div><div class="rowline"><span>07:30 예상</span><b>${pct2(s.H0730 ?? s.H)}</b></div></div>
+      <div class="tiny" style="margin-top:6px">${nxt != null ? "마지막 NXT 체결가를 2차 예측으로 사용해요." : "새 2차 예측이 없어 07:30 예상을 표시해요."} 노란 띠는 07:30 예상 범위예요.</div>` : ""}
+    ${g ? `<h4>믿을 정도</h4><div class="rows"><div class="rowline"><span>등급</span><b>${gradeChip(g)}</b></div></div>
       <div class="tiny" style="margin-top:6px">08:10 장전 거래(넥스트레이드)의 방향이 09:00 시가까지 이어질지를 본 값이에요. 예상 시가 숫자가 얼마나 정확한지와는 다른 얘기예요.</div>` : ""}
     <h4>내 잔고</h4><div class="rows">
       <div class="rowline"><span>보유 수량</span><b>${num(r.h.q)}주${r.changed ? ` <small style="color:var(--accent)">지금은 ${num(r.q)}주로 바꿔 보는 중</small>` : ""}</b></div>
@@ -472,18 +472,18 @@ export function acctSheet(list, cur, my) {
 const INFO = {
   band: ["노란띠 읽는 법", `<div class="rows">
     <div class="rowline"><span><i class="lg-band" style="display:inline-block;vertical-align:-1px;margin-right:6px"></i>예상 범위</span><b style="font-weight:500;font-size:13px;max-width:215px">지난 비슷한 아침 10번 중 8번은 실제 시가가 이 안에서 열렸어요. 양 끝 숫자가 범위의 끝이에요.</b></div>
-    <div class="rowline"><span><i class="lg-dot" style="display:inline-block;margin-right:6px"></i>예상 시가</span><b style="font-weight:500;font-size:13px;max-width:215px">밤사이 야간선물 움직임으로 계산한 한 점이에요. 검은 말풍선의 숫자예요.</b></div>
+    <div class="rowline"><span><i class="lg-dot" style="display:inline-block;margin-right:6px"></i>예상 시가</span><b style="font-weight:500;font-size:13px;max-width:215px">검은 점은 07:30에는 야간선물로 추정한 시가, 08:11에는 장전 마지막 체결가예요. 장전 가격 자료가 없으면 07:30 예상이 보여요.</b></div>
     <div class="rowline"><span><i class="lg-zero" style="display:inline-block;vertical-align:-2px;margin:0 9px 0 3px"></i>어제 종가</span><b style="font-weight:500;font-size:13px;max-width:215px">0%. 띠가 이 선 왼쪽에 있으면 어제보다 낮게, 오른쪽이면 높게 열리는 쪽이에요.</b></div>
     <div class="rowline"><span><i class="lg-nxt" style="display:inline-block;margin-right:6px"></i>장전 거래</span><b style="font-weight:500;font-size:13px;max-width:215px">08:10까지 넥스트레이드에서 실제로 거래된 가격이에요. 08:11부터 보여요.</b></div>
     <div class="rowline"><span><i class="lg-act" style="display:inline-block;vertical-align:-1px;margin-right:6px"></i>실제 시가</span><b style="font-weight:500;font-size:13px;max-width:215px">09:00에 열린 가격. 범위 안이면 초록, 밖이면 빨강이에요.</b></div></div>
     <div class="notice info" style="margin-top:14px"><div><b>띠를 눌러 보세요</b>띠 위 아무 곳이나 누르거나 끌면 ‘그 값에 열리면 내 금액이 얼마인지’ 바로 보여요. 수량은 − + 로 바꿔 볼 수 있고, 실제 주문은 나가지 않아요.</div></div>
     <div class="tiny" style="margin-top:12px">범위는 확률이나 약속이 아니에요. 10번 중 2번쯤은 범위 밖에서 열려요. 띠의 폭은 얼마나 믿을 만한지가 아니라 그 종목이 평소 얼마나 흔들렸는지를 따라가요.</div>`],
-  trust: ["07:30 예상과 크게 달라짐이란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">8시~8시 10분 장전 거래로 한 번 더 계산한 2차 예측이 07:30 예상(1차)과 크게 다를 때 붙여요.</p>
-    <div class="rows" style="margin-top:8px"><div class="rowline"><span>이런 종목은</span><b style="font-weight:500;font-size:13px;max-width:215px">지난 기록에서 시가가 07:30 범위 안에서 열린 날이 10번 중 3번이었어요</b></div><div class="rowline"><span>그래서</span><b style="font-weight:500;font-size:13px;max-width:215px">2차 예측을 기준으로 보세요. 2차 예측도 평소보다 오차가 클 수 있어요</b></div></div>
+  trust: ["07:30 예상과 크게 달라짐이란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10까지 마지막 NXT 체결가가 07:30 예상에서 노란띠 반폭보다 멀어졌을 때 붙여요.</p>
+    <div class="rows" style="margin-top:8px"><div class="rowline"><span>이런 종목은</span><b style="font-weight:500;font-size:13px;max-width:215px">지난 기록에서 시가가 07:30 범위 안에서 열린 날이 10번 중 3번이었어요</b></div><div class="rowline"><span>그래서</span><b style="font-weight:500;font-size:13px;max-width:215px">07:30 예상과 08:10까지 마지막 체결가의 차이를 확인할 수 있어요</b></div></div>
     <div class="tiny" style="margin-top:12px">1차와 2차의 거리는 07:30 범위 폭에 견줘 재요. 숫자는 규칙을 고정한 뒤 15거래일(3,000종목-날) 기록이에요.</div>`],
-  grade: ["믿을 정도란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 장전 거래가 가리키는 방향(어제 종가보다 위/아래)이 09:00 시가까지 이어질지를 세 단계로 나눈 값이에요.</p>
-    <div class="rows" style="margin-top:8px"><div class="rowline"><span class="chip hi">높음 ${meter(3)}</span><b style="font-weight:500;font-size:13px">지난 비슷한 경우 10번 중 9번 이상 같은 방향</b></div><div class="rowline"><span class="chip">보통 ${meter(2)}</span><b style="font-weight:500;font-size:13px">10번 중 7~9번</b></div><div class="rowline"><span class="chip lo">낮음 ${meter(1)}</span><b style="font-weight:500;font-size:13px">그보다 낮음. 방향이 자주 바뀌었어요</b></div></div>
-    <div class="tiny" style="margin-top:12px">장전 거래가 어제 종가에서 멀리 움직였을수록 방향이 이어지는 일이 많았어요. 노란띠의 폭이나 예상 시가의 정확도와는 따로 보는 값이에요.</div>`],
+  grade: ["방향 믿을 정도", `<p class="sub">괄호 안은 전일 종가를 기준으로 장전 마지막 체결가의 상승·하락 방향이 정규장 시가에서도 같을 것으로 모델이 추정한 확률이에요.</p>
+    <div class="rows"><div class="rowline"><span>높음</span><b>90% 이상</b></div><div class="rowline"><span>보통</span><b>75% 이상 90% 미만</b></div><div class="rowline"><span>낮음</span><b>75% 미만</b></div></div>
+    <div class="tiny" style="margin-top:12px">장전 마지막 체결가가 있으면 세 등급 모두 그 가격을 2차 예측으로 써요. 노란 띠는 07:30에 표시한 시가의 예상 범위예요.</div>`],
   eve: ["어제 저녁 거래란", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">어제 낮 장이 끝난 뒤 저녁 8시까지 열리는 넥스트레이드(대체거래소) 시장에서 마지막으로 거래된 가격을, 어제 낮 종가와 비교한 값이에요.</p>
     <div class="rows" style="margin-top:8px"><div class="rowline"><span>언제 값인가요</span><b style="font-weight:500;font-size:13px;max-width:215px">어제 저녁 6~8시 사이 마지막 거래. 미국 장이 열리기 전이에요.</b></div><div class="rowline"><span>예상 범위에 들어가나요</span><b style="font-weight:500;font-size:13px;max-width:215px">아니요. 참고로만 보여 드려요.</b></div></div>
     <div class="tiny" style="margin-top:12px">이 값을 예상 범위 계산에 넣어 보았지만 예상이 눈에 띄게 가까워지지 않아 쓰지 않아요. 저녁 거래 뒤에 미국 장과 야간선물이 움직이기 때문에, 아침 시작 가격은 이 값과 다를 수 있어요. 저녁 거래가 없던 종목에는 나오지 않아요.</div>`],
@@ -493,7 +493,7 @@ const INFO = {
   hmap: ["내 종목 지도 읽는 법", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">시장(야간선물) → 업종 → 내 종목 순서로 묶었어요.</p>
     <div class="rows" style="margin-top:8px"><div class="rowline"><span>칸 크기</span><b style="font-weight:500;font-size:13px;max-width:215px">보유 금액</b></div><div class="rowline"><span>칸 색</span><b style="font-weight:500;font-size:13px;max-width:215px">종목마다 계산한 오늘 예상 시가가 어제 종가보다 위면 빨강, 아래면 파랑</b></div><div class="rowline"><span>소식 수</span><b style="font-weight:500;font-size:13px;max-width:215px">밤사이 그 종목과 이어진 미국 기사 수</b></div><div class="rowline"><span>점선 칸</span><b style="font-weight:500;font-size:13px;max-width:215px">관심 종목(수량 0)</b></div></div>
     <div class="tiny" style="margin-top:12px">업종별 예상은 따로 계산하지 않아서 업종 줄에는 금액 비중만 적었어요. 칸을 누르면 그 종목을 볼 수 있어요.</div>`],
-  nxtout: ["장전 거래가 범위 밖이에요", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 장전 거래가 이미 아침 예상 범위 밖에 있어요. 지난 1년 이런 종목은 범위 안에서 열린 경우가 10번 중 3번 남짓이었고, 시가도 장전 거래 쪽으로 벗어난 경우가 10번 중 6~7번이었어요.</p><div class="tiny" style="margin-top:12px">아직 확인 중인 표시예요.</div>`],
+  nxtout: ["장전 거래가 범위 밖이에요", `<p class="sub" style="font-size:13.5px;color:var(--ink2);margin:0">08:10 장전 거래가 이미 07:30 예상 범위 밖에 있어요. 지난 1년 이런 종목은 범위 안에서 열린 경우가 10번 중 3번 남짓이었고, 시가도 장전 거래 쪽으로 벗어난 경우가 10번 중 6~7번이었어요.</p><div class="tiny" style="margin-top:12px">아직 확인 중인 표시예요.</div>`],
 };
 export const infoSheet = (k) => `<div class="grab" data-act="close"><i></i></div><div class="sheet-h"><h3>${INFO[k][0]}</h3><button class="x" data-act="close" aria-label="닫기">${I.x}</button></div><div class="sheet-b">${INFO[k][1]}</div>`;
 
@@ -548,13 +548,13 @@ export function notifSheet(st, d) {
 
 /** 처음 안내(3단계) */
 export function introSheet(step) {
-  const demo = bandHtml({ code: "000000", name: "예시", H: -0.009, b80: [-0.036, 0.018], b90: [-0.046, 0.027], grade: { g: -0.004 }, y: null }, { dom: [-0.05, 0.05], slot: "0811", avg: 0.02 });
+  const demo = bandHtml({ code: "000000", name: "예시", H0730: -0.009, H: -0.004, b80: [-0.036, 0.018], b90: [-0.046, 0.027], nxt_g: -0.004, y: null }, { dom: [-0.05, 0.05], slot: "0811", avg: 0.02 });
   const pages = [
     ["자는 동안 생긴 일, 내 주식 기준으로", `<p>한국 주식을 갖고 있으면, <b>밤사이 미국 시장에서 생긴 일</b>이 다음 날 아침 9시 내 주식이 시작하는 가격에 영향을 줘요. 이 화면은 그걸 <b>장이 열리기 전에</b> 내 종목 기준으로 미리 정리해 줘요.</p>
       <ul><li>오늘 아침 내 주식이 대략 얼마에 시작할지</li><li>밤사이 미국 뉴스 가운데 내 종목과 관련 있는 것</li><li>9시에 실제로 얼마에 시작했는지</li></ul>
       <p class="tiny">지금은 시연판이에요. 증권사 앱 안에 들어가는 기능으로 만들고 있어요. 사거나 팔라고 권하지 않아요.</p>`],
     ["노란띠 = 오늘 시작 가격의 예상 범위", `<div class="demo-band">${demo}</div>
-      <ul><li><b>가운데 점선</b>이 어제 끝난 가격이에요. 띠가 왼쪽이면 어제보다 낮게, 오른쪽이면 높게 시작하는 쪽이에요</li><li><b>노란 띠</b> 안에서 시작한 날이 지난 비슷한 아침 10번 중 8번쯤이었어요</li><li><b>검은 점</b>은 그중 가장 그럴듯한 한 점, <b>세모</b>는 8시부터 실제로 거래된 가격, <b>가는 점선</b>은 내가 산 평균 가격이에요</li></ul>
+      <ul><li><b>가운데 점선</b>이 어제 끝난 가격이에요. 띠가 왼쪽이면 어제보다 낮게, 오른쪽이면 높게 시작하는 쪽이에요</li><li><b>노란 띠</b> 안에서 시작한 날이 지난 비슷한 아침 10번 중 8번쯤이었어요</li><li><b>검은 점</b>은 현재 예상 시가예요. 이 예시에서는 마지막 NXT 체결가를 쓴 08:11 값이고, 회색 점은 07:30 예상이에요. <b>가는 점선</b>은 내가 산 평균 가격이에요</li></ul>
       <p class="tiny">꼭 그 안에서 시작한다는 약속은 아니에요. 띠를 누르거나 끌면 ‘그 값에 시작하면 내 돈이 얼마나 달라지는지’ 볼 수 있어요.</p>`],
     ["이렇게 써 보세요", `<ul><li><b>예시 계좌 3개</b>가 들어 있어요. 오른쪽 위에서 바꿔 볼 수 있어요</li><li><b>내 종목</b> 탭에서 내가 가진 종목과 수량을 직접 넣을 수 있어요. 산 가격은 몰라도 되고, 수량을 0으로 두면 ‘관심 종목’으로 볼 수 있어요</li><li>맨 위 <b>날짜</b>를 누르면 지난 아침을 다시 볼 수 있어요. ‘실시간’은 지금 시각을 따라가요</li></ul>
       <p class="tiny">아침 6시 30분에 첫 브리핑이 나오고, 8시 11분에 장 열리기 전 거래를 더해요. 9시 뒤에는 실제 시작 가격과 나란히 보여 드려요.</p>`],
@@ -629,7 +629,7 @@ export function homeNeed(m, st) {                       // 확인이 필요한 �
   const held = m.rows.filter((r) => r.h.q > 0);
   if (m.showAct) return { held, need: held.filter((r) => r.s.y != null && !r.s.inb), base: held.filter((r) => r.s.y != null).length };
   if (st.slot === "0730") return { held, need: [], base: null };
-  const need = held.filter((r) => { const g = r.s.grade; return g && ((g.g != null && !(r.s.b80[0] <= g.g && g.g <= r.s.b80[1])) || g.level === "낮음"); });
+  const need = held.filter((r) => { const g = r.s.grade; return (r.s.nxt_g != null && !(r.s.b80[0] <= r.s.nxt_g && r.s.nxt_g <= r.s.b80[1])) || g?.level === "낮음"; });
   return { held, need, base: held.length };
 }
 
@@ -702,10 +702,10 @@ const ico4 = (s, tm, size = 28, warn = false) => { const [bg, fg] = tm[grpOf(s)]
 export function rows4(m, st) {
   const watch = (st.hold4 || (m.rows.some((r) => r.h.q > 0) ? "own" : "watch")) === "watch";
   const out = m.rows.filter((r) => (watch ? r.h.q === 0 : r.h.q > 0)).map((r) => {
-    const s = r.s, g = st.slot !== "0730" ? s.grade : null, act = m.showAct && s.y != null;
-    const isOut = act ? !s.inb : !!(g && g.g != null && !(s.b80[0] <= g.g && g.g <= s.b80[1]));
-    const low = false;   // E107: 믿을 정도 낮음 = 장전 가격이 07:30 범위 밖(isOut)이라 따로 묶지 않는다
-    const ref = act ? s.y : g && g.g != null ? g.g : s.H, dir = ref > s.b80[1] ? "상승" : "하락";
+    const s = r.s, g = st.slot !== "0730" ? s.grade : null, nxt = st.slot !== "0730" ? s.nxt_g : null, act = m.showAct && s.y != null;
+    const isOut = act ? !s.inb : !!(nxt != null && !(s.b80[0] <= nxt && nxt <= s.b80[1]));
+    const low = false;   // 이 목록은 장전 가격이 07:30 범위를 벗어난 종목부터 보여 준다.
+    const ref = act ? s.y : nxt != null ? nxt : s.H, dir = ref > s.b80[1] ? "상승" : "하락";
     const v = act ? s.y : r.pin != null ? r.pin : s.H, amt = r.q > 0 ? r.value * v : null;
     const news = (m.newsBy[s.code] || 0) + (m.briefBy[s.code] || 0);
     const tag = (isOut ? `범위보다 크게 ${dir}` : low ? "믿을 정도 낮음" : r.q > 0 ? `보유 ${num(r.q)}주` : "관심 종목") + (news ? ` · 소식 ${news}` : "");
@@ -730,7 +730,7 @@ function mini4(v, s, dom, mark) {   // mark: 범위 밖으로 판단한 근거 �
     <rect x="${(c - 0.57).toFixed(1)}" y="1" width="1.14" height="12" fill="var(--sub)"/>${mark != null ? `<circle cx="${X(mark).toFixed(1)}" cy="7" r="3.6" fill="var(--card)" stroke="var(--n4-need)" stroke-width="2"/>` : ""}<ellipse cx="${p.toFixed(1)}" cy="7" rx="5.14" ry="4.5" fill="var(--n4-dot)" stroke="var(--card)" stroke-width="1.5"/></svg>`;
 }
 const row4 = (x, tm, dom) => `<button class="n4-row" data-act="s4" data-code="${x.s.code}">${ico4(x.s, tm, 28, x.need)}
-  <span class="n4-nm"><b>${esc(x.s.name)}</b><small class="${x.need ? "need" : ""}">${esc(x.tag)}</small></span>${mini4(x.v, x.s, dom, x.isOut && !x.act && x.g ? x.g.g : null)}
+  <span class="n4-nm"><b>${esc(x.s.name)}</b><small class="${x.need ? "need" : ""}">${esc(x.tag)}</small></span>${mini4(x.v, x.s, dom, x.isOut && !x.act ? x.s.nxt_g : null)}
   <span class="n4-v ${tone(x.amt ?? x.v)}"><b class="num">${pct(x.v)}</b><small class="num">${x.amt == null ? "관심" : won(x.amt)}</small></span><i class="n4-chev">›</i></button>`;
 
 export function acct4Html(m, d, st) {
@@ -810,7 +810,7 @@ export function brief(m, d, st) {
     h += night4Card(m, d);
     h += `<div class="n4-title"><b>${need.length ? `나머지 ${rest.length}종목` : `${watch ? "관심" : "보유"} ${rest.length}종목`}</b><small>누르면 아래에서 자세히 열려요</small></div>${R(rest)}`;
   }
-  h += `<p class="n4-foot">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요. 08:11에는 장전 거래로 예상을 한 번 더 계산해요(2차 예측). 07:30 예상과 크게 달라진 종목은 위로 올려 펼쳐 둬요. 믿을 정도는 8시 장전 흐름이 9시 시가까지 이어질 가능성이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. ${m.account.sample ? "예시 계좌이며 " : ""}투자 권유가 아니에요.<br>${esc(recordLine(d))}</p></div>`;
+  h += `<p class="n4-foot">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요. 08:11에는 08:10까지 마지막 NXT 체결가를 2차 예측으로 써요. 장전 가격 자료가 없는 종목은 07:30 예상을 표시해요. 07:30 예상과 크게 달라진 종목은 위로 올려 펼쳐 둬요. 방향 믿을 정도는 장전 상승·하락 방향이 정규장 시가에서도 같을 추정 확률이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. ${m.account.sample ? "예시 계좌이며 " : ""}투자 권유가 아니에요.<br>${esc(recordLine(d))}</p></div>`;
   return h;
 }
 
@@ -824,7 +824,7 @@ export function s4Sheet(code, m, d, st) {
   const list = order4(rows4(m, st).list, st.f4 || "all"), idx = list.findIndex((x) => x.s.code === code), x = list[idx] || rows4(m, { ...st, hold4: st.hold4 === "watch" ? "own" : "watch" }).list.find((y) => y.s.code === code);
   if (!x) return "";
   const r = x.r, s = r.s, tm = tintMap(m), live = r.pin != null, v = live ? r.pin : s.H, amt = r.q > 0 ? r.value * v : null;
-  const prev = list[idx - 1], next = list[idx + 1], g = st.slot !== "0730" ? s.grade : null, same = m.rows.filter((y) => y.h.q > 0 && grpOf(y.s) === grpOf(s)).length;
+  const prev = list[idx - 1], next = list[idx + 1], g = st.slot !== "0730" ? s.grade : null, nxt = st.slot !== "0730" ? s.nxt_g : null, same = m.rows.filter((y) => y.h.q > 0 && grpOf(y.s) === grpOf(s)).length;
   const avgR = r.h.avg > 0 ? r.h.avg / s.pc - 1 : null, [bg, fg] = tm[grpOf(s)] || TINTS[6];
   return `<div class="grab" data-act="close"><i></i></div>
   <div class="s4-head" data-s4="${code}"><button class="s4-nav" data-act="s4" data-code="${prev ? prev.s.code : ""}" aria-label="이전 종목"${prev ? "" : " disabled"}>‹</button><p>${idx + 1} / ${list.length} · ${SORT4[st.sort4 || "amt"]}</p><button class="s4-nav" data-act="s4" data-code="${next ? next.s.code : ""}" aria-label="다음 종목"${next ? "" : " disabled"}>›</button><button class="s4-x" data-act="close" aria-label="닫기">✕</button></div>
@@ -832,10 +832,10 @@ export function s4Sheet(code, m, d, st) {
     <div class="s4-acct" id="s4acct">${s4acct(m, r)}</div>
     <div class="s4-stock">${ico4(s, tm, 32)}<span class="nm"><b>${esc(s.name)}</b><small>${r.h.q > 0 ? `보유 ${num(r.h.q)}주` : "관심 종목"}</small></span>
       <span class="stepper s4-step${r.changed ? " changed" : ""}" data-stepper="${code}"><button data-step="-1" aria-label="수량 줄이기"${r.q <= 0 ? " disabled" : ""}><img src="${NI}minus.svg" width="12" height="12" alt=""></button><span class="q" data-act="qty" data-code="${code}"><span data-f="q">${num(r.q)}</span><small>주</small></span><button data-step="1" aria-label="수량 늘리기"><img src="${NI}plus.svg" width="12" height="12" alt=""></button></span></div>
-    <p class="s4-lbl">오늘 예상 시가 범위</p>
+    <p class="s4-lbl">예상 시가 · 노란 띠는 07:30 범위</p>
     <div class="s4-big"><b class="num ${tone(v)}" data-f="pct">${live ? "가정 " : ""}${pct2(v)}</b><span data-f="sub">${live ? "가정" : "예상"} ${num(tick(s.pc * (1 + v)))}원 · 어제 ${num(s.pc)}원</span></div>
     ${bandHtml(s, { dom: m.dom, slot: st.slot, showActual: m.showAct, pin: r.pin, avg: avgR })}
-    <div class="s4-badges">${S_PIN(r, s)}${g ? `<button class="b-grade" data-act="info" data-info="grade">믿을 정도 ${g.level} ${"●".repeat(GRADE[g.level][1])}${"○".repeat(3 - GRADE[g.level][1])} <i>ⓘ</i></button>` : ""}<span class="b-grp" style="background:${bg};color:${fg}">${esc(grpOf(s))} 업종 · ${same}종목</span>${x.isOut ? `<span class="b-out">${x.act ? "범위 밖에서 시작" : "07:30 예상보다 크게 " + (g.g > s.b80[1] ? "높음" : "낮음")}</span>` : ""}</div>
+    <div class="s4-badges">${S_PIN(r, s)}${g ? `<button class="b-grade" data-act="info" data-info="grade">방향 믿을 정도 ${gradeText(g)} ${"●".repeat(GRADE[g.level][1])}${"○".repeat(3 - GRADE[g.level][1])} <i>ⓘ</i></button>` : ""}<span class="b-grp" style="background:${bg};color:${fg}">${esc(grpOf(s))} 업종 · ${same}종목</span>${x.isOut ? `<span class="b-out">${x.act ? "범위 밖에서 시작" : "07:30 예상보다 크게 " + (nxt > s.b80[1] ? "높음" : "낮음")}</span>` : ""}</div>
     <hr>
     <div class="s4-amt"><span>예상 금액 변화</span><b class="num ${tone(amt)}" data-f="amt">${amt == null ? "관심" : won(amt)}</b><small data-f4="qb">(${num(r.q)}주 기준)</small></div>
     <span data-f="range" hidden></span><span data-f="was" hidden></span>

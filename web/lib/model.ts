@@ -5,9 +5,9 @@ import { db } from "@/lib/db";
 import tiers from "@/data/tiers.json";
 import { kstNow } from "@/lib/calendar";
 import { appNow } from "@/lib/clock";
-import { checkTime } from "@/lib/marketdays";
+import { checkTime, marketDay } from "@/lib/marketdays";
 import { timeGate } from "@/lib/timegate";
-import { adjustOf, trustOf } from "@/lib/trust";
+import type { DirectionGrade } from "@/lib/trust";
 
 const TIER = tiers as Record<string, number>;
 /** 1: 모델 설계 200종목 · 2: 서비스 대상(설계 밖, 같은 규칙으로 계산) · 3: 서비스 대상 아님 */
@@ -20,10 +20,8 @@ export type Card = {
 };
 export type CardStock = {
   code: string; name: string; pc: number; h: number; l80: number; u80: number; l90: number; u90: number;
-  grade: "높음" | "보통" | "낮음" | null;   // 믿을 정도 = 8시 장전 흐름(오름·내림)이 9시 시가까지 이어질 가능성(카드 grade_0811, 설계서 D08)
-  gap: "높음" | "보통" | "낮음" | null;     // 07:30 예상과 08:11 2차 예측이 가까운 정도(lib/trust.ts, E107). 낮음 = '07:30 예상과 크게 달라짐' 표시
+  grade: DirectionGrade | null;   // 믿을 정도 = 8시 장전 흐름(오름·내림)이 9시 시가까지 이어질 가능성(카드 grade_0811, 설계서 D08)
   p: number | null; nxtG: number | null; earn: boolean;
-  hb: number | null; lb: number | null; ub: number | null;   // 08:11 보정 예상 시가·보정 범위(장전 거래가 없으면 null)
 };
 export type CheckRow = { code: string; open: number; y: number; in80: boolean; in90: boolean };
 export type Check = { scored: number; inBand80: number; inBand90: number; maeH: number; checkedAt: string | null };   // checkedAt: 채점을 마친 시각 HH:MM(지난 기록은 null)
@@ -94,14 +92,16 @@ export async function dayModel(t?: string): Promise<DayModel | null> {
     pool.query(`select s.code, s.open, s.y, s.in80, s.in90 from model.check_stocks s join model.checks c on c.t = s.t and c.slot = s.slot
                 where s.t = $1 and s.slot = $2 and ${CHECK_GATE.replace(/checked_at/g, "c.checked_at")}`, gate),
   ]);
+  const hasPremarketSlot = card.slot === "0811" && (marketDay(day)?.premarket ?? true);
   for (const r of st.rows) {
     const caut = (r.cautions as { kind: string }[]) ?? [];
-    const h = Number(r.h), l80 = Number(r.l80), u80 = Number(r.u80), g = num(r.nxt_g);
-    const adj = adjustOf(h, l80, u80, g);
+    const h = Number(r.h), l80 = Number(r.l80), u80 = Number(r.u80);
+    const raw = hasPremarketSlot ? num(r.nxt_g) : null;
+    const g = raw != null && Number.isFinite(raw) ? raw : null;
+    const directional = g != null && g !== 0;
     out.stocks.set(r.code, {
       code: r.code, name: r.name, pc: Number(r.pc), h, l80, u80, l90: Number(r.l90), u90: Number(r.u90),
-      grade: r.grade_level ?? null, gap: trustOf(h, l80, u80, g), p: num(r.grade_p), nxtG: g, earn: caut.some((c) => c.kind === "e_earn"),
-      hb: adj?.hb ?? null, lb: adj?.lb ?? null, ub: adj?.ub ?? null,
+      grade: directional ? r.grade_level ?? null : null, p: directional ? num(r.grade_p) : null, nxtG: g, earn: caut.some((c) => c.kind === "e_earn"),
     });
   }
   if (ck.rows[0]) {

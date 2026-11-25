@@ -54,12 +54,12 @@ def main():
         if o is None:
             continue
         y = o / s["base_close"]["value"] - 1
-        g = s["grade_0811"]
+        grade = s.get("grade_0811") or {}
         rows.append(dict(code=s["code"], name=s["name"], pc=s["base_close"]["value"], open=o, y=y, H=s["H"],
                          L80=s["band80"][0], U80=s["band80"][1], L90=s["band90"][0], U90=s["band90"][1],
                          in80=s["band80"][0] <= y <= s["band80"][1], in90=s["band90"][0] <= y <= s["band90"][1],
                          earn=any(c["kind"] == "e_earn" for c in s["cautions"]),
-                         level=None if g is None else g["level"], p=None if g is None else g["p"], g=None if g is None else g["nxt_g"]))
+                         level=grade.get("level"), p=grade.get("p"), g=s.get("nxt_g", grade.get("nxt_g"))))
     d = pd.DataFrame(rows)
     x = card["market"]["x"]
     d["err_H"] = (d.y - d.H).abs() * 100

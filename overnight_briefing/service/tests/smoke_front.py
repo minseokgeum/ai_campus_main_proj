@@ -20,21 +20,32 @@ DRAFT = [{"code": "000660", "name": "SK하이닉스", "q": 12, "avg": None, "in_
          {"code": "105840", "name": "우진", "q": 50, "avg": 9000, "in_model": False}]
 bad, n = [], 0
 
-# 08:11 해석 규칙(E107): 서비스 복사본(core/trust08.py)이 정본(model/workbench/trust_0811.py)과 같은 숫자·같은 결과인지
+# 등급과 무관하게 관측한 NXT 값을 쓰고, 기존 노란띠만 남긴다. 이전·새 카드 형식을 함께 점검한다.
 import importlib.util
-from pathlib import Path as _P
-_root = _P(__file__).resolve().parents[2]
-_spec = importlib.util.spec_from_file_location("trust_0811", _root / "model/workbench/trust_0811.py"); _canon = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_canon)
-sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
-from core import trust08 as _copy
-n += 1
-if (tuple(_copy.CUTS), _copy.W, _copy.K) != (tuple(_canon.CUTS), _canon.W, _canon.K):
-    bad.append("trust08 상수가 정본과 다름")
-for _H, _L, _U, _g in ((0, -.02, .02, .005), (0, -.02, .02, .015), (.01, -.01, .03, -.02), (-.03, -.05, -.01, -.031)):
-    n += 1
-    _c, _k = _copy.t08(_H, _L, _U, _g), _canon.adjust(_H, _L, _U, _g)
-    if _c["trust"] != _canon.trust(_H, _L, _U, _g) or abs(_c["Hb"] - _k[0]) > 1e-6 or abs(_c["adj"][0] - _k[1]) > 1e-6:
-        bad.append(f"trust08 결과가 정본과 다름: {(_H, _L, _U, _g)}")
+from pathlib import Path
+_root = Path(__file__).resolve().parents[2]
+_spec = importlib.util.spec_from_file_location("trust_0811", _root / "model/workbench/trust_0811.py")
+_canon = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_canon)
+sys.path.insert(0, str(_root / "service"))
+from core.trust08 import t08
+
+for level in ("높음", "보통", "낮음", None):
+    for gap in (0.031, -0.007, 0.0, None):
+        grade = dict(level=level, nxt_g=gap) if level else None
+        stock = dict(H=0.01, band80=[-0.02, 0.04], grade_0811=grade)
+        if level is None:
+            stock["nxt_g"] = gap
+        result = _canon.annotate(stock)
+        view = t08(stock["H"], *stock["band80"], gap)
+        n += 1
+        if result["band80"] != stock["band80"] or result["t08"]["Hb"] != gap or result["t08"]["band_adj"] is not None:
+            bad.append(("08:11 카드", level, gap))
+        if gap is None:
+            if view is not None:
+                bad.append(("장전 가격 자료 없음", view))
+        elif view["Hb"] != gap or view["adj"] is not None or view["trust"] != result["t08"]["trust"]:
+            bad.append(("08:11 서비스", level, gap, view))
 
 
 def wait(pg, T, slot, acct, tab):

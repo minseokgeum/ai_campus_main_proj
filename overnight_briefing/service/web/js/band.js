@@ -20,26 +20,24 @@ export function bandHtml(s, o) {
   const x = (v, dx) => posCss(v, dom, dx);
   const w = (a, b) => `calc((100% - ${2 * G}px) * ${(frac(b, dom) - frac(a, dom)).toFixed(5)})`;
   const [lo, hi] = s.b80, [lo9, hi9] = s.b90;
-  const g = slot !== "0730" && s.grade ? s.grade.g : null;
+  const g = slot !== "0730" ? s.nxt_g : null;
   const act = o.showActual && s.y != null ? s.y : null;
   const out = act != null && !(lo <= act && act <= hi);
   // 실제 시가·장전 거래 표식이 끝 숫자 자리에 오면 숫자를 표식 바깥으로 민다
   const mk = act != null ? act : g;
   const loAt = mk != null && mk < lo && mk > lo - zone ? [mk, -9] : [lo, 0], hiAt = mk != null && mk > hi && mk < hi + zone ? [mk, 9] : [hi, 0];
   const near = (v) => (v == null ? "" : (Math.abs(v - s.H) < 0.25 * width ? " near" : "") + (v > hi && v < hi + zone ? " dim-hi" : "") + (v < lo && v > lo - zone ? " dim-lo" : ""));
-  let h = `<div class="band${o.pin != null ? " pinned" + near(o.pin) : ""}" data-band="${s.code}" data-h="${s.H}" data-lo="${lo}" data-hi="${hi}" style="--g:${G}px" role="img" aria-label="${esc(s.name)} 예상 범위 ${pct(lo)}에서 ${pct(hi)}, 예상 시가 ${pct(s.H)}">`;
+  let h = `<div class="band${o.pin != null ? " pinned" + near(o.pin) : ""}" data-band="${s.code}" data-h="${s.H}" data-lo="${lo}" data-hi="${hi}" style="--g:${G}px" role="img" aria-label="${esc(s.name)} 07:30 예상 범위 ${pct(lo)}에서 ${pct(hi)}, 예상 시가 ${pct(s.H)}">`;
   h += `<i class="track"></i>${o.wide ? `<i class="f90" style="left:${x(lo9)};width:${w(lo9, hi9)}"></i>` : ""}<i class="f80" style="left:${x(lo)};width:${w(lo, hi)}"></i>`;
   h += `<i class="zero" style="left:${x(0)}"></i>`;
-  if (s.adj && slot === "0811" && !o.showActual) {   // 08:11 보정 범위(청록 테두리)와 07:30 예상 자리(회색 점), E107
-    h += `<i class="fadj" style="left:${x(s.adj[0])};width:${w(s.adj[0], s.adj[1])}"></i>`;
-    if (s.H0730 != null) h += `<i class="h730" style="left:${x(s.H0730)}"></i>`;
-  }
+  if (s.H0730 != null && slot === "0811" && !o.showActual)
+    h += `<i class="h730" style="left:${x(s.H0730)}" title="07:30 예상"></i>`;
   if (o.avg != null && isFinite(o.avg)) {
     if (o.avg >= dom[0] && o.avg <= dom[1]) h += `<i class="avg" style="left:${x(o.avg)}"></i><span class="avg-l" style="left:${x(o.avg)}">평단</span>`;
   }
   h += `<span class="end lo ${tone(lo)}" style="left:${x(loAt[0], loAt[1])}">${pct(lo)}</span><span class="end hi ${tone(hi)}" style="left:${x(hiAt[0], hiAt[1])}">${pct(hi)}</span>`;
   h += `<i class="dot" style="left:${x(s.H)}"></i><span class="dot-l" style="left:${x(s.H)}">${pct(s.H)}</span>`;
-  if (g != null && act == null) h += `<span class="mk" style="left:${x(g)}"><i></i>장전 ${pct(g)}</span>`;      // 개장 뒤에는 실제 시가 표식만 두고, 장전 거래는 아래 흐름 줄에 적는다
+  if (g != null && act == null && g !== s.H) h += `<span class="mk" style="left:${x(g)}"><i></i>장전 ${pct(g)}</span>`;      // 개장 뒤에는 실제 시가 표식만 두고, 장전 거래는 아래 흐름 줄에 적는다
   if (act != null) h += `<i class="act${out ? " out" : ""}" style="left:${x(act)}"></i><span class="mk actl${out ? " out" : ""}" style="left:${x(act)}"><i></i>실제 ${pct(act)}</span>`;
   if (o.pin != null) h += `<i class="scrub" style="left:${x(o.pin)}"></i><span class="bubble" style="left:${x(o.pin)}">${pct(o.pin)}에 열리면</span>`;
   return h + "</div>";

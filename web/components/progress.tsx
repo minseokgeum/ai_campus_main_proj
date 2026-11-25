@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sheet } from "@/components/sheet";
 
-const stepsOf = (chk: string) => [["06:00", "야간 마감"], ["07:30", "예상 범위 고정"], ["08:11", "믿을 정도 확인"], [chk, "시가 채점"]] as const;
+const stepsOf = (chk: string) => [["06:00", "야간 마감"], ["07:30", "예상 범위 고정"], ["08:11", "장전 가격·방향 등급"], [chk, "시가 채점"]] as const;
 
 export function ProgressSheet({ stage, slotTitle, slotSub, details, chk = "09:05" }: {
   stage: 0 | 1 | 2 | 3; slotTitle: string; slotSub: string; details: [string, string, boolean][];   // [제목, 설명, 끝남]

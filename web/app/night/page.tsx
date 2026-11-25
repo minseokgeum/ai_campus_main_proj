@@ -77,7 +77,7 @@ function dayInfo(t: string, checkedAt: string | null = null) {
 const toB = (r: Row, nNews: number, avg: number | null = null, v?: { neg: number; pos: number; neu: number }): BRow => ({
   code: r.code, name: r.name, sector: r.sector, tier: r.tier, kind: r.kind, side: r.side, qty: r.qty,
   pc: r.s?.pc ?? null, h: r.s?.h ?? null, l80: r.s?.l80 ?? null, u80: r.s?.u80 ?? null, l90: r.s?.l90 ?? null, u90: r.s?.u90 ?? null,
-  grade: r.s?.grade ?? null, gap: r.s?.gap ?? null, hb: r.s?.hb ?? null, lb: r.s?.lb ?? null, ub: r.s?.ub ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
+  grade: r.s?.grade ?? null, p: r.s?.p ?? null, nxtG: r.s?.nxtG ?? null, earn: !!r.s?.earn, y: r.c?.y ?? null, open: r.c?.open ?? null, in80: r.c?.in80 ?? null, nNews, avg, v,
 });
 
 export default async function Night({ searchParams }: { searchParams: Promise<Q> }) {
@@ -148,6 +148,8 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   const news = byStock(articles, [...new Set([...items.map((x) => x.code), ...holdItems.map((x) => x.code)])]);
   const i = dates.indexOf(m.t);
   const graded = card.slot === "0811" && (marketDay(m.t)?.premarket ?? true);   // 개장 전 거래가 없는 날(수능일·새해 첫날)의 08:11 카드는 등급이 없어 07:30과 같다
+  const after0811 = m.t < today || now.hour * 100 + now.minute >= 811;
+  const hasUpdate = holdRows.some((r) => r.s?.nxtG != null);
   const noGrade = graded && ![...m.stocks.values()].some((s) => s.grade);   // 08:11 카드인데 그날 장전 거래 자료가 없어 믿을 정도를 못 낸 날
   const grades = { 높음: 0, 보통: 0, 낮음: 0, 대상아님: holdRows.filter((r) => r.kind === "notservice").length };
   for (const r of holdRows) if (r.s?.grade) grades[r.s.grade]++;
@@ -181,9 +183,9 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   const progress = phase === "post"
     ? { t: `${chk} 실제 시가로 채점 완료`, s: `${nScored}종목 중 ${nIn}종목이 범위 안에서 시작 · 기록 저장됨` }
     : !di.premarket ? { t: "07:30 예상 범위 공개", s: `개장 전 거래가 없는 날이라 08:11 업데이트 없음 · ${next} 채점` }
-    : noGrade ? { t: "08:11 믿을 정도를 내지 못했어요", s: `그날 장전 거래 자료가 없어요 · ${next} 채점` }
-      : graded ? { t: "08:11 믿을 정도 반영 완료", s: `높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음} · ${next} 채점` }
-      : { t: "07:30 예상 범위 공개", s: "다음 08:11 장전 거래로 믿을 정도 반영" };
+    : noGrade ? { t: "08:11 방향 등급 미산출", s: `산출된 방향 등급이 없어요 · ${next} 채점` }
+      : graded ? { t: "08:11 방향 유지 등급", s: `높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음} · ${next} 채점` }
+      : { t: "07:30 예상 범위 공개", s: "08:11에 장전 가격과 방향 등급 공개" };
   const x = m.night?.last ?? card.x;
   const banners: ("mon" | "hol" | "us" | "nonight")[] = [];
   if (afterHoliday(m.t)) banners.push("hol");
@@ -205,7 +207,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
   </>;
   // 필터를 걸면 위 묶음 이름도 그 필터로(피그마 462:8306 '범위 밖 종목 2')
   const fTitle = f === "out" ? { title: `범위 밖 종목 ${nOut}`, sub: phase === "post" ? "실제 시가가 예상 범위를 벗어난 종목이에요" : "장전 거래 가격이 예상 범위를 벗어난 종목이에요" }
-    : f === "low" ? { title: `믿을 정도 낮은 종목 ${nLow}`, sub: "장전 거래가 보합 근처라 오를지 내릴지 바뀔 수 있어요" } : null;
+    : f === "low" ? { title: `방향 유지 등급 낮은 종목 ${nLow}`, sub: "전일 종가 대비 장전 방향이 시가까지 이어질 추정 확률이 75% 미만이에요" } : null;
 
   return (
     <Shell>
@@ -222,9 +224,9 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
 
       <ProgressSheet stage={stage} details={progressDetails(stage, grades, m.check ? { scored: nScored, inN: nIn } : null, di)} chk={m.check ? chk : next} slotTitle={progress.t} slotSub={progress.s} />
 
-      <NightBoard t={m.t} phase={phase} view={view} sortLabel={SORT_LABEL(sp.o)} initialOpen={sp.open}
+      <NightBoard after0811={after0811} t={m.t} phase={phase} view={view} sortLabel={SORT_LABEL(sp.o)} initialOpen={sp.open}
         rows={rows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))} holdRows={holdRows.map((r) => toB(r, nNews(r.code), avgOf.get(r.code) ?? null, verdictsOf(news.get(r.code) ?? [], r.code)))}
-        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : graded && !noGrade ? "오늘 시가 예상 · 08:11 2차 예측" : "오늘 시가에 예상되는 내 주식 변화"}
+        accountTitle={phase === "post" ? "오늘 시가로 실제 바뀐 내 주식" : partial ? `오늘 시가 예상 · ${acct.n}종목 기준` : graded && hasUpdate ? "오늘 시가 예상 · 08:11 장전 가격 반영" : "오늘 시가에 예상되는 내 주식 변화"}
         accountHead={<><MaskToggle /><SectorSheet rows={holdRows} acct={acct} count={pf.holdings.length} label={label} /></>}
         accountBelow={<>
           {sectors.length ? (
@@ -278,7 +280,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
                 {sectors.map((g) => <Link key={g.sector} href={nightHref(base, { f: `s:${g.sector}` })} className={f === `s:${g.sector}` ? "on" : ""}>{g.sector} {g.list.length}</Link>)}
               </div>
               {f === "t3" || f === "t2" ? <div className="quiet">{f === "t3" ? "서비스 대상(코스피 전체 + 코스닥150) 밖의 종목은 예상 시가를 계산하지 않아요." : "모델을 설계할 때 쓰지 않은 종목이에요. 같은 규칙으로 계산했어요."} <NotServiceHelp label="자세히" /></div> : null}
-              {phase === "pre" && graded && !noGrade ? <p className="gline"><span className="tq">믿을 정도<GradeHelp /></span> 높음 {grades.높음} · 보통 {grades.보통} · 낮음 {grades.낮음}</p> : null}
+              {phase === "pre" && graded && !noGrade ? <p className="gline"><span className="tq">방향 유지 등급<GradeHelp /></span> 높음 {grades.높음} · 보통 {grades.보통} · 낮음 {grades.낮음}</p> : null}
               {!rows.length ? <p className="state">조건에 맞는 종목이 없어요. <Link href={nightHref(base, { f: undefined })} className="addlink">필터 해제</Link></p> : null}
             </>
           )}
@@ -287,7 +289,7 @@ export default async function Night({ searchParams }: { searchParams: Promise<Q>
           ? { title: `범위 밖에서 시작한 종목 ${nAtt}`, sub: "예상 범위를 벗어난 실제 시가 · 기록 탭에 저장됐어요" }
           : { title: `확인이 필요한 종목 ${nAtt}`, sub: graded ? `07:30 예상과 크게 달라진 종목 ${nOut} — 눌러서 자세히 보세요` : `범위 밖 ${nOut} — 눌러서 자세히 보세요` }) : null)}
         rest={{ title: nAtt ? `나머지 ${rows.length - nAtt}종목` : `${view === "hold" ? "보유" : "관심"} 종목`, sub: "누르면 아래에서 자세히 열려요" }}
-        footer={items.length ? <p className="fine">예상 범위는 지난 비슷한 아침에 실제 시가가 들어온 정도를 바탕으로 계산해요(80% 범위). 08:11에는 장전 거래로 예상을 한 번 더 계산해요(2차 예측). 07:30 예상과 크게 달라진 종목은 위로 올려 펼쳐 둬요. 믿을 정도는 8시 장전 흐름이 9시 시가까지 이어질 가능성이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
+        footer={items.length ? <p className="fine">07:30 노란 띠는 실제 시가가 들어올 것으로 예상한 80% 범위예요. 08:11에는 08:10까지 확인한 마지막 NXT 가격을 2차 예상 시가로 써요. 장전 가격 자료가 없는 종목은 07:30 예상을 유지해요. 등급 옆 %는 전일 종가 대비 장전 등락 방향이 시가까지 이어질 추정 확률이에요. 수량을 바꾸면 이 화면의 예상 금액만 다시 계산해요. 모델 추정이며 투자 권유가 아니에요.</p> : null}
       />
     </Shell>
   );

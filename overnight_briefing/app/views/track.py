@@ -201,7 +201,8 @@ def day_detail() -> None:
         seg = data.segments()
         if seg is not None:
             full = full.merge(seg, on="code", how="left")
-        cols = {"name": "종목", "업종": "업종", "H": "예상", "L80": "띠 아래", "U80": "띠 위", "y": "실제", "결과": "결과", "nxt_g": "08:10 장전", "grade": "08:11 등급"}
+        full["grade"] = [ui.grade_text(level, p) for level, p in zip(full.grade, full.p)]
+        cols = {"name": "종목", "업종": "업종", "H": "예상", "L80": "띠 아래", "U80": "띠 위", "y": "실제", "결과": "결과", "nxt_g": "08:10 장전", "grade": "08:11 방향 등급 (추정 확률)"}
         show = full[[c for c in cols if c in full.columns]].rename(columns=cols)
         for c in ("예상", "띠 아래", "띠 위", "실제", "08:10 장전"):
             if c in show:

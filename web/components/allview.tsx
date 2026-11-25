@@ -8,7 +8,8 @@ import { Avatar, StockNews } from "@/components/ui";
 import { MaskToggle } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { FuturesCard } from "@/components/futcard";
-import { FuturesHelp } from "@/components/helps";
+import { gradeText } from "@/lib/trust";
+import { FuturesHelp, GradeHelp } from "@/components/helps";
 import { P, type Row } from "@/lib/night";
 import { AllPlay, type PlayCard } from "@/components/allplay";
 import { impactFor, verdictsOf, type Article } from "@/lib/news";
@@ -20,14 +21,13 @@ import type { CardStock } from "@/lib/model";
 import type { Reason } from "@/lib/summary";
 import type { Ev } from "@/lib/events";
 
-const DOTS: Record<string, string> = { 높음: "●●●", 보통: "●●○", 낮음: "●○○" };
-
 type Props = {
   t: string;                 // 카드 날짜(YYYYMMDD). 바꾼 수량 저장 칸 이름(밤사이 종목 창과 같은 칸)
   rows: Row[];               // 장전: 예상 · 장후: 실제(채점)
   watchRows: Row[];          // 관심 종목(수량 0, 2026-11-24)
   preRows: Row[];            // 장전 예상(장후에도 '예상' 칸과 띠에 씀)
   post: boolean;             // 채점 뒤인가
+  after0811: boolean;        // 시연 중인 날짜·시각의 08:11 경과 여부
   slot0811: boolean;         // 08:11 카드(장전 거래 반영)인가
   steps: { t: string; label: string; done: boolean; at?: string }[];   // at: 누르면 그 시점으로(시연 계정만)
   news: Map<string, Article[]>;   // 종목코드 → 그 종목 기사
@@ -52,7 +52,7 @@ const NOTE = "예상 가격대는 이 소식을 넣지 않고 계산했어요";
 function bandWords(s: CardStock, x: number | null, y: number | null): string {
   const lo = s.l80, hi = s.u80, H = s.h;
   const k = hi <= 0 ? 0 : lo >= 0 ? 1 : H <= -0.003 ? 2 : H >= 0.003 ? 3 : 4;
-  const head = x == null ? "예상 가격대는" : `밤사이 야간선물(${pct(P(x))})을 반영한 예상 가격대는`;
+  const head = x == null ? "07:30 예상 가격대는" : `밤사이 야간선물(${pct(P(x))})을 반영한 07:30 예상 가격대는`;
   if (y != null) {
     const past = ["전체가 어제 종가보다 아래였고", "전체가 어제 종가보다 위였고", "어제 종가보다 아래쪽으로 치우쳐 있었고", "어제 종가보다 위쪽으로 치우쳐 있었고", "어제 종가를 가운데 두고 위아래로 비슷했고"][k];
     return `${head} ${past}, 9시에는 ${lo <= y && y <= hi ? "예상대로" : y > hi ? "예상보다 높게" : "예상보다 낮게"} 시작했어요(${pct(P(y))}).`;
@@ -111,11 +111,11 @@ function checkList(p: Props) {
     const s = r.s!, g = pre ? s.nxtG : null, w = val(r) / sv;
     let why = "", strong = false, nxo = false;
     if (post) { if (r.c && !(s.l80 <= r.c.y && r.c.y <= s.u80)) { why = `예상보다 ${r.c.y > s.u80 ? "높게" : "낮게"} 시작했어요`; strong = true; } }
-    else if (g != null && !(s.l80 <= g && g <= s.u80)) { why = `개장 전 거래가 예상보다 ${g > s.u80 ? "높아요" : "낮아요"}`; strong = true; nxo = true; }
+    else if (g != null && !(s.l80 <= g && g <= s.u80)) { why = `장전 가격은 07:30 예상 범위 ${g > s.u80 ? "위" : "아래"}예요`; strong = true; nxo = true; }
     if (!why && s.earn) { why = "어제 실적 공시"; strong = true; }
     if (!why && !post && anyG && w >= 0.1) {
-      if (g != null && s.grade === "낮음") why = "믿을 정도 낮음 · 장전 거래가 보합 근처";
-      else if (g == null) why = nxtNone(r.code) ? "평소 개장 전 거래가 없는 종목 · 새 숫자는 08:50 예상체결가부터" : "개장 전 거래가 없어 07:30 예상 그대로예요";
+      if (g != null && s.grade === "낮음") why = gradeText(s.grade, s.p, g, true);
+      else if (g == null) why = "장전 가격 미확인 · 07:30 예상 유지";
     }
     if (why) ck.push({ r, why, strong, w, nxo });
   }
@@ -142,8 +142,11 @@ function FirstLook(p: Props & { shown: Set<string> }) {
   // ① 내 돈
   const byAmt = [...held].sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!)), top = byAmt[0], n = held.length;
   const done = post && !!top.c;
-  const dn = held.filter((r) => (r.pct ?? r.s!.h) < 0).length;
-  const dirTxt = done ? "" : dn === n ? `${n}종목 모두 어제보다 낮게 시작할 것으로 보여요.` : dn === 0 ? `${n}종목 모두 어제보다 높게 시작할 것으로 보여요.` : `${n}종목 중 ${dn}종목은 낮게, ${n - dn}종목은 높게 보여요.`;
+  const dn = held.filter((r) => r.pct! < 0).length;
+  const up = held.filter((r) => r.pct! > 0).length;
+  const flat = n - dn - up;
+  const directions = [dn && `하락 ${dn}종목`, up && `상승 ${up}종목`, flat && `보합 ${flat}종목`].filter(Boolean);
+  const dirTxt = done ? "" : `전일 종가 대비 시가 예상은 ${directions.join(" · ")}이에요.`;
   const [lo, hi] = band(top);
   const t1 = done ? `${jo(top.name, "이", "가")} 가장 크게 움직였어요 · ${swon(top.amount!)}` : `${jo(top.name, "이", "가")} 가장 크게 움직여요 · 예상 ${swon(top.amount!)}`;
   const s1 = done ? `07:30 예상 ${swon(h730(top))}, 노란 막대(${swon(lo)} ~ ${swon(hi)}) ${top.s!.l80 <= top.c!.y && top.c!.y <= top.s!.u80 ? "안에서" : "밖에서"} 시작했어요.`
@@ -153,12 +156,10 @@ function FirstLook(p: Props & { shown: Set<string> }) {
   const ic2 = post ? "9시" : p.noPre ? "개장" : "8시";
   let b2: React.ReactNode;
   if (ck.length) {
-    const nxr = ck.filter((x) => x.nxo).map((x) => x.r);
-    const tot = held.reduce((a, r) => a + Math.abs(h730(r)), 0);
-    const sh = tot ? Math.round((100 * nxr.reduce((a, r) => a + Math.abs(h730(r)), 0)) / tot) : 0;
+    const hasUpdate = !post && p.slot0811 && held.some((r) => r.s!.nxtG != null);
     const h730sum = held.reduce((a, r) => a + h730(r), 0), hsum = held.reduce((a, r) => a + r.amount!, 0);
-    const why = nxr.length ? `${jo(nxr.map((r) => r.name).join("·"), "은", "는")} 개장 전 거래가 07:30 예상과 크게 달라요(아침 예상 금액 변화의 ${sh}%). 08:11 계좌 예상은 개장 전 거래로 다시 계산했어요(2차 예측: 07:30 ${swon(h730sum)} → ${swon(hsum)}). 이런 종목은 오차가 평소보다 클 수 있어 주의해서 보세요.`
-      : post ? "예상 가격대 밖에서 시작한 종목이에요." : "믿을 정도가 낮으면(장전 거래가 보합 근처) 시작가가 장전 거래와 다른 방향으로 열리는 날이 많았어요.";
+    const why = hasUpdate ? `08:11 기준으로 계좌 시가 예상을 업데이트했어요. 07:30 ${swon(h730sum)} → 08:11 ${swon(hsum)}.`
+      : post ? "실제 시가와 07:30 예상 범위, 실적 공시를 확인하세요." : "아래 종목에 표시된 이유를 확인하세요.";
     b2 = <><b>확인할 표시 {ck.length}종목</b><small>{why + evTxt}</small>
       {ck.slice(0, 3).map((x) => (
         <a key={x.r.code} className="mini" href={`#ac-${x.r.code}`}><span><b>{x.r.name}</b> <span className={x.strong ? "lo" : ""}>{x.why}</span></span>
@@ -167,13 +168,13 @@ function FirstLook(p: Props & { shown: Set<string> }) {
       {ck.length > 3 ? <small className="fl-more">{ck.slice(3).map((x) => x.r.name).join("·")} 더</small> : null}</>;
   } else if (post) {
     b2 = <><b>시작가가 나온 {held.filter((r) => r.c).length}종목 모두 예상대로 시작했어요</b><small>{"아침 예상 가격대 안에서 시작했다는 뜻이에요. 날마다의 결과는 '기록'에 쌓여요." + evTxt}</small></>;
-  } else if (!p.slot0811 && !p.noPre) {
+  } else if (!p.after0811 && !p.noPre) {
     const top2 = [...held].sort((a, b) => Math.abs(h730(b)) - Math.abs(h730(a))).slice(0, 2), nx2 = top2.filter((r) => !nxtNone(r.code)), nn = top2.filter((r) => nxtNone(r.code));
     const nm = (rs: Row[]) => rs.map((r) => r.name).join("·");
-    const t = nx2.length ? `08:11에 다시 볼 것: ${nm(nx2)}` : `08:50에 다시 볼 것: ${nm(nn)}`;
+    const t = nx2.length ? `08:11에 다시 볼 것: ${nm(nx2)}` : `장전 가격 확인: ${nm(nn)}`;
     const sub = (nn.length && nx2.length ? "예상 금액 변화가 가장 큰 두 종목 가운데 개장 전 거래가 있는 종목이에요." : `예상 금액 변화가 가장 큰 ${top2.length > 1 ? "두 종목" : "종목"}이에요.`)
-      + (nx2.length ? " 08:11 화면에서는 개장 전 거래가 노란 막대 밖인 종목과 거래가 없는 종목을 이 칸 맨 위에 나눠 보여 드려요." : "")
-      + (nn.length ? ` ${jo(nm(nn), "은", "는")} 최근 ${p.nxtHist.get(nn[0].code)?.[1] ?? 0}거래일 동안 개장 전 거래가 없었던 종목이라, 새 숫자는 08:50 거래소 예상체결가부터 나와요.` : "");
+      + (nx2.length ? " 08:11 화면에서는 개장 전 거래가 노란 막대 밖인 종목과 장전 가격 자료가 없는 종목을 표시해요." : "")
+      + (nn.length ? ` ${jo(nm(nn), "은", "는")} 최근 ${p.nxtHist.get(nn[0].code)?.[1] ?? 0}거래일 동안 08:10 장전 가격 자료가 없었어요.` : "");
     b2 = <><b>{t}</b><small>{sub + evTxt}</small></>;
   } else if (p.noPre) {
     b2 = <><b>오늘은 개장 전 거래가 없어요</b><small>{`개장은 ${p.openAt}이에요. 07:30 예상이 개장 전 마지막 숫자예요.` + evTxt}</small></>;
@@ -182,9 +183,9 @@ function FirstLook(p: Props & { shown: Set<string> }) {
     const h730s = held.reduce((a, r) => a + h730(r), 0), hs = held.reduce((a, r) => a + (r.amount ?? 0), 0);
     const mix = ["높음", "보통", "낮음"].map((k) => (lv(k) ? `${k} ${lv(k)}` : "")).filter(Boolean).join(" · ");
     const noneR = held.filter((r) => r.s!.nxtG == null);
-    const noneTxt = !noneR.length ? "" : noneR.every((r) => nxtNone(r.code)) ? ` ${jo(noneR.map((r) => r.name).join("·"), "은", "는")} 평소에도 개장 전 거래가 없는 종목이라 새 숫자는 08:50 거래소 예상체결가부터예요.` : ` 개장 전 거래가 없던 ${noneR.length}종목은 07:30 예상 그대로예요.`;
-    b2 = gr.length ? <><b>개장 전 거래가 있던 {gr.length}종목 모두 예상대로예요</b><small>{`아침 예상 가격대 안에서 거래되고 있어요. 믿을 정도(8시 흐름이 9시까지 이어질 가능성): ${mix}. 08:11 2차 예측으로 다시 계산했어요(07:30 ${swon(h730s)} → ${swon(hs)}).${noneTxt}` + evTxt}</small></>
-      : <><b>개장 전 거래가 있었던 종목이 없어요</b><small>{"07:30 예상 그대로예요." + evTxt}</small></>;
+    const noneTxt = noneR.length ? ` 장전 가격 미확인 ${noneR.length}종목은 07:30 예상을 유지했어요.` : "";
+    b2 = gr.length ? <><b>장전 가격을 확인한 {gr.length}종목 모두 07:30 범위 안이에요</b><small>{`08:11 기준으로 계좌 시가 예상을 업데이트했어요. 07:30 ${swon(h730s)} → 08:11 ${swon(hs)}.${mix ? ` 방향 유지 등급은 ${mix}예요.` : ""}${noneTxt}` + evTxt}</small></>
+      : <><b>확인된 장전 가격 자료가 없어요</b><small>{"07:30 예상 그대로예요." + evTxt}</small></>;
   }
 
   // ③ 이어진 소식: 회사 자체 → 거래 상대 → 그 밖(제품·업종), 같으면 보유 금액 큰 순. 한 종목에 1건, 최대 2건
@@ -237,7 +238,7 @@ export function AllView(p: Props) {
       s, c: r.c, pct: r.pct ?? s.h, nxt, y: p.post ? r.c?.y ?? null : null,
       icon: <Avatar name={r.name} size={30} />,
       chips: <>
-        {p.slot0811 && s.grade ? <span className="g">믿을 정도 {s.grade} {DOTS[s.grade]}</span> : <span className="n">믿을 정도는 08:11에 나와요</span>}
+        <span className={s.grade ? "g" : "n"}>{gradeText(s.grade, s.p, s.nxtG, p.after0811)} <GradeHelp /></span>
         {vd.neg || vd.pos ? <span className="n">{vd.neg ? `부정 ${vd.neg}` : ""}{vd.neg && vd.pos ? " · " : ""}{vd.pos ? `긍정 ${vd.pos}` : ""}</span> : <span className="n">{nArt ? `소식 ${nArt}건` : "소식 없음"}</span>}
         {s.earn ? <span className="w">어제 실적 공시</span> : null}
       </>,
@@ -245,10 +246,10 @@ export function AllView(p: Props) {
         const y = r.c.y, g = s.nxtG, inb = s.l80 <= y && y <= s.u80;
         return (
           <p className="ac-step">
-            <span>예상 <b style={{ color: signColor(s.h) }}>{pct(P(s.h))}</b></span><span aria-hidden>→</span>
-            {g != null ? <><span>개장 전 <b style={{ color: signColor(g) }}>{pct(P(g))}</b></span><span aria-hidden>→</span></> : null}
+            <span>07:30 예상 <b style={{ color: signColor(s.h) }}>{pct(P(s.h))}</b></span><span aria-hidden>→</span>
+            {g != null ? <><span>08:11 2차 예상 <b style={{ color: signColor(g) }}>{pct(P(g))}</b></span><span aria-hidden>→</span></> : null}
             <span>실제 <b style={{ color: signColor(y) }}>{pct(P(y))}</b></span>
-            <em className={inb ? "in" : "out"}>{inb ? "예상대로" : y > s.u80 ? "예상보다 높게" : "예상보다 낮게"}</em>
+            <em className={inb ? "in" : "out"}>{inb ? "07:30 범위 안" : y > s.u80 ? "07:30 범위 위" : "07:30 범위 아래"}</em>
           </p>
         );
       })() : nxt != null ? (() => {   // 08:11: 07:30 예상 → 08:10 개장 전 거래
@@ -257,13 +258,12 @@ export function AllView(p: Props) {
           <>
             <p className="ac-step">
               <span>07:30 예상 <b style={{ color: signColor(s.h) }}>{pct(P(s.h))}</b></span><span aria-hidden>→</span>
-              <span>08:10 개장 전 거래 <b style={{ color: signColor(nxt) }}>{pct(P(nxt))}</b></span>
-              <em className={out ? "out" : "in"}>{out ? (nxt > s.u80 ? "예상보다 높게" : "예상보다 낮게") : "예상대로"}</em>
+              <span>08:11 2차 예상 · NXT <b style={{ color: signColor(nxt) }}>{pct(P(nxt))}</b></span>
+              <em className={out ? "out" : "in"}>{out ? (nxt > s.u80 ? "07:30 범위 위" : "07:30 범위 아래") : "07:30 범위 안"}</em>
             </p>
-            {out ? <p className="ac-flownote">지난 1년 기록으로는 이런 날 10번 중 6~7번, 9시 시작가도 {nxt > s.u80 ? "높은" : "낮은"} 쪽으로 벗어났어요</p> : null}
           </>
         );
-      })() : null,
+      })() : p.after0811 && !p.post ? <p className="ac-step">장전 가격 자료가 없어 07:30 예상을 유지했어요.</p> : null,
       combined: <Combined s={s} x={p.x} y={p.post && r.c ? r.c.y : null} reason={p.reasons.get(r.code)} arts={p.news.get(r.code) ?? []} />,
       links: <div className="ac-links"><Link href={watch ? `/night?v=watch&open=${r.code}` : `/night?open=${r.code}`}>종목 창 ›</Link>{nArt ? <Link href={`/news?tab=mine&c=${r.code}`}>밤사이 소식 {nArt}건 ›</Link> : null}<Link href={`/mine/${r.code}`}>종목 상세 ›</Link></div>,
     };

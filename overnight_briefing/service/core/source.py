@@ -12,6 +12,8 @@ import threading
 import time
 from pathlib import Path
 
+from .trust08 import t08
+
 SERVICE = Path(__file__).resolve().parents[1]
 SNAP = Path(os.environ.get("SNAPSHOT_DIR", str(SERVICE / "data")))
 TTL = 60
@@ -63,7 +65,18 @@ def meta() -> dict:
 def day(T: str) -> dict:
     if MODE == "live":
         return _cached("day:" + T, lambda: B.day(T))
-    return _read(f"day/{T}.json")
+
+    def read_snapshot():
+        saved = _read(f"day/{T}.json")
+        stocks = {}
+        for code, stock in saved["stocks"].items():
+            # 과거 묶음은 등급 안에 관측치를 저장하고 t08에 별도 가중 추정치를 저장했다.
+            nxt = stock.get("nxt_g", (stock.get("grade") or {}).get("g"))
+            view = t08(stock["H"], *stock["b80"], nxt)
+            stocks[code] = dict(stock, nxt_g=view["Hb"] if view else None, t08=view)
+        return dict(saved, stocks=stocks)
+
+    return _cached("day:" + T, read_snapshot)
 
 
 def track() -> dict:
