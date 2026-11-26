@@ -1,7 +1,8 @@
 // 수량·평단 수정 / 관심으로 옮기기(종목 상세 147:619의 링크). 수량 0이면 관심 종목으로 옮긴다.
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { demoLocked, guestNoAdd, requireUser } from "@/lib/auth";
+import { DemoLock, GuestAddLock } from "@/components/demolock";
 import { portfolio, setHolding, uStock, viewingPast } from "@/lib/portfolio";
 import { PastLock } from "@/components/ui";
 
@@ -11,8 +12,11 @@ export default async function EditHolding({ params, searchParams }: { params: Pr
   const u = uStock(code);
   if (!u) notFound();
   const user = await requireUser();
+  if (await demoLocked()) return <DemoLock back={`/mine/${code}`} title={u.name} />;   // 시연 계정은 보기 전용(2026-11-26)
   if (await viewingPast()) return <PastLock back={`/mine/${code}`} />;
-  const h = (await portfolio(user.id)).holdings.find((x) => x.code === code);
+  const pf0 = await portfolio(user.id);
+  if (await guestNoAdd() && !pf0.holdings.some((x) => x.code === code) && !pf0.watch.includes(code)) return <GuestAddLock back={`/mine/${code}`} />;   // 체험 계정: 계좌에 없던 종목은 추가 막기
+  const h = pf0.holdings.find((x) => x.code === code);
 
   async function save(form: FormData) {
     "use server";

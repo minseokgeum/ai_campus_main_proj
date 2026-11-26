@@ -15,31 +15,32 @@ async function browse(form: FormData) {
 
 export default async function DemoPick() {
   if (await currentUser()) redirect("/");
+  // 2026-11-26 사용자 결정(시안 demo.html): 머리 줄 ‹ + 가운데 '둘러보기' 크게, 입체 카드, 업종은 칩, 종목은 '대표 2 외 n' 한 줄, 아래 안내는 정보 칸
   return (
-    <main className="start">
-      <div className="starttop"><Link href="/start" aria-label="뒤로">‹ 뒤로</Link><b>둘러보기</b><span /></div>
-      <div className="dpick">
-        <h1>어떤 계좌로 둘러볼까요?</h1>
-        <p className="lead">고른 계좌를 복사해서 나만의 체험 계정을 만들어요.<br />종목이나 수량을 바꿔도 다른 사람에게는 보이지 않아요.</p>
+    <main className="start dp2">
+      <div className="dp2-top"><Link href="/start" aria-label="뒤로">‹</Link><b>둘러보기</b><span /></div>
+      <h1>어떤 계좌로<br />둘러볼까요?</h1>
+      <p className="lead">고른 계좌를 복사해 나만의 체험 계정을 만들어요.<br />수량을 바꿔도 다른 사람에게는 보이지 않아요.</p>
+      <div className="dp2-list">
         {DEMO_SETS.map((s) => {
-          const names = leadNames(s);
+          const two = leadNames(s, 2), names = two.join(", ").length > 14 ? two.slice(0, 1) : two, rest = s.holdings.length - names.length;   // 두 이름이 길면 하나만(한 줄에 끝나게)
           return (
             <form key={s.key} action={browse}>
               <input type="hidden" name="set" value={s.key} />
-              <button type="submit" className="dcard">
-                <span className="dkey" aria-hidden>{s.key}</span>
-                <span className="dbody">
+              <button type="submit" className="dp2-card">
+                <span className="dp2-key" aria-hidden>{s.key}</span>
+                <span className="dp2-body">
                   <b>{s.title}</b>
-                  <small>{s.sub}</small>
-                  <em>보유 {s.holdings.length}종목 · {names.join(", ")}{s.holdings.length > names.length ? " 외" : ""}</em>
+                  <span className="dp2-chips">{s.sub.split("·").map((x) => <span key={x}>{x.trim()}</span>)}</span>
+                  <small><em>보유 {s.holdings.length}종목</em><span>&nbsp;·&nbsp;{names.join(", ")}{rest > 0 ? ` 외 ${rest}` : ""}</span></small>
                 </span>
-                <span className="dgo" aria-hidden>›</span>
+                <span className="dp2-go" aria-hidden>›</span>
               </button>
             </form>
           );
         })}
-        <p className="fine">뉴스는 이 계좌들에 담긴 종목을 중심으로 모아요. 다른 종목을 추가하면 예상 시가와 시세는 보이지만 밤사이 뉴스는 없을 수 있어요.</p>
       </div>
+      <p className="dp2-info"><i aria-hidden>i</i><span>뉴스는 이 계좌들에 담긴 종목을 중심으로 모아요. 체험 계정에서는 종목을 추가할 수 없어요.</span></p>
     </main>
   );
 }

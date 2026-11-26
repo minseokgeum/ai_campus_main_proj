@@ -49,10 +49,10 @@ export async function series(days: { d: string; c: number }[], code: string, ste
   return out.map((p, i) => ({ x: out.length > 1 ? i / (out.length - 1) : 1, p }));
 }
 
-/** 최근 n번의 카드(08:11 우선)와 채점: 범위 안·밖, 예상 H와 야간선물 x(반응도 계산용) */
+/** 최근 n번의 카드(08:11 우선)와 확인: 범위 안·밖, 예상 H와 야간선물 x(반응도 계산용) */
 export async function bandHistory(code: string, n = 20) {
   try {
-    const g = await timeGate();   // 화면 시각까지 나온 카드·채점만(시연 시각이면 그 시각 기준)
+    const g = await timeGate();   // 화면 시각까지 나온 카드·확인만(시연 시각이면 그 시각 기준)
     const r = await db().query(
       `select distinct on (s.t) s.t, s.h, s.l80, s.u80, c.x, k.y, k.in80, kc.checked_at
        from model.card_stocks s join model.cards c on c.t = s.t and c.slot = s.slot

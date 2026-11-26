@@ -19,6 +19,7 @@ function Bars({ b, big }: { b: number[]; big?: boolean }) {
 }
 
 export function FuturesCard({ night, live, buckets }: { night: Night; live: boolean; buckets: number[] }) {
+  const newsStart = `${night.d.slice(0, 4)}-${night.d.slice(4, 6)}-${night.d.slice(6)}T18:00:00+09:00`;   // 막대(newsBuckets)와 같은 시작 시각
   const r = night.last ?? night.points[night.points.length - 1]?.r ?? 0;
   const top = buckets.indexOf(Math.max(...buckets)), total = buckets.reduce((a, x) => a + x, 0);
   const when = live ? "오늘 밤 18:00부터(진행 중)" : "어젯밤 18:00 ~ 06:00";
@@ -40,12 +41,14 @@ export function FuturesCard({ night, live, buckets }: { night: Night; live: bool
         <p className="fbig"><b style={{ color: signColor(r) }}>{pct(r * 100)}</b><span>{(night.dayClose * (1 + r)).toFixed(2)}</span></p>
         <p className="fine">어제 주간 종가 {night.dayClose.toFixed(2)} 대비</p>
         {/* 위 그래프와 아래 기사 수 막대를 붙여 같은 시각이 세로로 맞게 두고, 시각 눈금은 둘이 함께 쓴다(비교 선이 글자를 가로지르지 않게, 2026-11-22) */}
-        <ChartScrub points={night.points} dayClose={night.dayClose} buckets={buckets}>
+        {/* 막대를 누르면 그 15분 기사 목록이 눈금·막대 설명 아래에 열린다(2026-11-26, components/scrub.tsx) */}
+        <ChartScrub points={night.points} dayClose={night.dayClose} buckets={buckets} newsStart={newsStart} foot={<>
+          <div className="axis scrubaxis"><span>18:00</span><span>21:00</span><span>00:00</span><span>03:00</span><span>06:00</span></div>
+          <p className="fcap2">막대: 15분마다 나온 미국 기사 수{total ? ` · 가장 많을 때 ${Math.max(...buckets)}건` : ""} · 누르면 그때 기사</p>
+        </>}>
           <div className="fut big"><NightChart night={night} h={180} detail /></div>
           <Bars b={buckets} big />
         </ChartScrub>
-        <div className="axis scrubaxis"><span>18:00</span><span>21:00</span><span>00:00</span><span>03:00</span><span>06:00</span></div>
-        <p className="fcap2">막대: 15분마다 나온 미국 기사 수{total ? ` · 가장 많을 때 ${Math.max(...buckets)}건` : ""}</p>
       </Sheet>
     </div>
   );
@@ -53,7 +56,7 @@ export function FuturesCard({ night, live, buckets }: { night: Night; live: bool
 
 /** 밤사이 화면의 야간선물 칸(2026-11-25 사용자 요청: 새 화면 대신 아래에서 올라오는 창, 홈 카드와 같은 방식).
  *  children = 칸에 보이는 내용(제목·그래프·눈금). 칸 전체를 덮는 투명 단추가 창을 열고, 물음표는 그 위에 떠 있다.
- *  창 내용은 예전 야간선물 상세 화면(app/night/futures, 피그마 363:2)과 같다: 마감 가격·변화, 훑어 보는 그래프, 시작가·어제 마감·고가·저가 */
+ *  창 내용(피그마 363:2): 마감 가격·변화, 훑어 보는 그래프, 시작가·어제 마감·고가·저가 */
 export function FuturesFlow({ night, sub, children }: { night: Night; sub: string; children: React.ReactNode }) {
   const pts = night.points;
   const r = night.last ?? pts[pts.length - 1]?.r ?? 0;

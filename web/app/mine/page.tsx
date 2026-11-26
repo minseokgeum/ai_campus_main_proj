@@ -50,7 +50,7 @@ export default async function Mine({ searchParams }: { searchParams: Promise<{ v
           <h1>내 종목</h1>
           <div className="r">
             <Link href="/mine/add" aria-label="종목 추가">
-              <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden><path d="M11 2V20M2 11H20" stroke="#008C82" strokeWidth="2" strokeLinecap="round" /></svg>
+              <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden><path d="M11 2V20M2 11H20" stroke="#192D31" strokeWidth="2" strokeLinecap="round" /></svg>
             </Link>
             <Link href="/my" aria-label="마이">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden><path d="M11 2C13.2 2 15 3.8 15 6C15 8.2 13.2 10 11 10C8.8 10 7 8.2 7 6C7 3.8 8.8 2 11 2Z" stroke="#192D31" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><path d="M3 16.75C4 11.75 18 11.75 19 16.75" stroke="#192D31" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>

@@ -10,7 +10,7 @@ export function gradeLine(grade: string | null, p: number | null, nxt: number | 
   return <>장전 방향 유지 · <b>{grade}{tail}</b></>;
 }
 
-/** 채점 뒤 상태 한 줄: 띠 안/밖 · 예상(2차 예상, 없으면 06:30)보다 몇 %p */
+/** 확인 뒤 상태 한 줄: 띠 안/밖 · 예상(2차 예상, 없으면 06:30)보다 몇 %p */
 export function postLine(y: number, est: number, l: number, u: number): ReactNode {
   const d = Math.round((y - est) * 1000) / 10, inb = l <= y && y <= u;
   return <><b className={inb ? "in" : "out"}>{inb ? "띠 안" : "띠 밖"}</b> · {d === 0 ? "예상과 같게" : `예상보다 ${Math.abs(d).toFixed(1)}%p ${d > 0 ? "높게" : "낮게"}`}</>;

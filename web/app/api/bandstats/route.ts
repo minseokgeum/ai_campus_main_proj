@@ -1,4 +1,4 @@
-// 노란 띠 설명 창(components/yband.tsx BandHelp)의 근거 숫자: 규칙 고정 뒤(2026-11-03~) 화면 시각 전날까지 채점 기록에서
+// 노란 띠 설명 창(components/yband.tsx BandHelp)의 근거 숫자: 규칙 고정 뒤(2026-11-03~) 화면 시각 전날까지 확인 기록에서
 // 장전 거래(08:11 2차 예상)가 06:30 노란 띠 밖이었던 종목 중 실제 9시 시작도 띠 밖이었던 비율. 10분 동안 같은 값을 쓴다.
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

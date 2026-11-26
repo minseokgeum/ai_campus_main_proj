@@ -67,6 +67,8 @@ __pycache__/
 !web/vercel.json
 !web/data/*.json
 !web/data/special_days.csv
+# 홈 화면에 추가할 때 쓰는 달 아이콘(위 *.png 제외 규칙의 예외, 2026-11-26)
+!web/app/apple-icon.png
 
 # 팀에서 공유할 SQL 파일이 있다면 필요한 파일만 예외 처리
 # !schema.sql

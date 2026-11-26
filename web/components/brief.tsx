@@ -1,12 +1,8 @@
-// 3분 브리핑 창(배포용 변경 기록 07, 피그마 784:720): 카드 3개를 시장 / 산업 / 내 종목으로 고정. 카드 머리에 구분 이름, 그 아래 주제 제목, 본문, 근거 뉴스 1~2개.
+// 홈 '뉴스 브리핑' 카드(배포용 변경 기록 07, 피그마 784:720): 카드 3장을 시장 / 산업 / 내 종목으로 고정. 카드 머리에 구분 이름, 그 아래 주제 제목, 본문, 근거 뉴스 1~2개.
 // 시장: 시장 핫이슈 첫 줄(소제목·근거 포함) · 산업: 내 업종 중 밤사이 뉴스가 가장 많은 업종의 한 줄 · 내 종목: 보유 종목 한 줄(긍정·부정 판정 먼저, 2종목까지).
 // 산업·내 종목 카드의 짧은 주제 제목은 요약 결과에 아직 없어(지시문 쪽 작업) 업종 이름·종목 이름으로 대신한다.
-import { AiMark } from "@/components/ui";
 import Link from "next/link";
-import { Sheet } from "@/components/sheet";
 import type { Brief, Evidence } from "@/lib/summary";
-import { dateLabel } from "@/lib/format";
-import { BRIEF_AT } from "@/lib/briefing";
 
 export type BriefFocus = { codes: string[]; names: Record<string, string>; sectors: string[] };   // 보유 종목(순서대로), 이름, 뉴스 많은 순 내 업종
 
@@ -45,28 +41,5 @@ export function BriefCards({ brief, focus, mineFirst }: { brief: Brief; focus?: 
       ))}
       <Link href="/news" className="bpoint bs bsmore" role="listitem"><b>더 많은 뉴스는<br />뉴스 브리핑에서 봐요</b><span>보러 가기 ›</span></Link>
     </div>
-  );
-}
-
-export function BriefSheet({ brief, date, trigger, className, focus }: { brief: Brief; date: string; trigger: React.ReactNode; className?: string; focus?: BriefFocus }) {
-  const cards = cardsOf(brief, focus);
-  if (!cards.length) return <Link href="/news" className={className}>{trigger}</Link>;
-  return (
-    <Sheet className={className} title={brief.title ?? "오늘의 핵심 3가지"} sub={`${dateLabel(date)} ${BRIEF_AT} KST 기준`} trigger={trigger}
-      kicker={<p className="bkick">오늘의 핵심 3가지 <AiMark small label="요약" /></p>}>
-      <div className="bcards">
-        {cards.map((c) => (
-          <section key={c.kick} className="bpoint">
-            <span className="bk">{c.kick}</span>
-            {c.title ? <h3>{c.title}</h3> : null}
-            <p>{c.body}</p>
-            {c.ev.map((e) => (
-              <p key={e.key} className="bev">근거 <a href={e.link} target="_blank" rel="noreferrer noopener">{e.ko ?? e.title}</a></p>
-            ))}
-          </section>
-        ))}
-      </div>
-      <Link href="/news" className="cta bmore">뉴스 브리핑에서 더 보기</Link>
-    </Sheet>
   );
 }

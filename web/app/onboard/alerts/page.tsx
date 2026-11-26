@@ -12,7 +12,7 @@ export default async function FirstAlerts() {
         <ul className="alist2">
           <li><b>06:30</b>오늘 시가 예상 범위가 나왔을 때</li>
           <li><b>08:11</b>NXT 체결가가 범위 밖인 종목이 있을 때</li>
-          <li><b>09:05</b>실제 시가로 채점이 끝났을 때</li>
+          <li><b>09:05</b>실제 시가로 확인이 끝났을 때</li>
         </ul>
       </div>
       <div className="startbtns">

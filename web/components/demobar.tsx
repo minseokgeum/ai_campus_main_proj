@@ -1,22 +1,22 @@
-// 시연 시각을 쓰는 중이면 화면 맨 위에 작은 띠(시연 계정만). "바꾸기"로 어느 화면에서나 날짜·시각을 바꾸고(2026-11-22), "지금으로"로 돌아간다.
-import { demoAt, demoDays } from "@/lib/clock";
-import { kstNow } from "@/lib/calendar";
-import { DemoPicker } from "@/components/demopicker";
+// 시연·체험 계정의 시점 이동(2026-11-26 사용자 결정): 예전 맨 위 시연 띠('시연 시각 · … 바꾸기 · 지금으로') 대신 오른쪽 아래 시계 단추(components/timefab.tsx).
+// 날짜는 시연 날짜(lib/clock DEMO_DAY) 고정, 시각은 그날 화면이 바뀌는 순간 다섯 개(06:00 · 06:30 · 08:11 · 실제 시가 반영 시각 · 18:00).
+import { DEMO_DAY, demoAt, demoDays, isDemoUser } from "@/lib/clock";
+import { TimeFab, type Slot } from "@/components/timefab";
 
 export async function DemoBar() {
+  if (!(await isDemoUser().catch(() => false))) return null;
   const at = await demoAt().catch(() => null);
-  if (!at) return null;
-  const p = Object.fromEntries(new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false })
-    .formatToParts(at).map((x) => [x.type, x.value]));
-  const days = await demoDays();
-  const real = kstNow();
-  const stamp = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(at).replace(/\D/g, "");
-  return (
-    <div className="demobar">
-      <span>시연 시각 · {p.month}월 {p.day}일 ({p.weekday}) {p.hour}:{p.minute} 기준</span>
-      <DemoPicker days={days} current={stamp} today={real.ymd} nowHm={`${String(real.hour).padStart(2, "0")}${String(real.minute).padStart(2, "0")}`}
-        className="dbchange" trigger={<>바꾸기</>} />
-      <a href="/demo-time?at=off&back=/my">지금으로 ›</a>   {/* 미리 불러오기(prefetch)가 쿠키를 바꾸지 않게 보통 링크로 */}
-    </div>
-  );
+  const stamp = at ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(at).replace(/\D/g, "") : null;
+  const d = (await demoDays().catch(() => [])).find((x) => x.t === DEMO_DAY);
+  const [chkLab, chkVal] = d?.chk ?? ["09:01", "0901"];
+  const slots: Slot[] = [
+    { hm: "0600", label: "06:00", sub: "예상 준비" },
+    { hm: "0630", label: "06:30", sub: "예상 공개" },
+    { hm: "0811", label: "08:11", sub: "장전 반영" },
+    { hm: chkVal, label: chkLab, sub: "실제 시가" },
+    { hm: "1800", label: "18:00", sub: "야간선물" },
+  ];
+  const dayLabel = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "long", day: "numeric", weekday: "short" })
+    .format(new Date(`${DEMO_DAY.slice(0, 4)}-${DEMO_DAY.slice(4, 6)}-${DEMO_DAY.slice(6)}T12:00:00+09:00`));
+  return <TimeFab day={DEMO_DAY} dayLabel={dayLabel} slots={slots} current={stamp} />;
 }

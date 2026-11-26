@@ -1,4 +1,4 @@
-// 밤사이 화면 부품: 작은 범위 띠(목록), 큰 범위 띠(종목 창), 야간선물 흐름 차트. 피그마 '밤사이 v4'(448:6559 · 400:5083 · 410:6525)를 데이터로 그린다.
+// 밤사이 화면 부품: 목록의 작은 범위 띠(BandMini), 야간선물 흐름 차트(NightChart), 오름·내림 색(signColor). 피그마 '밤사이 v4'(448:6559 · 400:5083 · 410:6525)를 데이터로 그린다.
 // 띠 색은 피그마 지금 값 #FFD970(저채도 시안 A·B는 결정 전). 오름 빨강 #d35d66 · 내림 파랑 #4c6fc3.
 import type { Night } from "@/lib/model";
 
@@ -12,32 +12,17 @@ function scale(vals: number[], w: number, pad: number) {
 }
 
 /** 목록 줄의 64×14 띠: 회색 선, 노란 80% 범위, 어제 종가 회색 점선, 08:10 실제 거래 빨간 세로선(라벨 없음), 점(장전: 예상 시가 · 장후: 실제 시가). 배포용 변경 기록 12 */
-export function BandMini({ l, u, dot, hollow }: { l: number; u: number; dot: number; hollow?: number | null }) {
-  const w = 64, h = 14, x = scale([l, u, dot, hollow ?? 0], w, 4);
+/** 목록 작은 띠(2026-11-26 사용자 결정: 노란 띠와 같은 색 규칙, 폭이 좁아 지금 값 하나만): 06:30 첫 예상 = 진회색 점 · 08:11 2차 예상 = 청록 점 · 장후 실제 시가 = 속 빈 빨간 원.
+ *  예전 빨간 세로 선(2차 예상)은 '빨강 = 실제 시가' 규칙과 어긋나서 없앰 */
+export function BandMini({ l, u, dot, kind = "pre" }: { l: number; u: number; dot: number; kind?: "pre" | "nxt" | "post" }) {
+  const w = 64, h = 14, x = scale([l, u, dot], w, 4);
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="bandmini">
       <line x1={2} x2={w - 2} y1={7} y2={7} stroke="#e4ebeb" strokeWidth={2} strokeLinecap="round" />
       <rect x={x(l)} y={3} width={Math.max(2, x(u) - x(l))} height={8} rx={4} fill={BAND} />
       <line x1={x(0)} x2={x(0)} y1={1} y2={13} stroke="#8a9598" strokeWidth={1.2} strokeDasharray="2 1.5" />
-      {hollow != null ? <line x1={x(hollow)} x2={x(hollow)} y1={1} y2={13} stroke="#d35d66" strokeWidth={1.5} /> : null}
-      <circle cx={x(dot)} cy={7} r={4} fill="#2f3437" stroke="#fff" strokeWidth={1.5} />
-    </svg>
-  );
-}
-
-/** 종목 창의 큰 띠: 어제 종가 눈금과 80% 범위 양 끝 숫자 */
-export function BandBar({ l, u, dot, nxt, label }: { l: number; u: number; dot: number; nxt?: number | null; label: (v: number) => string }) {
-  const w = 342, x = scale([l, u, dot, nxt ?? 0], w, 8);
-  return (
-    <svg width="100%" viewBox={`0 0 ${w} 58`} role="img" aria-label={`예상 범위 ${label(l)} ~ ${label(u)}`} className="bandbar">
-      <text x={x(0)} y={10} textAnchor="middle" fontSize={10} fill="#66777a">어제 종가</text>
-      <rect x={8} y={22} width={w - 16} height={8} rx={4} fill="#eef1f2" />
-      <rect x={x(l)} y={20} width={Math.max(3, x(u) - x(l))} height={12} rx={6} fill={BAND} />
-      <line x1={x(0)} x2={x(0)} y1={14} y2={38} stroke="#192d31" strokeWidth={1.4} />
-      {nxt != null ? <circle cx={x(nxt)} cy={26} r={5} fill="#fff" stroke="#192d31" strokeWidth={1.6} /> : null}
-      <circle cx={x(dot)} cy={26} r={6} fill="#192d31" />
-      <text x={x(l)} y={52} textAnchor="middle" fontSize={11} fill={signColor(l)}>{label(l)}</text>
-      <text x={x(u)} y={52} textAnchor="middle" fontSize={11} fill={signColor(u)}>{label(u)}</text>
+      {kind === "post" ? <circle cx={x(dot)} cy={7} r={3.6} fill="#fff" stroke="#e5484d" strokeWidth={2.2} />
+        : <circle cx={x(dot)} cy={7} r={4} fill={kind === "nxt" ? "#2e8a7e" : "#2f3437"} stroke="#fff" strokeWidth={1.5} />}
     </svg>
   );
 }

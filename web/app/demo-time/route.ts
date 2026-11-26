@@ -6,7 +6,8 @@ export async function GET(req: NextRequest) {
   const at = req.nextUrl.searchParams.get("at") ?? "off";
   const back = req.nextUrl.searchParams.get("back") ?? "/";
   const res = NextResponse.redirect(new URL(back.startsWith("/") && !back.startsWith("//") ? back : "/", req.url));
-  if (at === "off" || !fromStamp(at)) res.cookies.delete(DEMO_COOKIE);
+  // at=off: 실제 지금으로(쿠키 "now"). 시연 날짜가 기본이 된 뒤(2026-11-26)로는 쿠키를 지우면 다시 시연 날짜가 되므로 지우지 않고 "now"를 둔다
+  if (at === "off" || !fromStamp(at)) res.cookies.set(DEMO_COOKIE, "now", { path: "/", maxAge: 60 * 60 * 12, httpOnly: true, sameSite: "lax", secure: req.nextUrl.protocol === "https:" });
   else res.cookies.set(DEMO_COOKIE, at, { path: "/", maxAge: 60 * 60 * 12, httpOnly: true, sameSite: "lax", secure: req.nextUrl.protocol === "https:" });
   return res;
 }

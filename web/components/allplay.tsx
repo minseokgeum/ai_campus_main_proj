@@ -11,9 +11,9 @@ import { MaskToggle } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { pct, swon, won } from "@/lib/format";
 import type { CardStock, CheckRow } from "@/lib/model";
+import { expAmt } from "@/lib/tick";
 
 const P = (v: number) => v * 100;
-const BAND = "#FFD970";
 const MAXQ = 99999;
 const FIRST = 3;   // 처음에 보여 줄 종목 카드 수(2026-11-24: 다 보여 주면 너무 길어서 5개 + 펼치기, 2026-11-25 사용자 결정 3개)
 
@@ -26,12 +26,11 @@ function scroller(el: HTMLElement): Element {
   return document.scrollingElement ?? document.documentElement;
 }
 
-// 종목 카드로 부드럽게 내려가기(2026-11-24): 바로 점프하면 부자연스러워서. 도착 위치는 화면 맨 위에 붙은 시연 시각 띠 아래 6px
-// 카드 사이 간격(8px)보다 작게 6px를 띄워 윗 카드·설명 글씨가 띠 아래로 비치지 않게('동작 줄이기'를 켠 사람에게는 애니메이션 없이 바로)
+// 종목 카드로 부드럽게 내려가기(2026-11-24): 바로 점프하면 부자연스러워서. 도착 위치는 화면 맨 위에서 6px 아래
+// (카드 사이 간격 8px보다 작게 띄워 윗 카드 글씨가 비치지 않게). '동작 줄이기'를 켠 사람에게는 애니메이션 없이 바로 간다
 function glide(el: HTMLElement) {
-  const bar = document.querySelector(".demobar")?.getBoundingClientRect().height ?? 0;
   const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  scroller(el).scrollBy({ top: el.getBoundingClientRect().top - bar - 6, behavior: calm ? "auto" : "smooth" });
+  scroller(el).scrollBy({ top: el.getBoundingClientRect().top - 6, behavior: calm ? "auto" : "smooth" });
 }
 
 export type PlayCard = {
@@ -80,14 +79,13 @@ export function AllPlay(p: {
   const now = p.cards.map((c) => {
     const q = qOf(c), value = q * c.s.pc, pin = pinOf(c);
     const v = p.post ? (c.c ? c.c.y : null) : pin ?? c.pct;
-    const amount = p.post ? (c.c ? q * (c.c.open - c.s.pc) : null) : v == null ? null : value * v;
+    const amount = p.post ? (c.c ? q * (c.c.open - c.s.pc) : null) : v == null ? null : expAmt(q, c.s.pc, v);   // 호가 단위로 맞춘 가격(lib/tick.ts)
     return { c, q, value, pin, v, amount };
   });
   const calc = now.filter((x) => x.q > 0 && x.amount != null);
   const value = calc.reduce((a, x) => a + x.value, 0), amount = calc.reduce((a, x) => a + x.amount!, 0);
   const pinned = !p.post && now.some((x) => x.pin != null);
   const resetOne = (code: string) => { setOvr((o) => { const n = { ...o }; delete n[code]; return n; }); };
-  const checkHm = p.steps[p.steps.length - 1]?.t ?? "09:00";   // 채점 시각(오늘 아침 진행 마지막 단계)
 
   // 기여: 합계와 같은 방향 종목 중 가장 큰 종목이 그 방향 금액의 몇 %인가(원래 버전 "줄어들 금액의 84%가 SK하이닉스예요")
   const same = calc.filter((x) => Math.sign(x.amount!) === Math.sign(amount) && x.amount !== 0).sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
@@ -103,7 +101,7 @@ export function AllPlay(p: {
   const bars: [string, number, string][] = [...head.map((x) => [x.c.name, x.amount!, x.c.code] as [string, number, string]), ...(rest.length ? [[`그 외 ${rest.length}종목`, restAmt, ""] as [string, number, string]] : [])];
 
   // 순서: 계정 수량 기준으로 한 번 정한다(수량을 누르는 동안 카드가 자리를 옮기지 않게)
-  const baseAmt = (c: PlayCard) => (p.post ? (c.c ? c.qty * (c.c.open - c.s.pc) : 0) : c.qty * c.s.pc * c.pct);
+  const baseAmt = (c: PlayCard) => (p.post ? (c.c ? c.qty * (c.c.open - c.s.pc) : 0) : expAmt(c.qty, c.s.pc, c.pct));
   const needAt = new Map(p.need.map((c, i) => [c, i]));
   const sorted = [...p.cards].sort(ord === "value"
     ? (a, b) => b.qty * b.s.pc - a.qty * a.s.pc
@@ -196,14 +194,14 @@ export function AllPlay(p: {
           </div>
         ) : null}
         {p.record ? <Link href="/night/record" className="allrec"><span>지난 20거래일 동안 내 종목 <b>{p.record.inN}/{p.record.n}</b>번이 예상 범위 안에서 열렸어요(목표 80%)</span><em>›</em></Link> : null}
-        {/* 범례 줄은 뺌: 띠 위 이름표(06:30 · 장전 · 실제)와 '예상 범위 ?' 설명 창으로(2026-11-25 사용자 시안) */}
+        {/* 범례 줄은 뺌: 띠 아래 세 칸(① 06:30 · ② 08:11 · 실제 시가)과 '예상 범위 ?' 설명 창으로(2026-11-25 사용자 시안, 2026-11-26 E안) */}
         {/* 넷째 종목부터는 늘 그려 두고, 펼칠 때 높이가 0.25초에 걸쳐 늘어난다(피그마 기록 31, 2026-11-25 '움직임은 다 피그마'). 접혀 있을 땐 누를 수 없게(inert) */}
         {[shown.slice(0, FIRST), shown.slice(FIRST)].map((part, pi) => { const cards = part.map((c) => {
           const x = nowOf.get(c.code)!, s = c.s, q = x.q, zero = c.watch && q === 0;
           const moved = q !== c.qty;
-          // 카드(2026-11-25 사용자 시안 '줄글 없는 버전'): 종목 · 상태 → 큰 숫자 → 상태 한 줄 → 노란 띠(이름표·양 끝 금액, 끌어 보기) → 수량 −/+(사용자 결정: 유지)
+          // 카드(2026-11-25 사용자 시안 '줄글 없는 버전'): 종목 · 상태 → 큰 숫자 → 상태 한 줄 → 노란 띠(표식·아래 세 칸·양 끝 금액, 끌어 보기) → 수량 −/+(사용자 결정: 유지)
           const ph: BandPhase = p.post && c.y != null ? "post" : p.slot0811 && !p.post && c.nxt != null ? "nxt" : "pre";
-          const state = p.post ? <span className="st on">✓ {checkHm} 채점</span> : p.slot0811 ? <span className={`st${c.nxt != null ? " on" : ""}`}>08:11 · {c.nxt != null ? "장전 거래 반영" : "장전 거래 없음"}</span> : <span className="st">06:30 공개</span>;
+          const state = p.post ? <span className="st on">✓ 실제 시가 반영</span> : p.slot0811 ? <span className={`st${c.nxt != null ? " on" : ""}`}>08:11 · {c.nxt != null ? "장전 거래 반영" : "장전 거래 없음"}</span> : <span className="st">06:30 공개</span>;
           return (
             <article key={c.code} id={`ac-${c.code}`} className={`allcard ${c.warn ? "warn" : ""}`}>
               <div className="ac-h2"><b className="nm">{c.name}{c.warn ? <Siren /> : null}</b><span className="qt">{zero ? "관심" : `${q.toLocaleString("ko-KR")}주`}</span>{state}</div>
@@ -211,7 +209,7 @@ export function AllPlay(p: {
               <p className="ac-big"><b style={{ color: signColor(x.v ?? 0) }}>{x.v != null ? pct1(x.v) : "—"}</b>
                 {!zero && x.amount != null ? <span className="amt" style={{ color: signColor(x.amount) }}>{swon(x.amount)}</span> : null}</p>
               {c.status ? <p className="ac-stat">{c.status}</p> : null}
-              <YBand name={c.name} l={s.l80} u={s.u80} h={s.h} nxt={s.nxtG} y={c.y} phase={ph} qty={q} pc={s.pc} l90={s.l90} u90={s.u90} play={!p.post} />
+              <YBand name={c.name} l={s.l80} u={s.u80} h={s.h} nxt={s.nxtG} y={c.y} phase={ph} after0811={p.slot0811 || p.post} qty={q} pc={s.pc} l90={s.l90} u90={s.u90} play={!p.post} />
               <div className="ac-foot">
                 <Stepper q={q} name={c.name} changed={q !== c.qty} set={(f) => setQ(c, f)} />
                 {moved ? <button type="button" className="ac-reset" aria-label={`${c.name} 수량 원래대로`} onClick={() => resetOne(c.code)}>↺ 되돌리기</button> : null}
@@ -279,19 +277,19 @@ function jo(name: string) {
 
 const toMin = (hm: string) => { const d = hm.replace(":", ""); return Number(d.slice(0, 2)) * 60 + Number(d.slice(2, 4)); };
 
-/** 오늘 아침 진행(2026-11-25 사용자 시안): 단계 사이 칸을 지금 시각만큼 채우고, 오른쪽에 '지금 · 다음 단계까지 n분' 또는 '✓ 채점 완료'.
+/** 오늘 아침 진행(2026-11-25 사용자 시안): 단계 사이 칸을 지금 시각만큼 채우고, 오른쪽에 '지금 · 다음 단계까지 n분' 또는 '✓ 실제 시가 반영'.
  *  지난 단계는 진한 글자, 지금 단계는 청록, 다음 단계는 회색. 시연 계정은 단계를 누르면 그 시점으로(예전과 같음) */
-function Progress({ steps, post, nowHm }: { steps: Step[]; post: boolean; nowHm: string }) {
+export function Progress({ steps, post, nowHm, solo }: { steps: Step[]; post: boolean; nowHm: string; solo?: boolean }) {   // solo: 홈 06:30 전 화면에 따로 쓸 때(2026-11-26, 위 선·여백 없이)
   if (steps.length < 2) return null;
   const pts = steps.map((s) => toMin(s.t)), now = post ? pts[pts.length - 1] : toMin(nowHm);
   const cur = pts.reduce((a, m, i) => (m <= now ? i : a), 0);
   const next = steps.find((_, i) => pts[i] > now);
   const left = next ? toMin(next.t) - now : 0;
   const hm = `${nowHm.slice(0, 2)}:${nowHm.slice(2, 4)}`;
-  const status = post ? `✓ ${steps[steps.length - 1].t} 채점 완료`
+  const status = post ? "✓ 실제 시가 반영"   // 2026-11-26 사용자 결정: '09:01 실제 시가 반영' 대신
     : next ? `${hm} · ${next.t} ${next.label}까지 ${left >= 60 ? `${Math.floor(left / 60)}시간 ` : ""}${left % 60}분` : "";
   return (
-    <section className="a2prog" aria-label="오늘 아침 진행">
+    <section className={`a2prog${solo ? " solo" : ""}`} aria-label="오늘 아침 진행">
       <div className="a2h"><h3>오늘 아침 진행</h3><span className="tq">{status}</span></div>
       <div className="a2seg" aria-hidden>
         {pts.slice(1).map((m, i) => <i key={i}><b style={{ width: `${Math.max(0, Math.min(1, (now - pts[i]) / Math.max(1, m - pts[i]))) * 100}%` }} /></i>)}

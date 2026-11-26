@@ -10,28 +10,28 @@ import type { Night } from "@/lib/model";
 import { bySector, P, SORT_LABEL, SORTS, type Phase, type Row } from "@/lib/night";
 import { pct, swon } from "@/lib/format";
 
-/** 오늘 아침 진행 창의 단계별 설명(창은 components/progress.tsx). day: 그날 개장 시각·채점 시각·개장 전 거래 여부(special_days.csv) */
+/** 오늘 아침 진행 창의 단계별 설명(창은 components/progress.tsx). day: 그날 개장 시각·확인 시각·개장 전 거래 여부(special_days.csv) */
 export function progressDetails(stage: number, grades: { 높음: number; 보통: number; 낮음: number; 대상아님: number }, check: { scored: number; inN: number } | null,
   day: { openAt: string; chk: string; next: string; premarket: boolean } = { openAt: "09:00", chk: "09:05", next: "09:00 개장 직후", premarket: true }): [string, string, boolean][] {
   return [
     ["06:00 야간 마감", "야간선물 거래가 06:00에 끝나면 지난밤 움직임으로 종목별 예상 시가를 계산해요.", stage > 0],
     ["06:30 예상 범위 고정", "지난 비슷한 아침의 기록으로 종목마다 예상 범위(노란 띠)를 정해 공개해요.", stage > 1],
-    !day.premarket ? ["08:11 장전 가격·방향 등급", `오늘은 개장 전 거래(NXT)가 없는 날이라 08:11 업데이트가 없어요. ${day.openAt} 시가가 나오면 바로 채점해요.`, stage > 2]
+    !day.premarket ? ["08:11 장전 가격·방향 등급", `오늘은 개장 전 거래(NXT)가 없는 날이라 08:11 업데이트가 없어요. ${day.openAt} 시가가 나오면 바로 범위 안에 들었는지 확인해요.`, stage > 2]
       : ["08:11 장전 가격·방향 등급", stage > 2 ? `장전 등락 방향이 시가까지 이어질 확률 · 높음 ${grades.높음} · 보통 ${grades.보통} · 낮음 ${grades.낮음}${grades.대상아님 ? ` · 서비스 대상 아님 ${grades.대상아님}` : ""}`
       : "08:10까지 확인한 NXT 가격을 2차 예상으로 쓰고, 같은 방향으로 개장할 확률을 등급으로 표시해요.", stage > 2],
-    [`${check ? day.chk : day.next} 실제 시가로 채점`, check ? `${check.scored}종목 중 ${check.inN}종목이 06:30 범위 안에서 시작했어요.` : `${day.openAt} 시가가 나오면 바로 예상 범위 안에 들었는지 채점해요.`, !!check],
+    [`${check ? day.chk : day.next} 실제 시가 반영`, check ? `${check.scored}종목 중 ${check.inN}종목이 06:30 범위 안에서 시작했어요.` : `${day.openAt} 시가가 나오면 바로 예상 범위 안에 들었는지 확인해요.`, !!check],
   ];
 }
 
 
 
 /** 업종별로 보면(피그마 379:2934) */
-export function SectorSheet({ rows, acct, count, label }: { rows: Row[]; acct: { amount: number; pct: number }; count: number; label: string }) {
+export function SectorSheet({ rows, acct, count, label, day = "오늘" }: { rows: Row[]; acct: { amount: number; pct: number }; count: number; label: string; day?: string }) {   // day: 지난 날짜면 그 날짜(11/25)
   const groups = bySector(rows.filter((r) => r.amount != null));
   const maxAbs = Math.max(1, ...groups.map((g) => Math.abs(g.amount)));
   const top = groups[0];
   return (
-    <Sheet className="linkish teal" title="업종별로 보면" sub={`보유 ${count}종목 · 오늘 ${label} 금액 변화 큰 순`} trigger={<span>업종별 보기 ›</span>}>
+    <Sheet className="linkish teal" title="업종별로 보면" sub={`보유 ${count}종목 · ${day} ${label} 금액 변화 큰 순`} trigger={<span>업종별 보기 ›</span>}>
       <p className="sacct">계좌 {label} <b style={{ color: signColor(acct.amount) }}><span className="amt">{swon(acct.amount)}</span> · {pct(P(acct.pct))}</b></p>
       {groups.map((g) => (
         <div key={g.sector} className="sgrp">
@@ -40,7 +40,7 @@ export function SectorSheet({ rows, acct, count, label }: { rows: Row[]; acct: {
           <b className="amt" style={{ color: signColor(g.amount) }}>{swon(g.amount)}</b>
         </div>
       ))}
-      {top ? <p className="fine">{top.sector} {top.list.length}종목이 오늘 {label} 변화의 가장 큰 부분({swon(top.amount)})을 차지해요. 같은 업종은 같은 소식에 함께 움직이기 쉬워요.</p> : null}
+      {top ? <p className="fine">{top.sector} {top.list.length}종목이 {day} {label} 변화의 가장 큰 부분({swon(top.amount)})을 차지해요. 같은 업종은 같은 소식에 함께 움직이기 쉬워요.</p> : null}
     </Sheet>
   );
 }

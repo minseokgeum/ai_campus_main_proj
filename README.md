@@ -13,7 +13,10 @@
 | `news_source_tests/` | 뉴스 매체·수집 방식을 정할 때 한 시험(근거 보관). [README](news_source_tests/README.md) |
 | `graph_news_overview.md` | **처음 보는 팀원용 안내**: 그래프 DB, 검색어, 구글 뉴스 수집·처리가 무엇을 만들고 어떻게 도는지, 결과 위치와 첫 실전 결과 |
 | `nightly_prompt_requirements.md` | 밤사이 뉴스 프롬프트를 만드는 팀원에게 전하는 요구사항(입력·출력, 유형 분류, 그래프용 추출 형식, 실행 조건, 시험 방법) |
-| `overnight_briefing/` | 장 전 브리핑(노란띠): 야간선물로 종목별 예상 시작가·80% 예상 범위·믿을 정도를 내고 개장 뒤 채점하는 모델(`model/`, 서버 실행 `run_model.py`·파일 실행 `run_day.sh`·특별한 날 달력), 1차 데모 화면(`service/`), 밤사이 AI 브리핑(`nightly_prompt/`). [README](overnight_briefing/README.md) |
+| `overnight_briefing/` | 장 전 브리핑(노란띠) 팀원 원본: 야간선물로 종목별 예상 시작가·80% 예상 범위·믿을 정도를 내고 개장 뒤 실제 시가로 확인하는 모델(`model/`), 1차 데모 화면(`service/`), 밤사이 AI 브리핑(`nightly_prompt/`), 모델 설계서·실험 장부(`docs/`). [README](overnight_briefing/README.md) |
+| `night_model/` | 노란띠 모델 **운영본**(2026-11-25 `overnight_briefing/model/`을 복사): 서버(`~/overnight/night_model`)가 06:10 계산·06:30 공개·08:11 2차 예상·개장 직후 실제 시가 확인·15:45 공식 종가를 돌린다. 고치는 일은 여기서 한다. [README](night_model/README.md) |
+| `web/` | 고객 화면 '당신이 잠든 사이에'(Next.js, Vercel 배포). 홈·밤사이·뉴스·내 종목·기록 화면, 시연·체험 계정, 시연 시각(11/26 아침 고정). 화면 규칙은 [`web/screen_rules.md`](web/screen_rules.md), 시연 계정은 [`demo_accounts.md`](demo_accounts.md) |
+| `demo_accounts.md` | 시연 계정 A·B·C(user1~3) 종목 구성과 체험 계정·보기 전용 규칙 |
 | `scripts/` | 보조 스크립트: 데이터 묶음 만들기·풀기(`data_bundle.py`) |
 | `market_data/` | 기준 자료: 상장사·WI26 업종(`sector.json`), 토스 테마(`toss_theme.json`), 지수 구성 종목. [README](market_data/README.txt) |
 | `backtest/`, `data_research/`, `stockdata_collection/` | 다른 작업(시세 수집, 백테스트 등) |
@@ -71,7 +74,7 @@ DART·뉴스 자료와 그것으로 만든 중간·결과 파일은 법적 문�
 | 15 | `graph_db` | 그래프 표 만들기와 Neo4j 적재 | Neo4j, `NEO4J_*` | `LOAD` | 없음(로컬) |
 | 16 | `search_terms` | 종목 유형, 검색어 후보, 업종·테마·회사 기본 검색어 | Codex | `RUN` | Codex 구독(요청 4건) |
 | 17 | `../news_search_tests/search_tests` | 구글 뉴스 검색 방식 시험(매체, OR 묶음, 거르기, 검색어 시험. 서비스 실행에는 필요 없음) | | `RUN` | 구글 뉴스 RSS(무료, 한 IP에서 시간당 수백 건이면 막힘) |
-| 18 | `../news_search/news_collect` | 24시간 수집(11절): 회차 없이 검색어별 목표 간격(1·2·3시간)으로 가장 밀린 검색어부터, 요청 간격 15초, 결과는 PostgreSQL DB에 계속 쌓음(`news_search.md` 2.3~2.5) | `GNEWS_DB_URL`, 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시간당 최대 약 240건·하루 최대 약 5,800건) |
+| 18 | `../news_search/news_collect` | 24시간 수집(11절): 회차 없이 검색어별 목표 간격(1·2·3시간)으로 가장 밀린 검색어부터, 요청 간격 12초, 결과는 PostgreSQL DB에 계속 쌓음(`news_search.md` 2.3~2.5) | `GNEWS_DB_URL`, 알림 키 | `RUN_COLLECT`(시험 칸은 `RUN`) | 구글 뉴스 RSS(무료, 시간당 최대 약 240건·하루 최대 약 5,800건) |
 | 19 | `../news_search/news_process` | 수집 마감 뒤 처리(10절 대기하며 돌리기): 취침 시각(`BEDTIME`) 전 기사는 비교용으로 등록, 뒤 기사는 묶기 → 이전 소식 확인 → 종목별 10개 묶음 → 본문 받기 → 프롬프트 입력. 수집과 함께 켜 둔다 | `OPENAI_API_KEY`(임베딩), 알림 키 | `WATCH_RUN`(골라 돌리기는 `PROCESS_RUN`) | OpenAI 임베딩(하룻밤 $0.01~0.03), 원문 주소 복원·원문 페이지(무료) |
 
 - `db_test`는 처리 단계가 아니라 수집 DB를 조회하는 노트북이다.

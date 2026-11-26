@@ -17,6 +17,7 @@ export type Article = {
   codes: string[]; // 걸린 검색어의 종목코드(업종·테마 검색어 포함)
   direct: string[]; // 그 종목 고유 검색어(자기 회사·브랜드·제품·해외 상대 등)로 걸린 종목코드 — 내 종목 뉴스는 이것만
   rank: Record<string, number>; // 종목마다 가장 가까운 검색어 종류의 순위(0 = 자기 회사). 종목 블록에서 가까운 기사 먼저
+  via: Record<string, string[]>; // 종목코드 → 이 기사를 그 종목에 이은 검색어(원문, 따옴표 포함). 관계 그림 칸 숫자를 목록과 같은 기사로 셀 때 쓴다(2026-11-26)
   themes: string[]; // 걸린 업종·테마 이름
   kinds: string[]; // 걸린 검색어 종류
   market: boolean; // 시장 전체 소식(업종·테마·원자재·정책 검색어로 걸림)
@@ -101,6 +102,7 @@ export async function nightNews(ymd?: string): Promise<Night> {
       codes: [...new Set(links.map((l) => l.code))].filter((c) => STOCKS[c]),
       direct: [...new Set(own.map((l) => l.code))].filter((c) => STOCKS[c]),
       rank: own.reduce<Record<string, number>>((m, l) => ({ ...m, [l.code]: Math.min(m[l.code] ?? 9, RANK[l.kind] ?? 5) }), {}),
+      via: own.reduce<Record<string, string[]>>((m, l) => ({ ...m, [l.code]: [...(m[l.code] ?? []), l.term] }), {}),
       themes, kinds: [...new Set(links.map((l) => l.kind))],
       market: links.some((l) => MARKET_KINDS.has(l.kind)),
       impacts: [], stock: {}, group: null,
@@ -133,13 +135,6 @@ export function bySector(articles: Article[], sectors: string[]): Map<string, Ar
     for (const s of ss) out.get(s as string)?.push(a);
   }
   return out;
-}
-
-/** 많이 나온 업종·테마(홈 '오늘의 핵심' 자리) */
-export function topThemes(articles: Article[], n = 3): string[] {
-  const cnt = new Map<string, number>();
-  for (const a of articles) for (const t of a.themes) cnt.set(t, (cnt.get(t) ?? 0) + 1);
-  return [...cnt.entries()].sort((x, y) => y[1] - x[1]).slice(0, n).map(([t]) => t);
 }
 
 // 기사 영향 판정(회사 이름으로 나옴)을 종목에 잇기: 그 종목의 자기 회사·브랜드 검색어나 종목명과 이름이 겹치면 그 종목의 판정으로 본다.
@@ -222,4 +217,37 @@ export async function newsBuckets(start: Date): Promise<number[]> {
     for (const r of rows) if (r.b >= 0 && r.b < 48) out[r.b] = r.n;
   } catch { /* 표가 없으면 0 */ }
   return out;
+}
+
+export type AtArticle = { key: string; title: string; ko: string | null; outlet: string; hm: string; mine: string[]; same: number; link: string };
+/** 야간선물 창 보도량 막대 한 칸(15분)에 발행된 미국 기사 목록(2026-11-26 사용자 요청). 막대 숫자(newsBuckets)와 같은 조건이라 건수가 같다.
+ *  같은 소식(news.stories 묶음)은 한 줄로 접는다. mine = 그 소식이 이어진 내 종목(그 종목 고유 검색어가 제목에 있을 때), same = 이 15분 안 같은 소식 기사 수.
+ *  순서: 내 종목 기사 먼저 → 같은 소식이 많은 것 → 먼저 나온 것 */
+export async function newsAt(start: Date, k: number, codes: string[]): Promise<AtArticle[]> {
+  const from = new Date(start.getTime() + k * 900_000), to = new Date(from.getTime() + 900_000);
+  try {
+    const { rows } = await db().query(
+      `select i.key, i.title, i.published_utc, coalesce(nullif(i.source, ''), i.outlet) as outlet, min(${LINK}) as link,
+              min(s.story_id) as story_id, min(s.news_id) as news_id, array_remove(array_agg(distinct h.term), null) as terms
+       from items i left join news.llm_articles l on l.key = i.key left join hits h on h.key = i.key left join news.stories s on s.key = i.key
+       where coalesce(i."drop", '') = '' and i.published_utc >= $1 and i.published_utc < $2 and ${NEWS_OK}
+       group by i.key, i.title, i.published_utc, i.source, i.outlet`, [from, to]);
+    const ai = await articleAI(rows.map((r) => r.key));
+    const own = TERMS.filter((t) => codes.includes(t.code) && !MARKET_KINDS.has(t.kind));
+    const grp = (r: { story_id: unknown; news_id: unknown; key: string }) => (r.story_id && r.news_id ? `${r.story_id}|${r.news_id}` : r.key);
+    const cnt = new Map<string, number>();
+    for (const r of rows) cnt.set(grp(r), (cnt.get(grp(r)) ?? 0) + 1);
+    const hm = (d: Date) => new Date(d.getTime() + 9 * 3600_000).toISOString().slice(11, 16);
+    // 같은 소식은 한 줄로 접는다(뉴스 브리핑과 같게): 묶음마다 먼저 나온 기사 하나 + '같은 소식 n건', 내 종목은 묶음 전체에서 모은다
+    const head = new Map<string, { r: (typeof rows)[number]; mine: Set<string> }>();
+    for (const r of [...rows].sort((x, y) => +new Date(x.published_utc) - +new Date(y.published_utc))) {
+      const terms = (r.terms as string[]) ?? [];
+      const mine = own.filter((t) => terms.includes(t.term) && inTitle(r.title, t.term)).map((t) => t.code);
+      const g = head.get(grp(r));
+      if (g) mine.forEach((c) => g.mine.add(c)); else head.set(grp(r), { r, mine: new Set(mine) });
+    }
+    return [...head.values()].map(({ r, mine }) => ({ key: r.key, title: r.title, ko: ai.get(r.key)?.ko ?? null, outlet: String(r.outlet ?? ""), hm: hm(new Date(r.published_utc)), mine: [...mine], same: cnt.get(grp(r)) ?? 1, link: String(r.link ?? "") })).sort((a, b) => Number(b.mine.length > 0) - Number(a.mine.length > 0) || b.same - a.same || a.hm.localeCompare(b.hm));
+  } catch {
+    return [];
+  }
 }

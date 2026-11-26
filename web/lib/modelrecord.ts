@@ -1,15 +1,13 @@
 // 모델 기록(2026-11-25 사용자 요청, 팀원 원래 버전 '기록' 탭 참고): 지금까지 날마다 낸 아침 예상이 실제 시작가와 얼마나 맞았는지.
-// 서버가 매일 9시에 쌓는 종목별 채점(model.check_stocks)과 그날 예상(model.card_stocks)을 그대로 모아 계산한다. 따로 저장하지 않는다.
+// 서버가 매일 9시에 쌓는 종목별 확인(model.check_stocks)과 그날 예상(model.card_stocks)을 그대로 모아 계산한다. 따로 저장하지 않는다.
 //  · 기준은 06:30 첫 예상(칸 이름 0730): 예상 시작가와 노란 띠. 2차 예상(08:10 개장 전 거래 가격)과 믿을 정도는 08:11 카드에서.
 //  · 묶음: 설계 200종목(팀원이 규칙을 만들고 검증한 종목) · 나머지 서비스 대상 755종목(같은 규칙을 적용한 종목). data/tiers.json
 //  · 기간: 규칙을 만들 때 본 기간(~2026-11-02) · 규칙 고정 뒤(2026-11-03~). 서비스 시작(11/20) 전 날짜는 같은 규칙으로 나중에 채운 기록이다.
-//  · 화면 시각(시연 시각)까지 채점이 나온 날만 센다(lib/timegate).
+//  · 화면 시각(시연 시각)까지 확인이 나온 날만 센다(lib/timegate).
 import "server-only";
 import { db } from "@/lib/db";
 import { timeGate } from "@/lib/timegate";
 import tiers from "@/data/tiers.json";
-
-export const FREEZE = "20261103";   // 규칙 고정(2026-11-02 15:17) 뒤 첫 거래일
 
 const TIER = tiers as Record<string, number>;
 const CODES = { 1: Object.keys(TIER).filter((c) => TIER[c] === 1), 2: Object.keys(TIER).filter((c) => TIER[c] === 2) } as const;
@@ -17,7 +15,7 @@ const CODES = { 1: Object.keys(TIER).filter((c) => TIER[c] === 1), 2: Object.key
 /** 하루치 합계(평균은 화면에서 합계 ÷ 개수로) */
 export type RecDay = {
   t: string; x: number;                      // x: 그날 야간 선물 변화
-  n: number; in80: number; in90: number;     // 채점한 종목 수, 노란 띠(80%)·90% 범위 안에서 시작한 종목 수
+  n: number; in80: number; in90: number;     // 확인한 종목 수, 노란 띠(80%)·90% 범위 안에서 시작한 종목 수
   eh: number; ex: number; e0: number;        // |실제 − 첫 예상|, |실제 − 야간 선물 변화|, |실제 − 0(어제 종가 그대로)| 합
   eg: number; ng: number;                    // |실제 − 2차 예상(개장 전 거래 가격)| 합과 개장 전 거래가 있던 종목 수
   hd: number; hn: number;                    // 믿을 정도 '높음' 중 개장 전 거래 방향과 시작 방향이 같았던 수 / 센 수(보합 빼고)

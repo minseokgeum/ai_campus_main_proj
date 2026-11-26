@@ -1,3 +1,4 @@
+// 뉴스·모델 DB 연결(읽기 전용): 밤사이 기사(news), 아침 카드·실제 시가 확인(model), 시세 표.
 import { Pool } from "pg";
 
 // 오라클 서버 수집 DB(PostgreSQL)를 읽기 전용 계정으로 읽는다. 주소는 환경 변수 GNEWS_DB_READ_URL(브라우저로 가지 않음).

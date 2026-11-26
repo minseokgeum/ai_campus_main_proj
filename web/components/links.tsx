@@ -1,10 +1,9 @@
 // 내 종목 연결 그림: 왼쪽 칸들이 오른쪽 내 종목 칸(흰 바탕 · ●)으로 모인다. 2026-11-25 사용자 시안으로 모양을 바꿈:
-// 칸 = 테두리 없는 연회색(이름 · 관계 둘째 줄 · 오른쪽 진한 숫자 = 밤사이 소식 수). 소식이 가장 많은 연결은 민트 칸 + 진한 청록 선,
+// 칸 = 테두리 없는 연회색, 소식 없는 칸은 흰 바탕 + 점선(이름 · 관계 둘째 줄 · 오른쪽 진한 숫자 = 뉴스 브리핑 목록의 그 종목 기사 중 그 연결로 이어진 수, 2026-11-26). 소식이 가장 많은 연결은 민트 칸 + 진한 청록 선,
 // 소식이 난 다른 연결은 연한 청록 선, 소식 없는 직접 관계는 회색 선, 업종·테마로 넓게 이어진 것은 점선. 자료는 lib/links.ts(소식 많은 순).
-import Link from "next/link";
 import { Sheet } from "@/components/sheet";
 import type { LinkNode } from "@/lib/links";
-import { LangToggle, LinkBox, LinkLang, LinkRow } from "@/components/linkbox";
+import { LinkBox, LinkLang, LinkRow } from "@/components/linkbox";
 
 const ROW = 64, BOX = 52;          // 칸 높이 52px, 칸 사이 12px
 const L = 56, R = 70;              // 선이 시작하는 x(왼쪽 칸 오른쪽 끝)·끝나는 x(내 종목 칸 왼쪽 끝), 너비 %(칸 56% · 내 종목 칸 30%, 2026-11-25)
@@ -30,16 +29,17 @@ export function LinkGraph({ name, nodes }: { name: string; nodes: LinkNode[] }) 
   );
 }
 
-/** 범례와 안내 */
-export function LinkLegend() {
+/** 범례와 안내. nodes를 주면 그 칸들에 실제로 나온 선 종류만 보여 준다(2026-11-26) */
+export function LinkLegend({ nodes }: { nodes?: LinkNode[] } = {}) {
+  const has = (f: (x: LinkNode) => boolean) => !nodes || nodes.some(f);
   return (
     <>
       <p className="lgleg">
-        <span><i className="hot" />오늘 소식 난 연결</span>
-        <span><i />직접 관계</span>
-        <span><i className="dash" />업종·테마로 이어짐</span>
+        {has((x) => x.n > 0) ? <span><i className="hot" />오늘 소식 난 연결</span> : null}
+        {has((x) => x.direct && !x.n) ? <span><i />직접 관계</span> : null}
+        {has((x) => !x.direct) ? <span><i className="dash" />업종·테마로 이어짐</span> : null}
       </p>
-      <p className="lgnote">연결은 공시·기사에서 모았어요. 숫자는 밤사이 그 연결로 들어온 미국 뉴스 수예요.</p>
+      <p className="lgnote">연결은 공시·기사에서 모았어요. 숫자는 뉴스 브리핑에 보이는 이 종목 밤사이 뉴스 중 그 연결로 들어온 수예요.</p>
     </>
   );
 }
@@ -55,51 +55,40 @@ function LinkRows({ nodes }: { nodes: LinkNode[] }) {
   );
 }
 
-/** ① 종목 상세 칸: 다섯 칸까지 그림, 나머지는 '모두 보기' 창의 목록 */
-export function StockLinksSection({ name, nodes }: { name: string; nodes: LinkNode[] }) {
-  if (!nodes.length) return null;
-  const top = nodes.slice(0, 5);
+/** 관계 전체 창의 안쪽(종목 상세 '관계도 ›'와 뉴스 '관계 그림 보기 ›'가 같이 쓴다): 다섯 칸 그림(소식 난 연결 먼저) + 범례, 나머지는 줄 목록 */
+function LinksBody({ name, nodes }: { name: string; nodes: LinkNode[] }) {
   return (
-    <LinkLang><section className="pcard">
-      <div className="rowh"><b>내 종목과 이어진 것</b>{nodes.length > 5 ? (
-        <Sheet className="linkish teal" title={`${name} · 이어진 것`} sub={`${nodes.length}개 · 오늘 소식이 난 연결 먼저`} trigger={<>{nodes.length}개 모두 보기 ›</>}>
-          <div className="lgtbar"><LangToggle /></div>
-          <LinkRows nodes={nodes} />
-        </Sheet>) : null}</div>
-      <div className="lgsub"><p className="sline2">오늘 소식이 난 연결을 위에 보여드려요</p><LangToggle /></div>
-      <LinkGraph name={name} nodes={top} />
-      {nodes.length > top.length ? <p className="lgmore">그 밖에 이어진 것 {nodes.length - top.length}개</p> : null}
+    <>
+      <LinkGraph name={name} nodes={nodes.slice(0, 5)} />
       <LinkLegend />
-    </section></LinkLang>
+      <p className="lgcount">이어진 것 {nodes.length}개 중 {Math.min(5, nodes.length)}개</p>
+      {nodes.length > 5 ? <LinkRows nodes={nodes.slice(5)} /> : null}
+    </>
   );
 }
+const SHEET_SUB = "오늘 소식이 난 연결을 위에 보여드려요";
 
-/** ② 뉴스 · 내 종목 뉴스의 '관계 그림 보기 ›' 단추(2026-11-24: 화면에 바로 뜨던 카드 대신 누르면 아래에서 올라오는 창). 이어진 것이 없으면 숨김 */
-export function NewsLinksButton({ code, name, nodes }: { code: string; name: string; nodes: LinkNode[] }) {
-  if (!nodes.length) return null;
-  const hot = nodes.filter((x) => x.n > 0).length;
+/** ② 뉴스 · 내 종목 뉴스의 '관계 그림 보기 ›' 단추(2026-11-24: 누르면 아래에서 올라오는 창).
+ *  2026-11-26 사용자 결정: 창은 종목 상세 '관계도'와 같은 관계 전체(종목 상세로 가는 단추 없음). 소식 난 연결이 없으면 단추를 숨긴다 */
+export function NewsLinksButton({ name, nodes }: { code?: string; name: string; nodes: LinkNode[] }) {
+  const hot = nodes.filter((x) => x.n > 0);
+  if (!hot.length) return null;
   return (
     <LinkLang>
-      <Sheet className="lgbtn" title={`${name} · 이어진 것`} sub="오늘 소식이 난 연결을 위에 보여드려요" trigger={<>관계 그림 보기{hot ? <em>소식 난 연결 {hot}</em> : null} ›</>}>
-        <LinkGraph name={name} nodes={nodes.slice(0, 5)} />
-        <LinkLegend />
-        <p className="lgcount">이어진 것 {nodes.length}개 중 {Math.min(5, nodes.length)}개</p>
-        <Link href={`/mine/${code}`} className="cta lgcta">종목 상세에서 보기</Link>
+      <Sheet className="lgbtn" title={`${name} · 이어진 것`} sub={SHEET_SUB} trigger={<>관계 그림 보기<em>소식 난 연결 {hot.length}</em> ›</>}>
+        <LinksBody name={name} nodes={nodes} />
       </Sheet>
     </LinkLang>
   );
 }
 
-/** ③ 종목 상세의 '관계도 ›' 창(2026-11-25 시안): 다섯 칸 그림 + 범례, 나머지는 줄 목록 */
+/** ③ 종목 상세의 '관계도 ›' 창(2026-11-25 시안) */
 export function LinksSheet({ name, nodes }: { name: string; nodes: LinkNode[] }) {
   if (!nodes.length) return null;
   return (
     <LinkLang>
-      <Sheet className="d4-tlink" title={`${name} · 이어진 것`} sub="오늘 소식이 난 연결을 위에 보여드려요" trigger={<>관계도 ›</>}>
-        <LinkGraph name={name} nodes={nodes.slice(0, 5)} />
-        <LinkLegend />
-        <p className="lgcount">이어진 것 {nodes.length}개 중 {Math.min(5, nodes.length)}개</p>
-        {nodes.length > 5 ? <LinkRows nodes={nodes.slice(5)} /> : null}
+      <Sheet className="d4-tlink" title={`${name} · 이어진 것`} sub={SHEET_SUB} trigger={<>관계도 ›</>}>
+        <LinksBody name={name} nodes={nodes} />
       </Sheet>
     </LinkLang>
   );

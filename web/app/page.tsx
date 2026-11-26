@@ -2,8 +2,9 @@
 // 내 주식 변화·지도는 아침 모델, 뉴스 브리핑은 LLM 요약, 미국 시장은 us_market, 야간선물은 야간 1분봉(모두 서버 DB).
 import Link from "next/link";
 import { AllView } from "@/components/allview";
+import { Progress } from "@/components/allplay";
 import { AiMark, BottomNav } from "@/components/ui";
-import { NightChart, signColor } from "@/components/model";
+import { signColor } from "@/components/model";
 import { MaskToggle } from "@/components/sheet";
 import { FuturesHelp } from "@/components/helps";
 import { BriefCards } from "@/components/brief";
@@ -26,6 +27,7 @@ import { isWeekend } from "@/lib/calendar";
 import { checkTime, closedReason, isClosedDay, marketDay, nextOpenDay } from "@/lib/marketdays";
 import { dateLabel, pct, swon } from "@/lib/format";
 import { appNow, isDemoUser } from "@/lib/clock";
+import { Nudge } from "@/components/nudge";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +53,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
   // 18:00 뒤에는 오늘 밤 진행 중인 야간선물(아침 카드의 지난밤 흐름이 아니라)
   const nightLive = !fresh || now.hour >= 18 ? await nightOf(isClosedDay(today) && m?.card?.d ? m.t : D).catch(() => null) : m?.night ?? null;
   const night = fresh && now.hour < 18 ? m?.night ?? null : nightLive;
-  const nx = night?.points.length ? night.points[night.points.length - 1].r : null;
   // 야간선물 카드 아래 막대: 그 밤(D 18:00부터 12시간) 15분마다 나온 미국 기사 수
   const buckets = night?.points.length ? await newsBuckets(new Date(`${night.d.slice(0, 4)}-${night.d.slice(4, 6)}-${night.d.slice(6)}T18:00:00+09:00`)) : [];
   const hm = `${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")}`;
@@ -59,7 +60,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
   // 06:30이 지났는데 오늘 카드가 아직 없음(야간 자료가 늦게 들어옴, 배포용 변경 기록 08)
   const delayed = !before0630 && !isClosedDay(today) && m?.t !== today;
   const hol = closedReason(today);   // 평일 휴장일이면 '신정이라' 같은 이유
-  // 머리 기준 시각: 채점 뒤면 채점 시각(밤사이 탭과 같게, 2026-11-24), 그 전엔 06:30·08:11 카드 시각
+  // 머리 기준 시각: 확인 뒤면 확인 시각(밤사이 탭과 같게, 2026-11-24), 그 전엔 06:30·08:11 카드 시각
   const stamp = delayed ? `${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")} · 늦어지는 중` : fresh ? `${m!.check ? m!.check.checkedAt ?? checkTime(today)[0] : m!.card!.slot === "0811" && (marketDay(today)?.premarket ?? true) ? "08:11" : "06:30"} 기준` : off ? "장이 열리지 않는 날" : `${hm} · 준비 중`;
   const mins = minutesToOpen(today, nowDate);
   const lastLabel = m ? (hol ? `${Number(m.t.slice(4, 6))}월 ${Number(m.t.slice(6))}일` : isClosedDay(today) ? `${dateLabel(isoDay(m.t)).replace(/^.*\((.)\)$/, "$1")}요일` : m.t === addDays(today, -1) ? "어제" : `${md(m.t)}`) : "";
@@ -90,10 +91,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
     const real = new Date(), at = new Date(`${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(8, 10)}:${stamp.slice(10, 12)}:00+09:00`);
     return at.getTime() <= real.getTime() ? stamp : undefined;
   };
-  const checkHm = (m?.t === today ? m.check?.checkedAt : null) ?? checkTime(today)[0];   // 오늘 채점 전이면 어제 채점 시각이 아니라 기준 시각(개장 5분 뒤)
+  const checkHm = (m?.t === today ? m.check?.checkedAt : null) ?? checkTime(today)[0];   // 오늘 확인 전이면 어제 확인 시각이 아니라 기준 시각(개장 5분 뒤)
   const steps = [{ t: "06:00", label: "야간장 마감", done: true, at: stepAt("06:00") }, { t: "06:30", label: "예상", done: true, at: stepAt("06:30") },
-    { t: "08:11", label: "장전 거래", done: slot0811, at: stepAt("08:11") }, { t: checkHm, label: "채점", done: !!m?.check, at: stepAt(checkHm) }];
-  // 맨 위 카드 금액과 문장: 채점 뒤엔 실제, 전엔 예상. 문장 = 합계와 같은 방향 종목 중 가장 큰 종목이 그 방향 금액의 몇 %(한 화면에 보기 문장과 같은 계산)
+    { t: "08:11", label: "장전 거래", done: slot0811, at: stepAt("08:11") }, { t: marketDay(today)?.openAt || "09:00", label: "정규장 시작", done: !!m?.check, at: stepAt(checkHm) }];   // 2026-11-26 사용자 결정: 마지막 단계 '확인(09:01)' → '정규장 시작(그날 개장 시각)'. 누르면 가는 시각은 실제 시가가 반영된 시각 그대로
+  // 맨 위 카드 금액과 문장: 확인 뒤엔 실제, 전엔 예상. 문장 = 합계와 같은 방향 종목 중 가장 큰 종목이 그 방향 금액의 몇 %(한 화면에 보기 문장과 같은 계산)
   const cardRows = (m?.check ? rows : preRows).filter((r) => r.amount != null && r.qty > 0);
   const topAcc = m?.check ? account(rows) : ac, topAmt = topAcc.amount, topPct = topAcc.pct;   // 예전 카드와 같은 합계 · 계좌 대비 %
   const sameDir = cardRows.filter((r) => Math.sign(r.amount!) === Math.sign(topAmt) && r.amount !== 0).sort((a, b) => Math.abs(b.amount!) - Math.abs(a.amount!));
@@ -104,16 +105,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
   return (
     <>
       <header className={`head homehead${allOn ? " allon" : ""}`}>
-        <h1>{allOn ? <><Link href="/" className="hback" aria-label="홈으로">‹</Link>당신이 잠든 사이에</> : "오늘의 출발"}</h1>   {/* 2026-11-25 사용자 결정: 홈 이름 '오늘의 출발', 달 카드를 눌러 들어간 한 화면에 보기만 '당신이 잠든 사이에' */}
+        {allOn ? <div className="shead hbrow"><Link href="/" aria-label="뒤로">‹</Link></div> : null}   {/* 2026-11-26: 제목 앞 ‹ 대신 맨 위 뒤로 줄 */}
+        <h1>{allOn ? "당신이 잠든 사이에" : "오늘의 출발"}</h1>   {/* 2026-11-25 사용자 결정: 홈 이름 '오늘의 출발', 달 카드를 눌러 들어간 한 화면에 보기만 '당신이 잠든 사이에' */}
         <p className="sub">{dateLabel(isoDay(today))} · {stamp} · {user.username}</p>
         <Link href="/my" className="my" aria-label="마이"><img src="/icons/my.svg" alt="" width={23} height={23} /></Link>
         <Link href="/alerts" className="bell" aria-label="알림"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15L6 17Zm4 3h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>{fresh && nWatch ? <i /> : null}</Link>
       </header>
       <main className="scroll home">
-        {allMode && demoUser && !allOn && !off ? (   // 06:30 전처럼 한 화면에 보기가 안 나오는 시각에도 단계 줄(시연 계정만): 눌러서 다른 시점으로
-          <ol className="allsteps stepnav">
-            {steps.map((x) => <li key={x.t}>{x.at ? <a href={`/demo-time?at=${x.at}&back=${encodeURIComponent("/?view=all")}`} aria-label={`${x.t} ${x.label} 시점 화면 보기`}><i /><b>{x.t}</b><span>{x.label}</span></a> : <><i /><b>{x.t}</b><span>{x.label}</span></>}</li>)}
-          </ol>
+        {allMode && demoUser && !allOn && !off ? (   // 06:30 전처럼 한 화면에 보기가 안 나오는 시각에도 '오늘 아침 진행'(2026-11-26: 한 화면에 보기와 같은 부품으로 통일, 시각 이동은 시계 단추)
+          <Progress solo steps={steps} post={!!m?.check && m.t === today} nowHm={`${String(now.hour).padStart(2, "0")}${String(now.minute).padStart(2, "0")}`} />
         ) : null}
         {allOn ? (
           <AllView after0811={after0811} nowHm={`${String(now.hour).padStart(2, "0")}${String(now.minute).padStart(2, "0")}`} t={m!.t} rows={rows} watchRows={watchRows} preRows={preRows} post={!!m!.check} slot0811={slot0811} steps={steps} news={news} reasons={reasons} x={m!.card?.x ?? null} nxtHist={nxtHist} events={events} noPre={marketDay(today)?.premarket === false} openAt={marketDay(today)?.openAt || "09:00"}
@@ -145,18 +145,19 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ v
             {m ? <Link href={`/night?d=${m.t}`} className="wlink">{lastLabel === "어제" ? "어제" : `${lastLabel}`} 결과 보기 <em>›</em></Link> : null}</section>
         ) : (
           // 맨 위 카드(피그마 배포용 변경 기록 49, 2026-11-25 사용자 요청: 디자인은 피그마, 내용은 지금 카드 그대로):
-          // 달 · '밤사이 · 시각 상태'('당신이 잠든 사이에'는 상태 글자가 잘려서 피그마대로 '밤사이') · 눈(금액 숨기기) · › / 큰 금액 + % / 가장 큰 종목 문장. 카드 전체를 누르면 한 화면에 보기(/?view=all)
-          <section className="nightcard">
+          // 달 · '밤사이 · 시각 상태'('당신이 잠든 사이에'는 상태 글자가 잘려서 피그마대로 '밤사이') · 눈(금액 숨기기) / 큰 금액 + % / 가장 큰 종목 문장. 카드 전체를 누르면 한 화면에 보기(/?view=all)
+          // 2026-11-26 사용자 결정 D안(피그마와 다름): 위 회색 › 대신 아래 '종목별로 자세히 보기' + 청록 원 화살표 줄, 주기적으로 물결 + 화살표 움직임(components/nudge.tsx), 누르면 살짝 눌림
+          <Nudge className="nightcard">
             <Link href="/?view=all" className="nc-hit" aria-label="당신이 잠든 사이에 · 한 화면에 보기" />
             <div className="nc-top">
               <Moon />
-              <span className="nc-st"><b>밤사이</b><span aria-hidden> · </span>{m!.check ? <>{checkHm} <em>채점 완료</em></> : slot0811 ? <>08:11 <em>새로 반영</em></> : <>06:30 <em>예상</em></>}</span>
+              <span className="nc-st"><b>밤사이</b><span aria-hidden> · </span>{m!.check ? <em>실제 시가 반영</em> : slot0811 ? <>08:11 <em>새로 반영</em></> : <>06:30 <em>예상</em></>}</span>
               <MaskToggle />
-              <em className="nc-go" aria-hidden><svg width="9" height="15" viewBox="0 0 9 15"><path d="M1.5 1.5 7.5 7.5 1.5 13.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg></em>
             </div>
             <p className="nc-amtrow"><span className="nc-amt amt tot" style={{ color: signColor(topAmt) }}>{swon(topAmt)}</span><small style={{ color: signColor(topAmt) }}>{pct(P(topPct))}</small></p>
             {topLine ? <p className="nc-l">{topLine}</p> : <p className="nc-l">{m!.check ? "오늘 시가로 실제 바뀐 내 주식이에요." : "오늘 9시에 예상되는 내 주식 변화예요."}</p>}
-          </section>
+            <div className="nc-cta" aria-hidden><span>종목별로 자세히 보기</span><i><svg width="7" height="12" viewBox="0 0 9 15"><path d="M1.5 1.5 7.5 7.5 1.5 13.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg></i></div>
+          </Nudge>
         )}
 
         <div className="hrow"><h2>뉴스 브리핑 <AiMark /></h2><Link href="/news">전체 보기</Link></div>

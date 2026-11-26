@@ -1,6 +1,6 @@
 // 모델 기록(2026-11-25 사용자 요청, 팀원 원래 버전 '기록' 탭 참고): 날마다 06:30에 낸 아침 예상이 9시 실제 시작가와 얼마나 맞았는지.
 // 숫자는 전체 기간(기간별 나눠 보기는 2026-11-25 사용자 결정으로 뺌). 설계 200종목 · 나머지 755종목을 바꿔 본다(사용자 결정).
-// 자료: lib/modelrecord.ts(서버가 매일 쌓는 종목별 채점을 그대로 모음).
+// 자료: lib/modelrecord.ts(서버가 매일 쌓는 종목별 확인을 그대로 모음).
 import Link from "next/link";
 import { BottomNav } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -36,7 +36,7 @@ export default async function RecordPage({ searchParams }: { searchParams: Promi
         </nav>
         <p className="fine">{group === 1 ? "팀원이 예상 규칙을 만들고 검증할 때 쓴 종목이에요(코스피 150 · 코스닥 50)." : "코스피 전체와 코스닥150 가운데 설계 종목 밖의 종목이에요. 규칙을 만들 때 쓰지 않았고, 같은 규칙을 그대로 적용했어요."}</p>
 
-        {!tot.n ? <p className="quiet">채점 기록이 아직 없어요.</p> : (
+        {!tot.n ? <p className="quiet">확인 기록이 아직 없어요.</p> : (
           <>
             <section className="mr-top" aria-label="전체 기간 성적">
               <span className="mr-k">노란 띠(80% 예상 범위) 안에서 시작</span>

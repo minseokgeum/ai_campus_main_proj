@@ -9,6 +9,8 @@ import { type DirectionGrade } from "@/lib/trust";
 import { GradeHelp, NotServiceHelp } from "@/components/helps";
 import { Layer, StickyAccount } from "@/components/sheet";
 import { gradeLine, postLine } from "@/components/bandtext";
+import { CalcDrop, type CalcRow } from "@/components/calcdrop";
+import { expAmt, tick } from "@/lib/tick";
 import { StockPanel, colorOf, pctText, swonText, wonText } from "@/components/stockpanel";
 import { NightBars, type BarRow } from "@/components/nightbars";
 
@@ -23,9 +25,10 @@ const TINTS: [string, string][] = [["rgba(241,163,60,0.18)", "#b86e12"], ["rgba(
   ["rgba(76,111,195,0.14)", "#4c6fc3"], ["rgba(214,51,108,0.14)", "#d6336c"], ["rgba(154,164,168,0.18)", "#5e6e72"]];
 const tint = (sector: string) => TINTS[[...sector].reduce((a, ch) => a + ch.charCodeAt(0), 0) % TINTS.length];
 
-export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabel, accountTitle, accountHead, accountBelow, listHead, futures, stickySeg, attention, rest, footer, initialOpen, chart, chartRows, newsBy }: {
+export function NightBoard({ dayWord = "오늘", t, after0811, phase, view, rows, holdRows, sortLabel, accountTitle, accountHead, accountBelow, listHead, futures, stickySeg, attention, rest, footer, initialOpen, chart, chartRows, newsBy }: {
   t: string; after0811: boolean; phase: "pre" | "post"; view: "hold" | "watch"; rows: BRow[]; holdRows: BRow[]; sortLabel: string;
   accountTitle: string; accountHead: ReactNode; accountBelow: ReactNode; listHead: ReactNode; futures: ReactNode; stickySeg: ReactNode; footer: ReactNode;
+  dayWord?: string;   // 지난 날짜면 그 날짜(위 계좌 줄 글자)
   attention: { title: string; sub: string } | null; rest: { title: string; sub: string } | null; initialOpen?: string;
   chart?: { title: string; note: string; rows: BarRow[] } | null;   // 종목별 오늘 예상 세로 막대(필터와 상관없이 보유/관심 전체)
   chartRows?: BRow[];   // 막대에서 연 종목이 필터로 목록에 없을 때 창을 열 자료
@@ -34,7 +37,12 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
   const key = `qty:${t}`;
   const [ovr, setOvr] = useState<Record<string, number>>({});
   const [open, setOpen] = useState<string | null>(initialOpen ?? null);
-  const [newsOpen, setNewsOpen] = useState(false);   // 종목 창 위에 뜨는 그 종목 밤사이 소식 창(변경 기록 29)
+  const [newsOpen, setNewsOpen] = useState(false);
+  // 계산기(components/calcdrop.tsx, 2026-11-26): 종목마다 띠에서 고른 값(어제 종가 대비)과 '모두 되돌리기'로 띠 손잡이를 지우는 신호.
+  // 옆 종목으로 넘겨도 고른 값은 남고(돌아오면 손잡이가 그 자리에), 종목 창을 닫으면 지운다. 바꾼 수량은 지금처럼 목록이 기억한다
+  const [picks, setPicks] = useState<Record<string, number>>({});
+  const [clr, setClr] = useState(0);
+  useEffect(() => { if (!open) setPicks({}); }, [open]);   // 종목 창 위에 뜨는 그 종목 밤사이 소식 창(변경 기록 29)
   useEffect(() => setNewsOpen(false), [open]);
   useEffect(() => { try { setOvr(JSON.parse(sessionStorage.getItem(key) ?? "{}")); } catch { /* 저장소 없으면 처음 수량 */ } }, [key]);
   useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(ovr)); } catch { /* 무시 */ } }, [key, ovr]);
@@ -50,7 +58,8 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
   // 금액 원칙(2026-11-24): 계산은 정확히, 화면에 찍을 때만 1원 반올림. 장전은 홈·종목 창과 같은 예상(08:11이면 NXT 가격),
   // 장후는 수량 × (실제 시가 − 어제 종가)(DB 등락률 y는 잘린 값이라 금액에 쓰지 않는다)
   const pctOf = (r: BRow) => (phase === "post" ? r.y : r.nxtG ?? r.h);
-  const amtOf = (r: BRow, q: number) => (r.pc == null ? null : phase === "post" ? (r.open != null ? q * (r.open - r.pc) : null) : (r.nxtG ?? r.h) != null ? q * r.pc * (r.nxtG ?? r.h)! : null);
+  // 장전 금액은 예상 가격을 호가 단위로 맞춰 셈(lib/tick.ts). 계산기에서 띠로 고른 가격이 있으면 그 종목은 그 가격으로(종목 창 회색 칸 '계좌 예상'과 계산기가 같은 숫자가 되게, 2026-11-26)
+  const amtOf = (r: BRow, q: number, usePick = true) => (r.pc == null ? null : usePick && picks[r.code] != null ? expAmt(q, r.pc, picks[r.code]) : phase === "post" ? (r.open != null ? q * (r.open - r.pc) : null) : (r.nxtG ?? r.h) != null ? expAmt(q, r.pc, (r.nxtG ?? r.h)!) : null);
   const acct = useMemo(() => {
     const all = new Map(holdRows.map((r) => [r.code, r]));
     for (const r of rows) if (ovr[r.code] != null && !all.has(r.code)) all.set(r.code, r);
@@ -58,11 +67,11 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
     for (const r of all.values()) {
       const q = qtyOf(r), a = amtOf(r, q);
       if (r.pc == null || a == null) continue;
-      value += q * r.pc; amount += a; pre += q * r.pc * (r.nxtG ?? r.h ?? 0);
+      value += q * r.pc; amount += a; pre += expAmt(q, r.pc, r.nxtG ?? r.h ?? 0);
     }
     return { value, amount, pre, after: value + amount, pct: value ? amount / value : 0 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [holdRows, rows, ovr, phase]);
+  }, [holdRows, rows, ovr, phase, picks]);
   // 숫자가 바뀌는 순간 계좌 금액을 0.5초 동안 옅은 청록으로 깜빡인다(규칙·전달 개발 메모 421:6770 ③)
   const [flash, setFlash] = useState(0);
   const prevAmt = useRef<number | null>(null);
@@ -90,7 +99,7 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
     let sub = view === "hold" ? `보유 ${q.toLocaleString("ko-KR")}주` : q > 0 ? `${q}주로 계산 중` : "관심 종목";
     const warn = r.kind === "out" || r.kind === "low";   // 범위 밖·믿을 정도 낮음은 아이콘 점으로만(문구는 '확인이 필요한 종목' 묶음과 종목 창에)
     if (q !== r.qty && view === "hold") sub = `${q}주로 계산 중`;
-    else if (r.kind === "nocalc") sub = phase === "post" && r.h != null ? "시가 채점 전" : "이 날 계산하지 못했어요(자료 부족)";
+    else if (r.kind === "nocalc") sub = phase === "post" && r.h != null ? "실제 시가 확인 전" : "이 날 계산하지 못했어요(자료 부족)";
     // 셋째 줄(배포용 변경 기록 01): 부정·긍정 개수(0인 쪽은 숨김) · 중립만 있으면 '중립 소식만 있어요' · 판정 없는 소식만 있으면 '소식 n건' · 없으면 '소식 없음'
     const newsLine = !r.nNews ? <span className="nl3">소식 없음</span>
       : r.v && (r.v.neg || r.v.pos) ? <span className="nl3 vl">{r.v.neg ? <span><b className="neg">부정</b> {r.v.neg}</span> : null}{r.v.pos ? <span><b className="pos">긍정</b> {r.v.pos}</span> : null}</span>
@@ -108,7 +117,7 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
           <><span className="na">대상 아님</span><span className="val"><b className="g">—</b><small>계산 안 함</small></span></>
         ) : r.l80 != null && r.u80 != null && p != null ? (
           <>
-            <BandMini l={r.l80} u={r.u80} dot={p} hollow={phase === "pre" && r.nxtG != null ? r.nxtG : null} />
+            <BandMini l={r.l80} u={r.u80} dot={p} kind={phase === "post" ? "post" : r.nxtG != null ? "nxt" : "pre"} />
             <span className="val" style={{ color: colorOf(p) }}>
               <b>{pctText(p)}</b>
               <small className="amt">{amt != null && (view === "hold" || q > 0) ? swonText(amt) : phase === "post" ? "실제" : "예상"}</small>
@@ -123,7 +132,7 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
   return (
     <>
       <StickyAccount targetId="acct-card">
-        <span className="sa"><span>{phase === "post" ? "오늘 실제 시가" : "오늘 시가 예상"}</span>
+        <span className="sa"><span>{phase === "post" ? `${dayWord} 실제 시가` : `${dayWord} 시가 예상`}</span>
           <b style={{ color: colorOf(acct.amount) }} className={fl}><span className="amt tot">{swonText(acct.amount)}</span> <small>{pctText(acct.pct)}</small></b></span>
         {stickySeg}
       </StickyAccount>
@@ -157,6 +166,25 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
 
       {cur ? (
         <Layer><div className="sheet-back light" onClick={() => setOpen(null)}>
+          {(() => {   // 수량을 바꾸거나 띠에서 가격을 고른 종목이 하나라도 있으면 창 위 빈 곳에 계산기(옆 종목으로 넘겨도 남는다)
+            const byCode = new Map([...(chartRows ?? []), ...rows, ...holdRows].map((r) => [r.code, r]));
+            const ok = (r?: BRow): r is BRow => !!r && r.kind !== "notservice" && r.pc != null && r.h != null;
+            const priceOf = (r: BRow, usePick = true) => {
+              const pk = usePick ? picks[r.code] : undefined;
+              const post = phase === "post" && r.y != null;
+              const nx = phase === "pre" && after0811 ? r.nxtG : null;
+              return tick(pk != null ? r.pc! * (1 + pk) : post && r.open != null ? r.open : r.pc! * (1 + (post ? r.y! : nx ?? r.h!)));
+            };
+            const labelOf = (r: BRow) => (picks[r.code] != null ? "띠에서 고른" : phase === "post" && r.y != null ? "실제 시가" : phase === "pre" && after0811 && r.nxtG != null ? "장전 기준" : "예상 시가");
+            const codes = [...new Set([...Object.keys(ovr).filter((c) => byCode.get(c) && ovr[c] !== byCode.get(c)!.qty), ...Object.keys(picks)])];
+            const list = codes.map((c) => byCode.get(c)).filter(ok);
+            if (!list.length) return null;
+            const calcRows: CalcRow[] = list.map((r) => ({ code: r.code, name: r.name, q0: r.qty, q: qtyOf(r), price: priceOf(r), label: labelOf(r), cur: r.code === cur.code }));
+            const acctRows = [...new Map([...holdRows, ...list].map((r) => [r.code, r])).values()].filter(ok);
+            const pnlNow = acctRows.reduce((s, r) => s + qtyOf(r) * (priceOf(r) - r.pc!), 0);
+            const pnlOrig = holdRows.filter(ok).reduce((s, r) => s + r.qty * (priceOf(r, false) - r.pc!), 0);
+            return <CalcDrop rows={calcRows} pnlNow={pnlNow} pnlOrig={pnlOrig} onReset={() => { setOvr({}); setPicks({}); setClr((c) => c + 1); }} />;
+          })()}
           <section className="sheet-box stocksheet" role="dialog" aria-modal="true" aria-label={`${cur.name} 종목 창`} onClick={(e) => e.stopPropagation()}>
             <i className="grab" />
             <div className="shead">
@@ -178,9 +206,10 @@ export function NightBoard({ t, after0811, phase, view, rows, holdRows, sortLabe
             ) : (
               <>
                 {cur.tier === 2 ? <p className="t2box">모델을 설계할 때 쓰지 않은 종목이에요. 같은 규칙으로 계산했지만, 과거 검증은 설계 종목(코스피 150 + 코스닥 50)으로만 했어요.</p> : null}
-                <StockPanel icon={<span className="ic" style={{ background: tint(cur.sector)[0], color: tint(cur.sector)[1] }}>{cur.name.slice(0, 1)}</span>} phase={phase} qty={qtyOf(cur)} setQty={(q) => setOvr({ ...ovr, [cur.code]: q })} acctAmount={acct.amount} acctValue={acct.value}
+                <StockPanel icon={<span className="ic" style={{ background: tint(cur.sector)[0], color: tint(cur.sector)[1] }}>{cur.name.slice(0, 1)}</span>} phase={phase} after0811={after0811} qty={qtyOf(cur)} setQty={(q) => setOvr({ ...ovr, [cur.code]: q })} acctAmount={acct.amount} acctValue={acct.value} key={cur.code} start={picks[cur.code] ?? null} clearKey={clr}
+                  onPick={(v) => setPicks((p) => { if (v == null) { if (!(cur.code in p)) return p; const o = { ...p }; delete o[cur.code]; return o; } return p[cur.code] === v ? p : { ...p, [cur.code]: v }; })}
                   s={{ code: cur.code, name: cur.name, qty: cur.qty, pc: cur.pc, h: cur.h, l80: cur.l80, u80: cur.u80, l90: cur.l90, u90: cur.u90, nxtG: cur.nxtG, y: cur.y, open: cur.open, avg: cur.avg }}
-                  status={(() => {   // 상태 한 줄(2026-11-25 사용자 시안): 칩·90% 문장 대신. 06:30엔 실적 태그 · 08:11엔 장전 방향 등급 · 채점 뒤엔 띠 안/밖
+                  status={(() => {   // 상태 한 줄(2026-11-25 사용자 시안): 칩·90% 문장 대신. 06:30엔 실적 태그 · 08:11엔 장전 방향 등급 · 확인 뒤엔 띠 안/밖
                     const earn = cur.earn ? <em className="earn">실적 발표 다음 날 · 평소보다 덜 맞아요</em> : null;
                     if (phase === "post" && cur.y != null) return <>{postLine(cur.y, cur.nxtG ?? cur.h!, cur.l80!, cur.u80!)}{earn ? <> · {earn}</> : null}</>;
                     if (after0811) return cur.nxtG == null ? <><span className="mute">장전 거래 없음 · 06:30 예상 유지</span>{earn ? <> · {earn}</> : null}</>

@@ -1,4 +1,4 @@
-// 알림(피그마 465:8273): 오늘·어제의 아침 모델 소식(06:30 예상, 08:11 범위 밖, 09:05 채점)을 내 보유 종목 기준으로 모아 보여 준다.
+// 알림(피그마 465:8273): 오늘·어제의 아침 모델 소식(06:30 예상, 08:11 범위 밖, 09:05 확인)을 내 보유 종목 기준으로 모아 보여 준다.
 // 휴대폰 푸시는 보내지 않는다(사용자 결정). 알림 설정 화면은 모양만 있다.
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
@@ -30,7 +30,7 @@ export default async function Alerts() {
     const a = account(pre);
     if (m.check) {
       const post = buildRows(m, items, "post").filter((r) => r.c);
-      notes.push({ at: m.check.checkedAt ?? checkTime(t)[0], icon: "check", title: "채점 결과가 나왔어요", body: `${post.length}종목 중 ${post.filter((r) => r.c!.in80).length}종목이 예상 범위 안에서 시작했어요`, href: `/night/record`, fresh: t === today });
+      notes.push({ at: m.check.checkedAt ?? checkTime(t)[0], icon: "check", title: "확인 결과가 나왔어요", body: `${post.length}종목 중 ${post.filter((r) => r.c!.in80).length}종목이 예상 범위 안에서 시작했어요`, href: `/night/record`, fresh: t === today });
     }
     const out = pre.filter((r) => r.kind === "out");
     if (m.card.slot === "0811" && out.length)

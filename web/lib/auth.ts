@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { appdb } from "@/lib/appdb";
 import { logPortfolio } from "@/lib/portfolio";
+import { isFixedDemo, isGuest } from "@/lib/demousers";
 
 const COOKIE = "sid";
 const DAYS = 30;
@@ -101,6 +102,8 @@ export async function guestLogin(key: string, sample: { code: string; qty: numbe
 
 /** 회원 탈퇴: 보유·관심·세션·계정을 지운다(되돌릴 수 없음). 예전 공용 체험 계정(guest)은 계정만 남기고, 사람마다 만든 체험 계정(guest_…)은 모두 지운다 */
 export async function deleteAccount(userId: number): Promise<void> {
+  const who = await appdb().query("select username from app.users where id = $1", [userId]);
+  if (isFixedDemo(who.rows[0]?.username)) return;   // 시연 계정은 탈퇴(삭제)할 수 없다(2026-11-26)
   const client = await appdb().connect();
   try {
     await client.query("begin");
@@ -159,3 +162,14 @@ export async function requireUser(): Promise<User> {
   if (!u) redirect("/start");
   return u;
 }
+
+/** 지금 로그인한 사람이 미리 만든 시연 계정(user1~10, guest)인지 — 보기 전용(lib/demousers.ts) */
+export async function demoLocked(): Promise<boolean> {
+  return isFixedDemo((await currentUser())?.username);
+}
+
+/** 지금 로그인한 사람이 둘러보기 체험 계정인지 — 종목 추가 막기(lib/demousers.ts) */
+export async function guestNoAdd(): Promise<boolean> {
+  return isGuest((await currentUser())?.username);
+}
+

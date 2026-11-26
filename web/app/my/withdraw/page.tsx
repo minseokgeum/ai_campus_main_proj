@@ -1,7 +1,8 @@
 // 회원 탈퇴(피그마 539:6286) → 탈퇴 완료(539:6336). 보유·관심·세션·계정을 바로 지운다.
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { deleteAccount, requireUser } from "@/lib/auth";
+import { deleteAccount, demoLocked, requireUser } from "@/lib/auth";
+import { DemoLock } from "@/components/demolock";
 
 async function doWithdraw(form: FormData) {
   "use server";
@@ -13,6 +14,7 @@ async function doWithdraw(form: FormData) {
 
 export default async function Withdraw({ searchParams }: { searchParams: Promise<{ e?: string }> }) {
   const user = await requireUser();
+  if (await demoLocked()) return <DemoLock back="/my" title="회원 탈퇴" />;   // 시연 계정은 탈퇴할 수 없다(2026-11-26)
   const sp = await searchParams;
   return (
     <main className="sheet wdraw">
@@ -20,7 +22,7 @@ export default async function Withdraw({ searchParams }: { searchParams: Promise
       <h1>탈퇴하기 전에<br />확인해 주세요</h1>
       <ul className="wbox">
         <li>등록한 보유·관심 종목이 모두 지워져요.</li>
-        <li>지난 예상과 채점 기록이 모두 지워져요.</li>
+        <li>지난 예상과 확인 기록이 모두 지워져요.</li>
         <li>같은 계정({user.username})으로 다시 가입해도 되돌릴 수 없어요.</li>
       </ul>
       <form action={doWithdraw} className="wform">

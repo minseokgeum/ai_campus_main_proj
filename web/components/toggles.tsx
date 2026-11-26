@@ -7,7 +7,7 @@ const GROUPS = [
   { h: "장 시작 전 (08:11)", items: [
     { k: "out", t: "범위 밖 종목이 생기면", d: "NXT 08:10 체결가가 예상 범위를 벗어난 종목이 있으면 08:11에 알려요", on: true },
     { k: "low", t: "방향 유지 등급이 낮은 종목", d: "오늘 방향 유지 등급이 낮은 보유 종목이 있으면 알려요", on: false }] },
-  { h: "채점", items: [{ k: "check", t: "09:05 채점 결과", d: "실제 시가로 맞음·벗어남을 채점하면 알려요", on: false }] },
+  { h: "확인 결과", items: [{ k: "check", t: "09:05 확인 결과", d: "실제 시가가 예상 범위 안에 들었는지 확인하면 알려요", on: false }] },
 ];
 
 export function AlertToggles() {

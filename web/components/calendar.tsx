@@ -1,5 +1,5 @@
 "use client";
-// 보관 달력 창(피그마 287:491 · 287:654): 월 이동, 날짜마다 채점 점(범위 안 비율 80% 이상 · 60~80% · 60% 미만, 2026-11-22 비율 기준으로 바꿈), 고른 날짜 보기.
+// 보관 달력 창(피그마 287:491 · 287:654): 월 이동, 날짜마다 확인 점(범위 안 비율 80% 이상 · 60~80% · 60% 미만, 2026-11-22 비율 기준으로 바꿈), 고른 날짜 보기.
 import Link from "next/link";
 import { useState } from "react";
 import { Layer } from "@/components/sheet";
@@ -11,7 +11,7 @@ export function CalendarSheet({ selected, today, marks, records, closed }: { sel
   const KRX_CLOSED = closed;
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState(selected.slice(0, 6));
-  const [pick, setPick] = useState(selected);
+  const [pick] = useState(selected);
   const y = Number(ym.slice(0, 4)), mo = Number(ym.slice(4, 6));
   const first = new Date(Date.UTC(y, mo - 1, 1)).getUTCDay();
   const days = new Date(Date.UTC(y, mo, 0)).getUTCDate();

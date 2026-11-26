@@ -135,7 +135,7 @@ export function nextOpenDay(t: string): string {
   return d;
 }
 
-/** 채점 시각을 모를 때 쓰는 기준: 개장 5분 뒤(보통 09:05, 수능일·새해 첫날 10:05). 서버는 시가가 들어오는 즉시 채점하고 그 시각(checked_at)을 남기므로,
+/** 확인 시각을 모를 때 쓰는 기준: 개장 5분 뒤(보통 09:05, 수능일·새해 첫날 10:05). 서버는 시가가 들어오는 즉시 확인하고 그 시각(checked_at)을 남기므로,
  *  이 값은 checked_at이 없는 지난 기록에만 쓴다. [화면 글자, 비교용 HHMM 숫자] */
 export function checkTime(t: string): [string, number] {
   const o = marketDay(t)?.openAt || "09:00";

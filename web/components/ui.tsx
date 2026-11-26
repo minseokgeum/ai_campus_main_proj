@@ -6,35 +6,8 @@ import { stockName } from "@/lib/data";
 import { foldStories, type Article } from "@/lib/news";
 
 
-// 아이콘(피그마 배포/하단 메뉴 771:173, 변경 기록 33 '투톤', 2026-11-25 반영): 선택 안 됨 = 회색 선만, 선택됨 = 민트 면 + 청록 선.
-// 두 가지 색이라 한 색으로 칠하는 마스크 대신 탭마다 파일 두 개(public/icons/nav-*.svg, nav-*-on.svg)
-const TABS = [
-  { key: "home", href: "/", label: "홈" },
-  { key: "news", href: "/news", label: "뉴스 브리핑" },
-  { key: "night", href: "/night", label: "밤사이" },
-  { key: "mine", href: "/mine", label: "내 종목" },
-  { key: "saved", href: "/saved", label: "보관" },
-] as const;
-
-export type TabKey = (typeof TABS)[number]["key"];
-
-/** 계좌 고르기(a)는 메뉴를 옮겨도 따라간다 */
-export function withAcct(href: string, acct?: string) {
-  return acct ? `${href}${href.includes("?") ? "&" : "?"}a=${acct}` : href;
-}
-
-export function BottomNav({ active, acct }: { active: TabKey | null; acct?: string }) {   // null: 마이처럼 다섯 탭에 속하지 않는 화면(선택 없음)
-  return (
-    <nav className="nav" aria-label="아래 메뉴">
-      {TABS.map((t) => (
-        <Link key={t.key} href={withAcct(t.href, acct)} className={t.key === active ? "on" : ""} aria-current={t.key === active ? "page" : undefined}>
-          <img className="ic" src={`/icons/nav-${t.key}${t.key === active ? "-on" : ""}.svg`} alt="" width={24} height={24} aria-hidden />
-          {t.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
+// 아래 메뉴(BottomNav)는 불러오는 중 화면(components/routeloading.tsx)에서도 쓰려고 components/navbar.tsx로 옮김(2026-11-26)
+export { BottomNav, withAcct, type TabKey } from "@/components/navbar";
 
 export function Head({ title, sub, help, tabs }: { title: ReactNode; sub?: ReactNode; help?: ReactNode; tabs?: ReactNode }) {   // tabs: 제목 아래 보기 전환 줄(뉴스 브리핑, 2026-11-25). 있으면 help는 그 줄 끝에
   return (
@@ -54,15 +27,6 @@ export function Section({ title, right }: { title: string; right?: ReactNode }) 
     <div className="sec">
       <span className="t">{title}</span>
       {right ? <span className="r">{right}</span> : null}
-    </div>
-  );
-}
-
-function Source({ a }: { a: Article }) {
-  return (
-    <div className="foot">
-      <span className="src">{a.source} · {kstTime(a.published)}</span>
-      <a className="go" href={a.link} target="_blank" rel="noreferrer noopener">원문 보기 <b>↗</b></a>
     </div>
   );
 }
@@ -165,44 +129,6 @@ export function Avatar({ name, sector, size = 28 }: { name: string; sector?: boo
   return <span className={`av ${sector ? "sec" : ""}`} aria-hidden style={{ width: size, height: size, fontSize: Math.round(size * 0.4), background: sector ? undefined : c }}>{name.slice(0, 1)}</span>;
 }
 
-/** 보유 종목 소식 한눈에(배포용 변경 '뉴스 · 내 종목 읽기 쉽게', 피그마 794:157): 종목 아이콘 · 이름 · 판정 비율 막대(부정 주황 / 긍정 초록 / 중립 회색 / 판정 없음 연회색) · 기사 수 */
-export function VerdictGlance({ title, rows }: { title: string; rows: { name: string; href: string; total: number; neg: number; pos: number; neu: number }[] }) {
-  if (!rows.length) return null;
-  return (
-    <section className="glance vg">
-      <h3>{title}<span>부정 소식 있는 종목 먼저</span></h3>
-      {rows.map((r) => {
-        const w = (n: number) => `${(n / Math.max(1, r.total)) * 100}%`;
-        return (
-          <Link key={r.name} href={r.href} className="grow">
-            <Avatar name={r.name} size={22} /><b>{r.name}</b>
-            <i className="vbar" aria-label={`부정 ${r.neg} · 긍정 ${r.pos} · 중립 ${r.neu} · 판정 없음 ${r.total - r.neg - r.pos - r.neu}`}>
-              <em className="neg" style={{ width: w(r.neg) }} /><em className="pos" style={{ width: w(r.pos) }} /><em className="neu" style={{ width: w(r.neu) }} />
-            </i>
-            <span>{r.total}건</span>
-          </Link>
-        );
-      })}
-      <p className="vleg"><span><i className="neg" />부정</span><span><i className="pos" />긍정</span><span><i className="neu" />중립</span><span><i />판정 없음</span></p>
-    </section>
-  );
-}
-
-/** 한눈에 카드(산업별 '○○ 뉴스 속 내 종목', 업종 전체 '선택 업종 뉴스 한눈에'): 아이콘 · 이름 · 기사 수 막대(청록) · n건 */
-export function Glance({ title, rows, sector }: { title: string; rows: { name: string; n: number; href?: string }[]; sector?: boolean }) {
-  if (!rows.length) return null;
-  const max = Math.max(1, ...rows.map((r) => r.n));
-  return (
-    <section className="glance">
-      <h3>{title}</h3>
-      {rows.map((r) => {
-        const inner = <><Avatar name={r.name} sector={sector} size={22} /><b>{r.name}</b><i><em style={{ width: `${(r.n / max) * 100}%` }} /></i><span>{r.n}건</span></>;
-        return r.href ? <Link key={r.name} href={r.href} className="grow">{inner}</Link> : <div key={r.name} className="grow">{inner}</div>;
-      })}
-    </section>
-  );
-}
-
 /** AI 표시(2026-11-25 통일, 사용자 시안): 테두리·바탕 없이 세 줄 요약 아이콘 + 'AI'를 진한 초록 계열 그라데이션(초록→앱 청록→진한 청록)으로. 빛이 4초마다 글자 위를 지나간다(움직임 줄이기면 없음).
  *  label: 뒤에 붙일 말(예: '요약', '전체 요약'). small: 문장 앞에 붙는 작은 크기 */
 export function AiMark({ label, small }: { label?: string; small?: boolean }) {
@@ -273,15 +199,6 @@ export function StateBox({ mark, tone = "teal", title, body, action }: { mark: s
 
 export function Empty({ text = "오늘은 관련 소식이 없어요" }: { text?: string }) {
   return <p className="state">{text}</p>;
-}
-
-export function Soon({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="soon">
-      <b>{title}</b>
-      <p>{body}</p>
-    </div>
-  );
 }
 
 /** 시연 시각으로 지난 시각을 보는 중일 때 종목 추가·수정 대신 보여 주는 안내(2026-11-23: 과거 시각은 그때 보유 구성으로 보여 줘서 고칠 수 없게) */

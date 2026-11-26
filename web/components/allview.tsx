@@ -4,8 +4,8 @@
 // ①·④의 조작(띠 누르기·끌기, 수량 −/+, 되돌리기, 순서, 보유·관심 나눠 보기)은 components/allplay.tsx(2026-11-24).
 // 모양은 피그마 버전(globals.css의 카드·색·글자)을 쓴다. 숫자는 모두 계산값이고, 소식은 예상 계산에 넣지 않는다(원인 단정 금지).
 import Link from "next/link";
-import { AiMark, Avatar, StockNews } from "@/components/ui";
-import { MaskToggle, Sheet } from "@/components/sheet";
+import { AiMark, StockNews } from "@/components/ui";
+import { Sheet } from "@/components/sheet";
 import { signColor } from "@/components/model";
 import { FuturesCard } from "@/components/futcard";
 import { gradeText } from "@/lib/trust";
@@ -13,12 +13,12 @@ import { gradeLine, postLine } from "@/components/bandtext";
 import { FuturesHelp, GradeHelp } from "@/components/helps";
 import { P, type Row } from "@/lib/night";
 import { AllPlay, type PlayCard } from "@/components/allplay";
-import { impactFor, verdictsOf, type Article } from "@/lib/news";
+import { impactFor, type Article } from "@/lib/news";
 import type { Night } from "@/lib/model";
 import type { UsDay } from "@/lib/market";
 import { usHead } from "@/lib/market";
 import { UsChips, type UsItem } from "@/components/ussheet";
-import { pct, swon, won } from "@/lib/format";
+import { pct, swon } from "@/lib/format";
 import type { CardStock } from "@/lib/model";
 import type { Reason } from "@/lib/summary";
 import type { Ev } from "@/lib/events";
@@ -28,10 +28,10 @@ const A = (v: number) => <span className="amt">{swon(v)}</span>;
 
 type Props = {
   t: string;                 // 카드 날짜(YYYYMMDD). 바꾼 수량 저장 칸 이름(밤사이 종목 창과 같은 칸)
-  rows: Row[];               // 장전: 예상 · 장후: 실제(채점)
+  rows: Row[];               // 장전: 예상 · 장후: 실제(확인)
   watchRows: Row[];          // 관심 종목(수량 0, 2026-11-24)
   preRows: Row[];            // 장전 예상(장후에도 '예상' 칸과 띠에 씀)
-  post: boolean;             // 채점 뒤인가
+  post: boolean;             // 확인 뒤인가
   after0811: boolean;        // 시연 중인 날짜·시각의 08:11 경과 여부
   slot0811: boolean;         // 08:11 카드(장전 거래 반영)인가
   steps: { t: string; label: string; done: boolean; at?: string }[];
@@ -246,7 +246,7 @@ export function AllView(p: Props) {
     return {
       code: r.code, name: r.name, qty: r.qty, watch, warn: r.kind === "out" || r.kind === "low",
       s, c: r.c, pct: r.pct ?? s.h, nxt, y: p.post ? r.c?.y ?? null : null,
-      // 상태 한 줄(2026-11-25 사용자 시안): 06:30엔 실적 태그만 · 08:11엔 장전 방향 등급 · 채점 뒤엔 띠 안/밖과 예상과의 차이. 근거 문장·칩은 띠 이름표와 '예상 범위 ?' 창으로
+      // 상태 한 줄(2026-11-25 사용자 시안): 06:30엔 실적 태그만 · 08:11엔 장전 방향 등급 · 확인 뒤엔 띠 안/밖과 예상과의 차이. 근거 문장·칩은 띠 이름표와 '예상 범위 ?' 창으로
       status: (() => {
         const earn = s.earn ? <em className="earn">실적 발표 다음 날 · 평소보다 덜 맞아요</em> : null;
         if (p.post && r.c) {

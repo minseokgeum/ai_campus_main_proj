@@ -1,9 +1,11 @@
 // 내 종목 연결 그림(2026-11-22, 피그마 미국 연결 기업 그림을 검색어 연결표 기준으로 바꿈): 종목과 이어진 회사·제품·원자재·업종·테마.
-// 원본은 서버 DB news.term_links(graph_db/term_links.ipynb: 검색어마다 그래프 관계·한글 이름). 소식 수는 브리핑 범위에 그 연결의 검색어로 들어온 기사 수.
+// 원본은 서버 DB news.term_links(graph_db/term_links.ipynb: 검색어마다 그래프 관계·한글 이름).
+// 소식 수는 뉴스 브리핑 '내 종목' 목록에 보이는 그 종목 기사(lib/news.ts byStock) 중 그 칸의 검색어로 이어진 기사 수(2026-11-26: 목록과 같은 기사로 셈.
+// 그전엔 그 검색어로 들어온 기사를 제목 규칙 없이 모두 세어 목록 수와 맞지 않았다).
 // 글자 규칙은 디자인 예시 '④ 글자 규칙'과 같다: 선 위 이름(관계·방향 → 고객사·공급사·생산 제품…), 칸 아래 종류, 직접 관계는 실선 · 업종·테마로 넓게 이어진 것은 점선.
 import "server-only";
 import { db } from "@/lib/db";
-import { NEWS_OK } from "@/lib/newsql";
+import type { Article } from "@/lib/news";
 
 export type LinkNode = {
   key: string;          // 칸 하나(해외 상대는 상대 회사 노드, 나머지는 한글 이름)
@@ -11,7 +13,7 @@ export type LinkNode = {
   kind: string;         // 칸 아래 종류: 회사 · 제품 · 원자재 · 브랜드 · 업종 · 테마 · 정책 · 사업
   rel: string;          // 선 위 이름
   direct: boolean;      // 직접 관계(실선)인지, 업종·테마로 넓게 이어진 것(점선)인지
-  n: number;            // 밤사이 그 연결의 검색어로 들어온 기사 수
+  n: number;            // 뉴스 브리핑 목록의 그 종목 기사 중 이 칸의 검색어로 이어진 기사 수
   terms: string[];      // 이 칸에 묶인 미국 뉴스 검색어 원문(따옴표 뗀 것). 칸을 누르면 보여 준다(번역 확인용, 2026-11-22)
 };
 
@@ -42,21 +44,19 @@ function relName(kind: string, link: string, rels: Rel[]): string | null {
   return link === "none" ? "관련 사업" : "관련";
 }
 
-/** 여러 종목의 연결(종목코드 → 칸 목록, 오늘 소식 많은 순 → 직접 관계 먼저). start·end: 기사 수를 셀 수집 시각 범위 */
-export async function stockLinks(codes: string[], start: Date, end: Date): Promise<Map<string, LinkNode[]>> {
+/** 여러 종목의 연결(종목코드 → 칸 목록, 오늘 소식 많은 순 → 직접 관계 먼저). arts: 종목코드 → 뉴스 브리핑 목록의 그 종목 기사(byStock 결과) */
+export async function stockLinks(codes: string[], arts: Map<string, Article[]>): Promise<Map<string, LinkNode[]>> {
   const out = new Map<string, LinkNode[]>(codes.map((c) => [c, []]));
   if (!codes.length) return out;
   try {
-    const pool = db();
-    const t = await pool.query(
+    const t = await db().query(
       `select stock_code, kind, query, node, coalesce(nullif(name_ko, ''), node_name, query) as name, link, relations
        from news.term_links where stock_code = any($1) and kind <> '자기 회사'`, [codes]);
-    const queries = [...new Set(t.rows.map((r) => r.query as string))];
-    const h = queries.length ? await pool.query(
-      `select h.term, i.key from items i join hits h on h.key = i.key left join news.llm_articles l on l.key = i.key
-       where coalesce(i."drop", '') = '' and i.published_utc >= $1 and i.published_utc < $2 and i.first_seen_utc < $2 and h.term = any($3) and ${NEWS_OK}`, [start, end, queries]) : { rows: [] };   // 브리핑과 같은 범위(발행 시각, 끝 시각까지 수집된 것)
+    // 종목·검색어 → 목록에서 그 검색어로 그 종목에 이어진 기사 key
     const keysOf = new Map<string, Set<string>>();
-    for (const r of h.rows) { const s = keysOf.get(r.term) ?? new Set<string>(); s.add(r.key); keysOf.set(r.term, s); }
+    for (const c of codes) for (const a of arts.get(c) ?? []) for (const term of a.via[c] ?? []) {
+      const s = keysOf.get(`${c}|${term}`) ?? new Set<string>(); s.add(a.key); keysOf.set(`${c}|${term}`, s);
+    }
     const groups = new Map<string, { node: LinkNode; keys: Set<string>; rank: number }>();
     for (const r of t.rows) {
       const rels = (typeof r.relations === "string" ? JSON.parse(r.relations) : r.relations ?? []) as Rel[];
@@ -70,7 +70,7 @@ export async function stockLinks(codes: string[], start: Date, end: Date): Promi
       if (term && !g.node.terms.includes(term)) g.node.terms.push(term);
       if (rank < g.rank) { g.node = { ...g.node, kind: KIND_TAG[r.kind] ?? g.node.kind, rel, direct }; g.rank = rank; }
       if (r.kind === "해외 상대" && !r.query.includes('" "')) g.node.name = String(r.name).trim();   // 상대 회사 칸 이름은 회사 이름만 쓴 검색어의 이름
-      for (const k of keysOf.get(r.query) ?? []) g.keys.add(k);
+      for (const k of keysOf.get(`${r.stock_code}|${r.query}`) ?? []) g.keys.add(k);
       groups.set(gk, g);
     }
     for (const g of groups.values()) {

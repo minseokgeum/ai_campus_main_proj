@@ -1,13 +1,12 @@
 // 뉴스 브리핑 v2(피그마 시장 522:6706 · 산업별 493:9838 · 내 종목 532:6226). 기사는 오라클 수집 DB의 밤사이 실제 기사.
-// 2026-11-24: 위 탭 줄 대신 큰 제목을 눌러 보기를 바꾼다(components/newsmenu.tsx), 내 종목 뉴스는 종목 이름 메뉴로 한 종목씩 고른다(Mine), 산업별도 같은 방식(IndustryV2, IND_V2로 되돌림), 세 화면 모두 판정 묶음.
+// 위 탭(내 종목 · 산업별 · 시장). 내 종목 뉴스는 종목 이름 줄에서 한 종목씩(Mine), 산업별도 업종 이름 줄에서 한 업종씩(Industry). 세 화면 모두 긍정·부정 판정 묶음으로 보여 준다.
 import Link from "next/link";
 import { NewsTimeHelp } from "@/components/helps";
 import { NewsLinksButton } from "@/components/links";
 import { stockLinks, type LinkNode } from "@/lib/links";
-import { AiSummary, Avatar, BottomNav, Empty, Glance, Head, NewsCard, Section, StateBox, StockNews, VerdictGroups } from "@/components/ui";
+import { AiSummary, BottomNav, Empty, Head, NewsCard, Section, StateBox, StockNews, VerdictGroups } from "@/components/ui";
 import { NameRow } from "@/components/namerow";
 import { aiBrief, type Brief } from "@/lib/summary";
-import { Sheet } from "@/components/sheet";
 import { requireUser } from "@/lib/auth";
 import { portfolio, UNIVERSE, uStock } from "@/lib/portfolio";
 import { articleVerdict, bySector, byStock, foldStories, groupByVerdict, impactFor, nightNews, verdictsOf } from "@/lib/news";
@@ -19,8 +18,6 @@ type Acct = { holdings: { code: string; qty: number }[]; watch: string[] };
 const nameOf = (c: string) => uStock(c)?.name ?? c;
 const sectorOf = (c: string) => uStock(c)?.sector;
 const MARKET_MAX = 30;
-// 산업별 새 화면(2026-11-24, 내 종목 뉴스처럼 업종 하나씩 · 업종 이름 메뉴). false로 바꾸면 예전 화면(업종 여러 개 고르기 · 업종별 2건 묶음)으로 돌아간다
-const IND_V2 = true;
 
 function q(base: Q, patch: Partial<Q>) {
   const p = new URLSearchParams();
@@ -39,7 +36,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const base: Q = { d: sp.d };
   const asOf = `${brief.asOf} 기준`;
   // 내 종목 탭: 종목마다 연결 그림(오늘 소식이 난 연결 카드 · 관계도 창)
-  const links = tab === "mine" ? await stockLinks(sp.v === "watch" ? acct.watch : acct.holdings.map((h) => h.code), brief.start, brief.end) : new Map<string, LinkNode[]>();
+  // 칸 숫자는 아래 목록과 같은 기사(byStock)로 센다(2026-11-26)
+  const mineCodes = sp.v === "watch" ? acct.watch : acct.holdings.map((h) => h.code);
+  const links = tab === "mine" ? await stockLinks(mineCodes, byStock(articles, mineCodes)) : new Map<string, LinkNode[]>();
 
   return (
     <>
@@ -52,8 +51,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
         </nav>} />
       <main className="scroll">
         {tab === "market" ? <Market list={articles.filter((a) => a.market)} asOf={asOf} ai={ai} /> : null}
-        {tab === "ind" ? (IND_V2 ? <IndustryV2 base={{ ...base, tab: "ind" }} sel={sp.s} acct={acct} list={articles} ai={ai} />
-          : <Industry base={{ ...base, tab: "ind" }} sel={sp.s} acct={acct} list={articles} asOf={asOf} ai={ai} />) : null}
+        {tab === "ind" ? <Industry base={{ ...base, tab: "ind" }} sel={sp.s} acct={acct} list={articles} ai={ai} /> : null}
         {tab === "mine" ? <Mine base={{ ...base, tab: "mine", v: sp.v, c: sp.c }} acct={acct} view={sp.v === "watch" ? "watch" : "hold"} pick={sp.c} list={articles} ai={ai} links={links} /> : null}
       </main>
       <BottomNav active="news" />
@@ -74,12 +72,11 @@ function Market({ list, asOf, ai }: { list: Awaited<ReturnType<typeof nightNews>
 }
 
 const ALL_SECTORS = [...new Set(UNIVERSE.map((x) => x.sector))].filter((x) => x && x !== "기타").sort((a, b) => a.localeCompare(b, "ko"));
-const SHOW = 3; // 업종별 뉴스에 펼쳐 둘 업종 수(나머지는 '나머지 업종 더 보기' 창)
 
 /** 산업별 새 화면(2026-11-24, 내 종목 뉴스와 같은 의도: 한 번에 하나, 그 업종 뉴스를 쭉). 업종 이름 줄(피그마 기록 50)에서 고른다
  *  (앞: 내 종목이 있는 업종 •, 뒤: 뉴스가 있는 다른 업종, 각각 뉴스 많은 순). 구성 = 업종 이름 · 뉴스 수와 그 업종 내 종목 · AI 요약 · 판정 묶음 뉴스 전체.
  *  ?s=업종이면 그 업종, 없으면 내 종목 업종 중 뉴스가 가장 많은 업종. 기사 판정은 그 업종 종목들의 판정을 합친 것(articleVerdict) */
-function IndustryV2({ base, sel, acct, list, ai }: { base: Q; sel?: string; acct: Acct; list: Awaited<ReturnType<typeof nightNews>>["articles"]; ai: Brief }) {
+function Industry({ base, sel, acct, list, ai }: { base: Q; sel?: string; acct: Acct; list: Awaited<ReturnType<typeof nightNews>>["articles"]; ai: Brief }) {
   const codes = [...new Set([...acct.holdings.map((h) => h.code), ...acct.watch])];
   const mine = [...new Set(codes.map(sectorOf).filter(Boolean))] as string[];
   const m = bySector(list, ALL_SECTORS);
@@ -123,86 +120,6 @@ function IndustryV2({ base, sel, acct, list, ai }: { base: Q; sel?: string; acct
         : <p className="quiet">밤사이 {cur} 업종 관련 미국 뉴스가 들어오지 않았어요.</p>}
       <p className="fine">업종 이름을 누르면 다른 업종 뉴스를 볼 수 있어요. 긍정·부정은 AI가 이 소식이 그 업종 종목에 유리한지 판단한 거예요. 주가 방향 예측이 아니에요.</p>
     </div>
-  );
-}
-
-/** 산업별(피그마 522:6842 여러 개 선택 · 493:9838 한 업종 · 534:6305 업종 전체 창 · 534:6293 업종 뉴스 창 · 534:6302 나머지 업종 창) */
-function Industry({ base, sel, acct, list, asOf, ai }: { base: Q; sel?: string; acct: Acct; list: Awaited<ReturnType<typeof nightNews>>["articles"]; asOf: string; ai: Brief }) {
-  const codes = [...acct.holdings.map((h) => h.code), ...acct.watch];
-  const mine = [...new Set(codes.map(sectorOf).filter(Boolean))] as string[];
-  const m = bySector(list, ALL_SECTORS);
-  const picked = sel ? sel.split(",").filter((x) => ALL_SECTORS.includes(x)) : [];
-  const chosen = picked.length ? picked : mine;
-  const toggle = (x: string) => { const nx = chosen.includes(x) ? chosen.filter((y) => y !== x) : [...chosen, x]; return q(base, { s: nx.length && nx.join(",") !== mine.join(",") ? nx.join(",") : undefined }); };
-  const n = (x: string) => m.get(x)?.length ?? 0;
-  const order = [...chosen].sort((a, b) => n(b) - n(a));
-  const shown = order.filter((x) => n(x)).slice(0, SHOW), rest = order.filter((x) => n(x)).slice(SHOW);
-  const total = new Set(chosen.flatMap((x) => (m.get(x) ?? []).map((a) => a.key))).size;
-  const newsSheet = (x: string, label: React.ReactNode, cls: string) => (
-    <Sheet key={x} className={cls} title={`${x} 뉴스`} sub={`${n(x)}건 · 최신순`} trigger={label}>
-      {[...(m.get(x) ?? [])].sort((a, b) => b.published.localeCompare(a.published)).map((a) => <NewsCard key={a.key} a={a} tag={x} />)}
-    </Sheet>
-  );
-  return (
-    <>
-      <div className="filter">
-        <div className="row">
-          <Link href={q(base, { s: undefined })} className={`pill ${!picked.length ? "all" : ""}`}>내 업종 전체</Link>
-          {[...new Set([...mine, ...picked])].map((x) => (
-            <Link key={x} href={toggle(x)} className={`pill ${chosen.includes(x) ? "on" : ""}`}>
-              {mine.includes(x) ? <span className="mydot" aria-label="내 종목이 있는 업종">•</span> : null}{x}{chosen.includes(x) ? <i>✓</i> : null}
-            </Link>
-          ))}
-        </div>
-        <Sheet className="pill more" close="text" title={`업종 전체 (${ALL_SECTORS.filter((x) => mine.includes(x) || n(x)).length})`} sub="WI26 기준 · • 내 종목이 있는 업종 · 뉴스 많은 순" trigger={<>전체 ›</>}>
-          {[["• 내 종목이 있는 업종", ALL_SECTORS.filter((x) => mine.includes(x))], ["다른 업종", ALL_SECTORS.filter((x) => !mine.includes(x) && n(x))]].map(([h, xs]) => (
-            <div key={h as string}>
-              <p className="dhead">{h as string}</p>
-              <div className="secgrid">
-                {(xs as string[]).sort((a, b) => n(b) - n(a)).map((x) => (
-                  <Link key={x} href={q(base, { s: x })} className={chosen.length === 1 && chosen[0] === x ? "on" : ""}><b>{mine.includes(x) ? <span className="mydot">• </span> : ""}{x}</b><span>뉴스 {n(x)}건</span></Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </Sheet>
-      </div>
-      <div className="selrow">{chosen.length === 1 ? <span><span className="mydot">•</span> 내 종목이 있는 업종 · 오늘 뉴스 많은 순</span>
-        : <><span>{chosen.length}개 업종 선택 · <span className="mydot">•</span> 내 종목이 있는 업종</span>{picked.length ? <Link href={q(base, { s: undefined })}>선택 초기화</Link> : null}</>}</div>
-      {chosen.length === 1 ? (
-        <>
-          <AiSummary meta={`${chosen[0]} · ${asOf} · 뉴스 ${n(chosen[0])}건`} what={`${chosen[0]} 업종`} lines={ai.sectors.get(chosen[0]) ? [ai.sectors.get(chosen[0])!] : []} />
-          {/* 한 업종: 그 업종 뉴스에 걸린 내 종목, 많은 순 5개(배포용 변경, 피그마 769:9749) */}
-          <Glance title={`${chosen[0]} 뉴스 속 내 종목`} rows={codes.map((c) => ({ name: nameOf(c), n: (m.get(chosen[0]) ?? []).filter((a) => a.direct.includes(c)).length, href: `/news?tab=mine&c=${c}` }))
-            .filter((r) => r.n > 0).sort((a, b) => b.n - a.n).slice(0, 5)} />
-          <Section title={`${chosen[0]} 관련 뉴스`} right={<><img src="/icons/dot-red.svg" alt="" width={6} height={6} />최신순 · {n(chosen[0])}건</>} />
-          {n(chosen[0]) ? [...(m.get(chosen[0]) ?? [])].sort((a, b) => b.published.localeCompare(a.published)).map((a) => <NewsCard key={a.key} a={a} tag={chosen[0]} />) : <Empty />}
-        </>
-      ) : <>
-      <AiSummary meta={`선택 업종 ${chosen.length}개 · 뉴스 ${total}건`} what="선택 업종"
-        lines={order.filter((x) => ai.sectors.get(x)).slice(0, 3).map((x) => [x, ai.sectors.get(x)!] as [string, string])}
-        note={order.filter((x) => ai.sectors.get(x)).length > 3 ? "뉴스가 많은 3개 업종만 먼저 요약했어요 · AI가 요약했어요. 원문과 다를 수 있어요." : undefined} />
-      <Glance title="선택 업종 뉴스 한눈에" sector rows={order.filter((x) => n(x)).slice(0, 6).map((x) => ({ name: x, n: n(x), href: q(base, { s: x }) }))} />
-      <Section title="업종별 뉴스" right={<><img src="/icons/dot-red.svg" alt="" width={6} height={6} />업종 {chosen.length}개 · 뉴스 {total}건</>} />
-      {!shown.length ? <Empty /> : shown.map((x) => (
-        <section key={x} className="block">
-          <div className="bh"><Avatar name={x} sector /><b>{x}</b><span>뉴스 {n(x)}건</span></div>
-          {[...(m.get(x) ?? [])].sort((a, b) => b.published.localeCompare(a.published)).slice(0, 2).map((a) => <StockNews key={a.key} a={a} />)}
-          {n(x) > 2 ? newsSheet(x, <>{x} 뉴스 {n(x)}건 모두 보기 ›</>, "more") : null}
-        </section>
-      ))}
-      {rest.length ? (
-        <Sheet className="moresec" title={`나머지 업종 ${rest.length}개`} sub={`${rest.reduce((a, x) => a + n(x), 0)}건 · 업종별 최신순`} trigger={<>나머지 업종 {rest.length}개 더 보기 ›</>}>
-          {rest.map((x) => (
-            <div key={x}>
-              <p className="dhead"><span className="mydot">•</span> {x} <span className="fine">{n(x)}건</span></p>
-              {[...(m.get(x) ?? [])].sort((a, b) => b.published.localeCompare(a.published)).map((a) => <NewsCard key={a.key} a={a} tag={x} />)}
-            </div>
-          ))}
-        </Sheet>
-      ) : null}
-      </>}
-    </>
   );
 }
 

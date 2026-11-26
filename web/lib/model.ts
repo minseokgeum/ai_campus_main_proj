@@ -24,7 +24,7 @@ export type CardStock = {
   p: number | null; nxtG: number | null; earn: boolean;
 };
 export type CheckRow = { code: string; open: number; y: number; in80: boolean; in90: boolean };
-export type Check = { scored: number; inBand80: number; inBand90: number; maeH: number; checkedAt: string | null };   // checkedAt: 채점을 마친 시각 HH:MM(지난 기록은 null)
+export type Check = { scored: number; inBand80: number; inBand90: number; maeH: number; checkedAt: string | null };   // checkedAt: 확인을 마친 시각 HH:MM(지난 기록은 null)
 export type NightPoint = { m: number; r: number }; // m: 18:00부터 분, r: 전일 주간 종가 대비 비율
 export type Night = { d: string; contract: string; dayClose: number; last: number | null; points: NightPoint[] };
 
@@ -33,7 +33,7 @@ export type DayModel = {
   card: Card | null;            // 보여 줄 카드(08:11이 있으면 08:11, 없으면 06:30)
   slots: Slot[];
   stocks: Map<string, CardStock>;
-  check: Check | null;          // 같은 카드의 개장 뒤 채점
+  check: Check | null;          // 같은 카드의 개장 뒤 확인
   checks: Map<string, CheckRow>;
   night: Night | null;
 };
@@ -62,7 +62,7 @@ export async function modelDates(limit = 40): Promise<string[]> {
   }
 }
 
-/** 한 날짜의 카드·종목 값·채점·야간선물 흐름. t가 없으면 가장 최근 카드 날짜 */
+/** 한 날짜의 카드·종목 값·확인·야간선물 흐름. t가 없으면 가장 최근 카드 날짜 */
 export async function dayModel(t?: string): Promise<DayModel | null> {
   const pool = db();
   let day = t;
@@ -71,14 +71,14 @@ export async function dayModel(t?: string): Promise<DayModel | null> {
     if (!dates.length) return null;
     day = dates[0];
   }
-  // 그 날이 화면 시각의 '오늘'이면 그 시각까지 나온 카드·채점만(06:30 카드 → 08:11 카드 → 채점).
-  // 채점은 서버가 그날 시가가 들어오는 즉시 하고 저장 시각(checked_at)을 남긴다 → 그 시각이 지났으면 보여 준다(시연 시각도 같은 기준).
+  // 그 날이 화면 시각의 '오늘'이면 그 시각까지 나온 카드·확인만(06:30 카드 → 08:11 카드 → 확인).
+  // 확인은 서버가 그날 시가가 들어오는 즉시 하고 저장 시각(checked_at)을 남긴다 → 그 시각이 지났으면 보여 준다(시연 시각도 같은 기준).
   // checked_at이 없는 지난 기록은 개장 5분 뒤(보통 09:05, 10시 개장일 10:05)를 기준으로 둔다.
   const nowAt = await appNow();
   const k = kstNow(nowAt), hm = k.hour * 100 + k.minute;
   const shown = (slot: string) => day! < k.ymd || (day === k.ymd && hm >= (slot === "0811" ? 811 : 630));
   const past = day! < k.ymd, pastFixed = day === k.ymd && hm >= checkTime(day!)[1];
-  // 분 단위로 비교(2026-11-24): 채점 줄은 채점이 끝나야 생기므로 실제 시각엔 차이가 없고, 시연 시각 09:01에서 09:01:30에 끝난 채점이 보인다
+  // 분 단위로 비교(2026-11-24): 확인 줄은 확인이 끝나야 생기므로 실제 시각엔 차이가 없고, 시연 시각 09:01에서 09:01:30에 끝난 확인이 보인다
   const CHECK_GATE = "($3 or (checked_at is not null and date_trunc('minute', checked_at) <= $4) or (checked_at is null and $5))";
   const cards = (await pool.query("select * from model.cards where t = $1 order by slot", [day])).rows.map(toCard).filter((c) => shown(c.slot));
   const slots = cards.map((c) => c.slot);
@@ -139,22 +139,11 @@ export async function night(d: string): Promise<Night | null> {
   return { d, contract: String(nd.rows[0]?.code ?? day.rows[0]?.code ?? ""), dayClose, last: lastClose ? lastClose / dayClose - 1 : null, points };
 }
 
-/** 개장 뒤 채점 요약(보관 화면용): 날짜별 채점된 카드 */
-export async function checkHistory(limit = 30): Promise<{ t: string; slot: Slot; inBand80: number; scored: number }[]> {
-  try {
-    const r = await db().query(
-      `select distinct on (t) t, slot, in_band80, scored from model.checks order by t desc, slot desc limit $1`, [limit]);
-    return r.rows.map((x) => ({ t: String(x.t), slot: x.slot, inBand80: Number(x.in_band80), scored: Number(x.scored) }));
-  } catch {
-    return [];
-  }
-}
-
-/** 여러 날짜의 내 종목 채점 줄(보관 화면 날짜 칩 색) */
+/** 여러 날짜의 내 종목 확인 줄(보관 화면 날짜 칩 색) */
 export async function myChecks(dates: string[], codes: string[]): Promise<Map<string, CheckRow[]>> {
   const out = new Map<string, CheckRow[]>();
   if (!dates.length || !codes.length) return out;
-  const g = await timeGate();   // 화면 시각까지 나온 채점만
+  const g = await timeGate();   // 화면 시각까지 나온 확인만
   const r = await db().query(
     `select distinct on (s.t, s.code) s.t, s.code, s.open, s.y, s.in80, s.in90, c.checked_at from model.check_stocks s
      join model.checks c on c.t = s.t and c.slot = s.slot
@@ -176,7 +165,7 @@ export async function recordData(codes: string[], n = 20): Promise<{ dates: stri
   const dates = (await modelDates(n)).reverse();
   const cells = new Map<string, Map<string, RecordCell>>();
   if (!dates.length || !codes.length) return { dates, cells };
-  const g = await timeGate();   // 화면 시각까지 나온 카드·채점만(그날 08:11 전이면 06:30 카드, 채점 전이면 동그라미 없음)
+  const g = await timeGate();   // 화면 시각까지 나온 카드·확인만(그날 08:11 전이면 06:30 카드, 확인 전이면 동그라미 없음)
   const r = await db().query(
     `select distinct on (s.t, s.code) s.t, s.code, s.h, s.l80, s.u80, k.y, k.in80, kc.checked_at
      from model.card_stocks s left join model.check_stocks k on k.t = s.t and k.slot = s.slot and k.code = s.code

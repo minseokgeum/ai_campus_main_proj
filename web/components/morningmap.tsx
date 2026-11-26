@@ -1,15 +1,12 @@
-// 오늘 아침 내 종목 지도 카드. 홈 나눠 보기와 내 종목 탭(업종별 투자 비중과 넘겨 보기, 2026-11-24)에서 같이 쓴다.
+// 오늘 아침 내 종목 지도 카드(홈 나눠 보기). 내용은 홈이 이미 계산한 값으로 만든다(mapInfo).
 // 오늘 예상이 나왔으면 예상 시가 색 지도, 그 전(06:30 전·주말·휴장일·지연)엔 보유 금액 크기만 있는 지도('06:30 공개'·'쉬는 날'·'준비 중').
 import Link from "next/link";
 import { Sheet } from "@/components/sheet";
 import { MapLegend, TreeMap, type MapStock } from "@/components/treemap";
 import { uStock } from "@/lib/portfolio";
-import { dayModel, isoDay } from "@/lib/model";
-import { buildRows, type Row } from "@/lib/night";
-import { byStock, nightNews } from "@/lib/news";
-import { kstNow } from "@/lib/calendar";
-import { appNow } from "@/lib/clock";
-import { isClosedDay, marketDay, nextOpenDay } from "@/lib/marketdays";
+import { isoDay } from "@/lib/model";
+import type { Row } from "@/lib/night";
+import { nextOpenDay } from "@/lib/marketdays";
 import { dateLabel } from "@/lib/format";
 
 export type MapInfo = { stocks: MapStock[]; sub: string; idle?: string };
@@ -34,24 +31,6 @@ export function mapInfo(p: { today: string; fresh: boolean; off: boolean; delaye
     stocks, idle: p.off ? "쉬는 날" : p.delayed ? "준비 중" : "06:30 공개",
     sub: `보유 비중 · ${p.off ? `다음 예상 ${dateLabel(isoDay(nextOpenDay(p.today)))} 06:30` : p.delayed ? "오늘 예상은 준비되면 채워져요" : "오늘 예상은 06:30에 채워져요"}`,
   };
-}
-
-/** 내 종목 탭처럼 홈 밖에서 쓸 때: 홈과 같은 규칙으로 아침 예상·밤사이 기사 수를 읽어 지도 내용을 만든다 */
-export async function loadMapInfo(holdings: { code: string; qty: number }[], px: Px): Promise<MapInfo | null> {
-  if (!holdings.length) return null;
-  const now = kstNow(await appNow());
-  const today = now.ymd;
-  const before0630 = now.hour < 6 || (now.hour === 6 && now.minute < 30);
-  const [m, { articles }] = await Promise.all([dayModel().catch(() => null), nightNews()]);
-  const fresh = m?.t === today && !before0630 && m.card?.status === "ok";
-  return mapInfo({
-    today, fresh,
-    off: isClosedDay(today) || m?.card?.status === "holiday",
-    delayed: !before0630 && !isClosedDay(today) && m?.t !== today,
-    slot0811: m?.card?.slot === "0811" && (marketDay(today)?.premarket ?? true), after0811: now.hour * 100 + now.minute >= 811,
-    preRows: m?.card?.status === "ok" ? buildRows(m, holdings, "pre") : [],
-    holdings, px, news: byStock(articles, holdings.map((h) => h.code)),
-  });
 }
 
 export function MapCard({ info }: { info: MapInfo }) {

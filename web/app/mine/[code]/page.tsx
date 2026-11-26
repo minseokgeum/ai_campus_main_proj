@@ -3,11 +3,12 @@
 // ‖ 시세 요약(전일 종가 · 거래량 · 시가총액 · 외국인 보유 · 52주 위치) → 주가 흐름(1일 · 1주 · 1달 · 3달 · 1년) ‖ 다가오는 일정 → 지난 소식.
 // 뺀 것: 이 종목의 예상 범위 기록(변경 기록 42, 20거래일 그래프는 오늘 예측 창 안으로), 미국 시장 반응도, 큰 연결 그림(관계도 창으로).
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BottomNav } from "@/components/ui";
 import { signColor } from "@/components/model";
-import { requireUser } from "@/lib/auth";
-import { portfolio, uStock } from "@/lib/portfolio";
+import { demoLocked, requireUser } from "@/lib/auth";
+import { DEMO_LOCK_SUB, DEMO_LOCK_TITLE, browseInstead } from "@/components/demolock";
+import { portfolio, removeStock, uStock, viewingPast } from "@/lib/portfolio";
 import { tierOf } from "@/lib/model";
 import { closes, filings, intraday, lastCloses, quote, series } from "@/lib/prices";
 import { avgFit, avgPlace, DayChart, PriceLine } from "@/components/daychart";
@@ -17,7 +18,6 @@ import { byStock, foldStories, impactFor, nightNews, stockNewsDays, verdictsOf }
 import { addDays, kstNow } from "@/lib/calendar";
 import { kstTime, pct, swon, won } from "@/lib/format";
 import { appNow, demoAt } from "@/lib/clock";
-import { briefing } from "@/lib/briefing";
 import { stockLinks } from "@/lib/links";
 import { HotLinks } from "@/components/links";
 import { PredLine } from "@/components/predline";
@@ -38,14 +38,23 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
   const pf = await portfolio(user.id);
   const h = pf.holdings.find((x) => x.code === code);
   const watch = pf.watch.includes(code);
+  const viewPast = await viewingPast();
+  const locked = await demoLocked();   // 시연 계정은 보기 전용: 삭제를 누르면 안내 창(2026-11-26)
+  async function remove() {
+    "use server";
+    const me = await requireUser();
+    if (await viewingPast()) redirect(`/mine/${code}`);   // 지난 시각에서는 지우지 않는다
+    await removeStock(me.id, code);
+    redirect("/mine");
+  }
   const range = RANGES.find((x) => x[0] === sp.r) ?? RANGES[2];   // 처음은 1달
   const nowAt = await appNow();
   const today = kstNow(nowAt).ymd;
-  const br = briefing(undefined, nowAt);   // 연결 그림의 소식 수는 지금 브리핑 범위(전날 23:00 ~ 그날 06:15 발행분, lib/briefing.ts)
-  const [px, q, past, fl, lc, lcSelf, lk, day, demo, pred, news, evs] = await Promise.all([closes(code, addDays(today, -range[2])), quote(code), stockNewsDays(code, 7), filings(code, 14),
-    lastCloses(pf.holdings.map((x) => x.code)), lastCloses([code]), stockLinks([code], br.start, br.end),
+  const [px, q, past, fl, lc, lcSelf, day, demo, pred, news, evs] = await Promise.all([closes(code, addDays(today, -range[2])), quote(code), stockNewsDays(code, 7), filings(code, 14),
+    lastCloses(pf.holdings.map((x) => x.code)), lastCloses([code]),
     range[0] === "1d" ? intraday(code) : Promise.resolve(null), demoAt(), stockPred(code),
     nightNews().then(({ articles }) => byStock(articles, [code])).catch(() => new Map()), upcomingEvents(today, [code], 30)]);
+  const lk = await stockLinks([code], news);   // 연결 그림 칸 숫자 = 지금 브리핑의 이 종목 기사(뉴스 브리핑 목록과 같은 기사) 중 그 칸 검색어로 이어진 수(2026-11-26)
   // 지난 소식(피그마 147:619): 기사(보도) + DART 공시, 최신순
   const md = (d: string) => `${Number(d.slice(4, 6))}/${Number(d.slice(6, 8))}`;
   const kd = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso)).replace(/-/g, "");
@@ -119,7 +128,18 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
             </div>
           ) : null}
           <div className="acts">{h ? <><Link href={`/mine/${code}/edit`}>수량·평단 수정 ›</Link><Link href={`/mine/${code}/edit?watch=1`}>관심으로 옮기기 ›</Link></>
-            : <Link href={`/mine/${code}/edit`}>보유 종목으로 추가 ›</Link>}</div>
+            : <Link href={`/mine/${code}/edit`}>보유 종목으로 추가 ›</Link>}
+            {/* 종목 삭제(2026-11-26 사용자 결정: 종목 상세 단추 줄 끝 회색 '삭제' + 확인 창). 보유·관심 종목일 때만, 지난 시각을 보는 중에는 숨김 */}
+            {(h || watch) && !viewPast ? (
+              locked ? (
+                <Sheet className="acts-del" center cancel="닫기" title={DEMO_LOCK_TITLE} sub={DEMO_LOCK_SUB} trigger={<>삭제</>}>
+                  <form action={browseInstead}><button type="submit" className="dok">둘러보기 시작</button></form>
+                </Sheet>
+              ) : (
+              <Sheet className="acts-del" center cancel="취소" title={`${u.name} 종목을 삭제할까요?`} sub="보유·관심 목록에서 모두 빠져요. 지난 기록은 그대로 남아요." trigger={<>삭제</>}>
+                <form action={remove}><button type="submit" className="dok">삭제</button></form>
+              </Sheet>)
+            ) : null}</div>
         </section>
         <i className="d4-gap" aria-hidden />
 
